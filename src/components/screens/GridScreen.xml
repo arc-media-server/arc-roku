@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!-- A grid of titles: a library (with its collections and folders), a collection, the watchlist,
      playlists and a playlist, or a person's titles. params: { title, source: { kind, id,
-     libraryKind, path } } (see source/shared/browse.bs). The * button sorts and filters a library. -->
+     libraryKind, path } } (see source/shared/browse.bs). The * button opens the card's menu, and a library's sort and filters. -->
 <component name="GridScreen" extends="Group">
     <interface>
         <field id="params" type="assocarray" onChange="onParams" />
@@ -17,6 +17,7 @@
     <script type="text/brightscript" uri="pkg:/source/shared/home.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/cards.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/browse.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/cardmenu.bs" />
     <children>
         <Rectangle width="1920" height="1080" color="0x0B1214FF" />
         <Label id="title" translation="[120, 70]" width="1300" font="font:LargeBoldSystemFont" color="0xF0F4F4FF" />

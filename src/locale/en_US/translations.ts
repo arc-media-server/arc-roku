@@ -9,8 +9,8 @@
   <translation>* Audio, subtitles and more</translation>
 </message>
 <message>
-  <source>* to sort and filter</source>
-  <translation>* to sort and filter</translation>
+  <source>* for options, sort and filter</source>
+  <translation>* for options, sort and filter</translation>
 </message>
 <message>
   <source>%1 channels</source>
@@ -73,6 +73,10 @@
   <translation>All</translation>
 </message>
 <message>
+  <source>Always</source>
+  <translation>Always</translation>
+</message>
+<message>
   <source>Any</source>
   <translation>Any</translation>
 </message>
@@ -85,6 +89,10 @@
   <translation>Arc didn't answer in time.</translation>
 </message>
 <message>
+  <source>Arc for Roku %1</source>
+  <translation>Arc for Roku %1</translation>
+</message>
+<message>
   <source>Arc's address</source>
   <translation>Arc's address</translation>
 </message>
@@ -93,12 +101,20 @@
   <translation>Audio</translation>
 </message>
 <message>
+  <source>Auto-Play Next Episode</source>
+  <translation>Auto-Play Next Episode</translation>
+</message>
+<message>
   <source>Automatic</source>
   <translation>Automatic</translation>
 </message>
 <message>
   <source>Behind the scenes</source>
   <translation>Behind the scenes</translation>
+</message>
+<message>
+  <source>Bottom</source>
+  <translation>Bottom</translation>
 </message>
 <message>
   <source>Can't reach Arc</source>
@@ -229,6 +245,10 @@
   <translation>Genre</translation>
 </message>
 <message>
+  <source>Go to details</source>
+  <translation>Go to details</translation>
+</message>
+<message>
   <source>Go to show</source>
   <translation>Go to show</translation>
 </message>
@@ -241,8 +261,20 @@
   <translation>Horror for Halloween</translation>
 </message>
 <message>
+  <source>Huge</source>
+  <translation>Huge</translation>
+</message>
+<message>
+  <source>In the language I last chose</source>
+  <translation>In the language I last chose</translation>
+</message>
+<message>
   <source>Interview</source>
   <translation>Interview</translation>
+</message>
+<message>
+  <source>Large</source>
+  <translation>Large</translation>
 </message>
 <message>
   <source>Last watched</source>
@@ -285,6 +317,10 @@
   <translation>Maximum (%1)</translation>
 </message>
 <message>
+  <source>Medium</source>
+  <translation>Medium</translation>
+</message>
+<message>
   <source>Mono</source>
   <translation>Mono</translation>
 </message>
@@ -307,6 +343,10 @@
 <message>
   <source>No Arc servers answered. Check Arc is running, or type its address.</source>
   <translation>No Arc servers answered. Check Arc is running, or type its address.</translation>
+</message>
+<message>
+  <source>None</source>
+  <translation>None</translation>
 </message>
 <message>
   <source>Nothing here yet. Add a library in Arc's settings on the web.</source>
@@ -341,8 +381,16 @@
   <translation>Oldest first</translation>
 </message>
 <message>
+  <source>On</source>
+  <translation>On</translation>
+</message>
+<message>
   <source>On your phone or computer, open Arc, choose Link a Device from your profile menu, and type this code.</source>
   <translation>On your phone or computer, open Arc, choose Link a Device from your profile menu, and type this code.</translation>
+</message>
+<message>
+  <source>Only when I choose them</source>
+  <translation>Only when I choose them</translation>
 </message>
 <message>
   <source>Options</source>
@@ -355,6 +403,10 @@
 <message>
   <source>Original</source>
   <translation>Original</translation>
+</message>
+<message>
+  <source>Outline only</source>
+  <translation>Outline only</translation>
 </message>
 <message>
   <source>Paused</source>
@@ -389,6 +441,10 @@
   <translation>Play Next</translation>
 </message>
 <message>
+  <source>Playback and subtitle choices follow your profile, on every device. Choosing a track in the player updates them too.</source>
+  <translation>Playback and subtitle choices follow your profile, on every device. Choosing a track in the player updates them too.</translation>
+</message>
+<message>
   <source>Playback was stopped from Arc.</source>
   <translation>Playback was stopped from Arc.</translation>
 </message>
@@ -399,6 +455,10 @@
 <message>
   <source>Playlists</source>
   <translation>Playlists</translation>
+</message>
+<message>
+  <source>Preferred Audio Language</source>
+  <translation>Preferred Audio Language</translation>
 </message>
 <message>
   <source>Press Back to close.</source>
@@ -433,6 +493,10 @@
   <translation>Resolution</translation>
 </message>
 <message>
+  <source>Resume</source>
+  <translation>Resume</translation>
+</message>
+<message>
   <source>Resume %1</source>
   <translation>Resume %1</translation>
 </message>
@@ -461,6 +525,18 @@
   <translation>Season %1</translation>
 </message>
 <message>
+  <source>Server</source>
+  <translation>Server</translation>
+</message>
+<message>
+  <source>Settings</source>
+  <translation>Settings</translation>
+</message>
+<message>
+  <source>Shaded box</source>
+  <translation>Shaded box</translation>
+</message>
+<message>
   <source>Short</source>
   <translation>Short</translation>
 </message>
@@ -471,6 +547,10 @@
 <message>
   <source>Show</source>
   <translation>Show</translation>
+</message>
+<message>
+  <source>Show Subtitles</source>
+  <translation>Show Subtitles</translation>
 </message>
 <message>
   <source>Shuffle</source>
@@ -485,8 +565,8 @@
   <translation>Sign out</translation>
 </message>
 <message>
-  <source>Signed in as %1</source>
-  <translation>Signed in as %1</translation>
+  <source>Sign Out of This Roku</source>
+  <translation>Sign Out of This Roku</translation>
 </message>
 <message>
   <source>Skip Credits</source>
@@ -497,8 +577,20 @@
   <translation>Skip Intro</translation>
 </message>
 <message>
+  <source>Skip Intros Automatically</source>
+  <translation>Skip Intros Automatically</translation>
+</message>
+<message>
   <source>Skip Recap</source>
   <translation>Skip Recap</translation>
+</message>
+<message>
+  <source>Small</source>
+  <translation>Small</translation>
+</message>
+<message>
+  <source>Solid black</source>
+  <translation>Solid black</translation>
 </message>
 <message>
   <source>Sort and filter</source>
@@ -513,12 +605,32 @@
   <translation>Stereo</translation>
 </message>
 <message>
+  <source>Subtitle Background</source>
+  <translation>Subtitle Background</translation>
+</message>
+<message>
+  <source>Subtitle Colour</source>
+  <translation>Subtitle Colour</translation>
+</message>
+<message>
+  <source>Subtitle Language</source>
+  <translation>Subtitle Language</translation>
+</message>
+<message>
+  <source>Subtitle Position</source>
+  <translation>Subtitle Position</translation>
+</message>
+<message>
+  <source>Subtitle Size</source>
+  <translation>Subtitle Size</translation>
+</message>
+<message>
   <source>Subtitles</source>
   <translation>Subtitles</translation>
 </message>
 <message>
-  <source>Switch profile</source>
-  <translation>Switch profile</translation>
+  <source>Switch Profile</source>
+  <translation>Switch Profile</translation>
 </message>
 <message>
   <source>That PIN isn't right.</source>
@@ -527,6 +639,10 @@
 <message>
   <source>The code ran out. Choose New code for another.</source>
   <translation>The code ran out. Choose New code for another.</translation>
+</message>
+<message>
+  <source>The file's default</source>
+  <translation>The file's default</translation>
 </message>
 <message>
   <source>This Roku couldn't play this title.</source>
@@ -539,6 +655,14 @@
 <message>
   <source>Titles</source>
   <translation>Titles</translation>
+</message>
+<message>
+  <source>Titles, artwork and episode details come from TMDB and TheTVDB. This product uses the TMDB API but is not endorsed or certified by TMDB.</source>
+  <translation>Titles, artwork and episode details come from TMDB and TheTVDB. This product uses the TMDB API but is not endorsed or certified by TMDB.</translation>
+</message>
+<message>
+  <source>Top</source>
+  <translation>Top</translation>
 </message>
 <message>
   <source>Track %1</source>
@@ -585,6 +709,14 @@
   <translation>Watchlist</translation>
 </message>
 <message>
+  <source>When the audio is in another language</source>
+  <translation>When the audio is in another language</translation>
+</message>
+<message>
+  <source>White</source>
+  <translation>White</translation>
+</message>
+<message>
   <source>Who's watching?</source>
   <translation>Who's watching?</translation>
 </message>
@@ -595,6 +727,10 @@
 <message>
   <source>Year</source>
   <translation>Year</translation>
+</message>
+<message>
+  <source>Yellow</source>
+  <translation>Yellow</translation>
 </message>
 <message>
   <source>Z to A</source>
