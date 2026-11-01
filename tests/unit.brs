@@ -9,6 +9,7 @@ sub Main()
     testHome()
     testBif()
     testTracks()
+    testBrowse()
     if m.failures = 0 then print "ALL PASSED" else print "FAILURES: "; m.failures
 end sub
 
@@ -199,4 +200,38 @@ sub testTracks()
     eq(qualityLabel(0, { server_limit_kbps: 4000 }), "Maximum (4 Mbps 720p)", "qualityLabel capped")
     eq(versionName({ edition: "Director's Cut", height: 2160, hdr: "HDR10", size: 25300000000 }), "Director's Cut · 4K · HDR10 · 25.3 GB", "versionName")
     eq(chapterAt([{ start_ms: 0 }, { start_ms: 5000 }], 7000), 1, "chapterAt")
+end sub
+
+sub testBrowse()
+    q = libraryQueryDefaults()
+    lib = { kind: "library", id: 2, libraryKind: "shows" }
+    eq(browsePath(lib, q, 0, 60), "/items?kind=series&library_id=2&limit=60&sort=title", "browsePath library first page")
+    q.sort = "added"
+    q.reverse = true
+    q.unwatched = true
+    q.genre = "Drama"
+    eq(browsePath(lib, q, 60, 60), "/items?genre=Drama&kind=series&library_id=2&limit=60&offset=60&reverse=1&sort=added&unwatched=1", "browsePath with filters and offset")
+    eq(browsePath({ kind: "folders", id: 3, path: "0/Birthdays" }, invalid, 0, 60), "/libraries/3/folders?path=0%2FBirthdays", "browsePath folder")
+    eq(browsePath({ kind: "collection", id: "abc" }, invalid, 0, 60), "/collections/abc", "browsePath collection")
+    eq(browsePath({ kind: "person", id: "369" }, invalid, 0, 60), "/people/369", "browsePath person")
+    eq(querySummary(q), "Date added · Oldest first · Unwatched · Drama", "querySummary")
+
+    page = browseCards(lib, { total: 130, items: [{ id: "a", kind: "series" }] })
+    eq(page.total, 130, "browseCards keeps the library total")
+    eq(page.cards[0].item.id, "a", "browseCards library items")
+    folders = browseCards({ kind: "folders" }, { folders: [{ name: "Birthdays", path: "0/Birthdays", count: 2, cover: "/c" }], items: [{ id: "v", kind: "movie" }] })
+    eq(folders.cards.Count(), 2, "browseCards folders then videos")
+    eq(folders.cards[0].item.kind, "folder", "browseCards folder card")
+    eq(folders.cards[0].line2, "2 titles", "browseCards folder count")
+    person = browseCards({ kind: "person" }, { person: { name: "X" }, credits: [{ item: { id: "m" }, character: "Deckard" }] })
+    eq(person.cards[0].line2, "Deckard", "browseCards person character")
+    playlists = browseCards({ kind: "playlists" }, [{ id: "p", title: "Movie Night", count: 6, images: ["/a", "/b"] }])
+    eq(playlists.cards[0].item.images.primary, "/a", "browseCards playlist cover")
+    eq(browseStyle({ kind: "library", libraryKind: "videos" }), "thumb", "browseStyle home videos")
+
+    rows = searchRows({ movies: [{ id: "1" }], shows: [{ id: "2" }], episodes: [], people: [{ id: 9, name: "Ann", known_for: "director" }] })
+    eq(rows.Count(), 2, "searchRows leaves out empty kinds")
+    eq(rows[0].cards.Count(), 2, "searchRows joins films and shows")
+    eq(rows[1].cards[0].item.id, "9", "searchRows person id as text")
+    eq(rows[1].cards[0].line2, "Director", "searchRows person role")
 end sub

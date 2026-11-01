@@ -3,7 +3,7 @@
 
 ' cardFields: what a card carries besides its picture and title.
 function cardFields() as object
-    return { itemId: "", kind: "", parentId: "", line2: "", progress: 0.0, style: "poster", backdrop: "", logo: "", meta: "", overview: "", resumeMs: 0, played: false }
+    return { itemId: "", kind: "", parentId: "", line2: "", progress: 0.0, style: "poster", backdrop: "", logo: "", meta: "", overview: "", resumeMs: 0, played: false, path: "" }
 end function
 
 ' fillCard sets a ContentNode (with cardFields) for an item shown as "poster" or "thumb".
@@ -29,6 +29,7 @@ sub fillCard(node as object, card as object, style as string)
 
     node.itemId = it.id
     node.kind = it.kind
+    if it.path <> invalid then node.path = it.path
     if it.parent_id <> invalid then node.parentId = it.parent_id
     node.style = style
     if style = "thumb" then node.HDPosterUrl = imageUrl(thumb) else node.HDPosterUrl = imageUrl(poster)
@@ -51,6 +52,7 @@ sub fillCard(node as object, card as object, style as string)
     else if it.year <> invalid and it.year > 0
         subText = it.year.ToStr()
     end if
+    if card.line2 <> invalid then subText = card.line2
     node.title = title
     node.line2 = subText
     d = durationMs(it)
