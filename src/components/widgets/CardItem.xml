@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- A title on a row: its poster (or a 16:9 picture with two lines under it), how far through it
+<!-- A title on a row: its poster (or a 16:9 picture, or a person's picture, with two lines under it), how far through it
      is, and a white edge when it has focus. Sized by its row. -->
 <component name="CardItem" extends="Group">
     <interface>

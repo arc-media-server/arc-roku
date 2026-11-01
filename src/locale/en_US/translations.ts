@@ -97,12 +97,20 @@
   <translation>Automatic</translation>
 </message>
 <message>
+  <source>Behind the scenes</source>
+  <translation>Behind the scenes</translation>
+</message>
+<message>
   <source>Can't reach Arc</source>
   <translation>Can't reach Arc</translation>
 </message>
 <message>
   <source>Cancel</source>
   <translation>Cancel</translation>
+</message>
+<message>
+  <source>Cast</source>
+  <translation>Cast</translation>
 </message>
 <message>
   <source>Chapter %1</source>
@@ -173,6 +181,10 @@
   <translation>Decade</translation>
 </message>
 <message>
+  <source>Deleted scene</source>
+  <translation>Deleted scene</translation>
+</message>
+<message>
   <source>Director</source>
   <translation>Director</translation>
 </message>
@@ -183,6 +195,18 @@
 <message>
   <source>Episodes</source>
   <translation>Episodes</translation>
+</message>
+<message>
+  <source>Extra</source>
+  <translation>Extra</translation>
+</message>
+<message>
+  <source>Extras</source>
+  <translation>Extras</translation>
+</message>
+<message>
+  <source>Featurette</source>
+  <translation>Featurette</translation>
 </message>
 <message>
   <source>Find your Arc server</source>
@@ -215,6 +239,10 @@
 <message>
   <source>Horror for Halloween</source>
   <translation>Horror for Halloween</translation>
+</message>
+<message>
+  <source>Interview</source>
+  <translation>Interview</translation>
 </message>
 <message>
   <source>Last watched</source>
@@ -259,6 +287,10 @@
 <message>
   <source>Mono</source>
   <translation>Mono</translation>
+</message>
+<message>
+  <source>More Like This</source>
+  <translation>More Like This</translation>
 </message>
 <message>
   <source>Most recent first</source>
@@ -413,6 +445,10 @@
   <translation>Romance for Valentine's Day</translation>
 </message>
 <message>
+  <source>Scene</source>
+  <translation>Scene</translation>
+</message>
+<message>
   <source>Search</source>
   <translation>Search</translation>
 </message>
@@ -423,6 +459,10 @@
 <message>
   <source>Season %1</source>
   <translation>Season %1</translation>
+</message>
+<message>
+  <source>Short</source>
+  <translation>Short</translation>
 </message>
 <message>
   <source>Shortest first</source>
@@ -503,6 +543,10 @@
 <message>
   <source>Track %1</source>
   <translation>Track %1</translation>
+</message>
+<message>
+  <source>Trailer</source>
+  <translation>Trailer</translation>
 </message>
 <message>
   <source>Try again</source>
