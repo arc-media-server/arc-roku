@@ -16,6 +16,7 @@
     <script type="text/brightscript" uri="pkg:/source/shared/home.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/cards.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/browse.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/cardmenu.bs" />
     <children>
         <Rectangle width="1920" height="1080" color="0x0B1214FF" />
         <Label id="heading" translation="[80, 70]" width="600" font="font:LargeBoldSystemFont" color="0xF0F4F4FF" />
@@ -25,6 +26,7 @@
             rowLabelColor="0xF0F4F4FF" rowLabelFont="font:MediumBoldSystemFont" drawFocusFeedback="false"
             rowFocusAnimationStyle="floatingFocus" vertFocusAnimationStyle="fixedFocus" />
         <Label id="note" translation="[680, 180]" width="1160" wrap="true" font="font:MediumSystemFont" color="0x9AA7A7FF" />
+        <OptionsPanel id="cardPanel" visible="false" />
         <Timer id="typing" repeat="false" duration="0.5" />
     </children>
 </component>

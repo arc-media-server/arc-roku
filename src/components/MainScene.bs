@@ -165,6 +165,8 @@ sub onAction(event as object)
         push("GridScreen", { title: a.title, source: a.source })
     else if go = "search"
         push("SearchScreen", {})
+    else if go = "settings"
+        push("SettingsScreen", {})
     else if go = "back"
         pop()
     end if

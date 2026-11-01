@@ -1,6 +1,6 @@
 ' Home's rows load together: each row asks Arc for its titles, and rows are placed in the
 ' profile's order as soon as every row above them has answered. Rows with nothing in them are
-' left out, as on the web. The * button opens the menu (switch profile, sign out, another server).
+' left out, as on the web. The * button opens the focused card's menu (cardmenu.bs).
 ' Left from the first card opens the list of places: Search, the libraries (with the Watchlist
 ' where the profile put it) and Playlists, as the other apps' side rail.
 
@@ -17,6 +17,9 @@ sub init()
     m.nav = m.top.findNode("nav")
     m.nav.observeField("picked", "onNavPicked")
     m.nav.observeField("closed", "onNavClosed")
+    m.cardPanel = m.top.findNode("cardPanel")
+    m.cardPanel.observeField("picked", "onCardPicked")
+    m.cardPanel.observeField("closed", "closeCardPanel")
     m.navPlaces = []
     m.heroDelay = m.top.findNode("heroDelay")
     m.heroDelay.observeField("fire", "showHero")
@@ -33,6 +36,7 @@ end sub
 
 sub takeFocus(_ = invalid as dynamic)
     m.nav.visible = false
+    m.cardPanel.visible = false
     m.rows.setFocus(true)
 end sub
 
@@ -189,7 +193,7 @@ end sub
 
 function onKeyEvent(key as string, press as boolean) as boolean
     if not press then return false
-    if m.nav.visible then return true
+    if m.nav.visible or m.cardPanel.visible then return true
     if key = "play"
         c = focusedCard()
         if c <> invalid and (c.kind = "movie" or c.kind = "episode")
@@ -224,6 +228,7 @@ sub openNav()
     end for
     if watchlistAt >= libs.Count() then places.Push(watchlist)
     places.Push({ label: tr("Playlists"), go: { go: "grid", title: tr("Playlists"), source: { kind: "playlists" } } })
+    places.Push({ label: tr("Settings"), go: { go: "settings" } })
     entries = []
     for each p in places
         entries.Push({ label: p.label, detail: "" })
@@ -249,25 +254,39 @@ sub onNavClosed()
     m.rows.setFocus(true)
 end sub
 
+' --- the * menu on a card (cardmenu.bs) ---
+
 sub showMenu()
-    d = CreateObject("roSGNode", "StandardMessageDialog")
-    d.title = m.global.serverName
-    profile = m.global.profile
-    if profile <> invalid and profile.name <> invalid then d.message = [tr("Signed in as %1").Replace("%1", profile.name)]
-    d.buttons = [tr("Switch profile"), tr("Sign out"), tr("Use another server"), tr("Cancel")]
-    d.observeField("buttonSelected", "onMenu")
-    m.dialog = d
-    m.top.getScene().dialog = d
+    c = focusedCard()
+    entries = cardMenu(c)
+    if entries.Count() = 0 then return
+    m.menuCard = c
+    m.menuEntries = entries
+    list = []
+    for each e in entries
+        list.Push({ label: e.label, detail: "" })
+    end for
+    m.cardPanel.title = c.title
+    m.cardPanel.entries = list
+    m.cardPanel.selected = -1
+    m.cardPanel.visible = true
+    m.cardPanel.show = true
 end sub
 
-sub onMenu()
-    choice = m.dialog.buttonSelected
-    m.dialog.close = true
-    if choice = 0
-        m.top.action = { go: "profiles" }
-    else if choice = 1
-        m.top.action = { go: "signOut" }
-    else if choice = 2
-        m.top.action = { go: "otherServer" }
-    end if
+sub onCardPicked()
+    i = m.cardPanel.picked
+    closeCardPanel()
+    if i < 0 or i >= m.menuEntries.Count() then return
+    go = runCardAction(m.menuCard, m.menuEntries[i].act)
+    if go <> invalid then m.top.action = go
+end sub
+
+sub closeCardPanel()
+    m.cardPanel.visible = false
+    m.rows.setFocus(true)
+end sub
+
+' A card's watched or Watchlist change is saved: Home loads again (rows may change).
+sub onCardChanged(event as object)
+    load()
 end sub

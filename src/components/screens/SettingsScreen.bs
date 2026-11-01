@@ -1,0 +1,188 @@
+' A row per choice with its value; OK flips an on/off choice or opens the choices beside the list.
+' Preferences are saved with PATCH /me/prefs, as the other apps save them.
+
+sub init()
+    m.rows = m.top.findNode("rows")
+    m.rows.observeField("itemSelected", "onRow")
+    m.options = m.top.findNode("options")
+    m.options.observeField("picked", "onPicked")
+    m.options.observeField("closed", "onClosed")
+    m.top.findNode("heading").text = tr("Settings")
+    m.top.findNode("note").text = tr("Playback and subtitle choices follow your profile, on every device. Choosing a track in the player updates them too.")
+    info = CreateObject("roAppInfo")
+    m.top.findNode("about").text = tr("Arc for Roku %1").Replace("%1", info.GetVersion()) + Chr(10) + tr("Titles, artwork and episode details come from TMDB and TheTVDB. This product uses the TMDB API but is not endorsed or certified by TMDB.")
+    m.prefs = invalid
+    m.rowKeys = []
+    callApi("GET", "/me/prefs", invalid, "onPrefs")
+end sub
+
+sub takeFocus(_ = invalid as dynamic)
+    if m.options.visible then m.options.show = true else m.rows.setFocus(true)
+end sub
+
+sub leaving(_ = invalid as dynamic)
+end sub
+
+sub returned(_ = invalid as dynamic)
+end sub
+
+sub onPrefs(event as object)
+    res = event.getData()
+    m.prefs = {}
+    if res.ok and res.data <> invalid then m.prefs = res.data
+    draw()
+end sub
+
+function pref(name as string, fallback as dynamic) as dynamic
+    if m.prefs = invalid or m.prefs[name] = invalid then return fallback
+    return m.prefs[name]
+end function
+
+function styleValue(name as string, fallback as string) as string
+    style = pref("subtitle_style", {})
+    if style = invalid or style[name] = invalid or style[name] = "" then return fallback
+    return style[name]
+end function
+
+function onOff(on as boolean) as string
+    if on then return tr("On")
+    return tr("Off")
+end function
+
+' choices: the values and names for each kind of choice.
+function choices(key as string) as object
+    if key = "subtitle_mode" then return [["", tr("In the language I last chose")], ["foreign", tr("When the audio is in another language")], ["always", tr("Always")], ["manual", tr("Only when I choose them")]]
+    if key = "size" then return [["medium", tr("Medium")], ["small", tr("Small")], ["large", tr("Large")], ["huge", tr("Huge")]]
+    if key = "color" then return [["white", tr("White")], ["yellow", tr("Yellow")]]
+    if key = "background" then return [["box", tr("Shaded box")], ["solid", tr("Solid black")], ["none", tr("Outline only")]]
+    if key = "position" then return [["bottom", tr("Bottom")], ["top", tr("Top")]]
+    if key = "audio_language" or key = "subtitle_language"
+        none = tr("None")
+        if key = "audio_language" then none = tr("The file's default")
+        out = [["", none]]
+        for each code in ["eng", "fra", "deu", "spa", "ita", "por", "nld", "swe", "nor", "dan", "fin", "pol", "ces", "hun", "ell", "tur", "rus", "ukr", "ara", "heb", "hin", "jpn", "kor", "zho", "tha", "vie"]
+            out.Push([code, languageName(code)])
+        end for
+        return out
+    end if
+    return []
+end function
+
+function choiceName(key as string, value as string) as string
+    list = choices(key)
+    for each c in list
+        if c[0] = value then return c[1]
+    end for
+    if value <> "" and (key = "audio_language" or key = "subtitle_language") then return languageName(value)
+    return list[0][1]
+end function
+
+function currentValue(key as string) as string
+    if key = "size" then return styleValue("size", "medium")
+    if key = "color" then return styleValue("color", "white")
+    if key = "background" then return styleValue("background", "box")
+    if key = "position" then return styleValue("position", "bottom")
+    return valueString(pref(key, ""))
+end function
+
+sub draw()
+    rows = []
+    rows.Push(["auto_play", tr("Auto-Play Next Episode"), onOff(pref("auto_play", true) <> false)])
+    rows.Push(["auto_skip", tr("Skip Intros Automatically"), onOff(pref("auto_skip", false) = true)])
+    for each key in ["audio_language", "subtitle_mode", "subtitle_language", "size", "color", "background", "position"]
+        rows.Push([key, choiceLabel(key), choiceName(key, currentValue(key))])
+    end for
+    profile = m.global.profile
+    name = ""
+    if profile <> invalid and profile.name <> invalid then name = profile.name
+    rows.Push(["profiles", tr("Switch Profile"), name])
+    rows.Push(["server", tr("Server"), m.global.serverName])
+    rows.Push(["signOut", tr("Sign Out of This Roku"), ""])
+    content = CreateObject("roSGNode", "ContentNode")
+    m.rowKeys = []
+    for each r in rows
+        node = content.createChild("ContentNode")
+        if r[2] <> "" then node.title = r[1] + ":   " + r[2] else node.title = r[1]
+        m.rowKeys.Push(r[0])
+    end for
+    focused = m.rows.itemFocused
+    m.rows.content = content
+    if focused > 0 then m.rows.jumpToItem = focused
+end sub
+
+function choiceLabel(key as string) as string
+    names = { audio_language: tr("Preferred Audio Language"), subtitle_mode: tr("Show Subtitles"), subtitle_language: tr("Subtitle Language"), size: tr("Subtitle Size"), color: tr("Subtitle Colour"), background: tr("Subtitle Background"), position: tr("Subtitle Position") }
+    return names[key]
+end function
+
+sub onRow()
+    key = m.rowKeys[m.rows.itemSelected]
+    if key = "auto_play"
+        save("auto_play", pref("auto_play", true) = false)
+    else if key = "auto_skip"
+        save("auto_skip", pref("auto_skip", false) <> true)
+    else if key = "profiles"
+        m.top.action = { go: "profiles" }
+    else if key = "server"
+        m.top.action = { go: "otherServer" }
+    else if key = "signOut"
+        m.top.action = { go: "signOut" }
+    else
+        m.picking = key
+        list = choices(key)
+        entries = []
+        selected = 0
+        current = currentValue(key)
+        for i = 0 to list.Count() - 1
+            if list[i][0] = current then selected = i
+            entries.Push({ label: list[i][1], detail: "" })
+        end for
+        m.options.title = choiceLabel(key)
+        m.options.entries = entries
+        m.options.selected = selected
+        m.options.visible = true
+        m.options.show = true
+    end if
+end sub
+
+sub onPicked()
+    key = m.picking
+    value = choices(key)[m.options.picked][0]
+    closePanel()
+    if key = "size" or key = "color" or key = "background" or key = "position"
+        style = {}
+        old = pref("subtitle_style", {})
+        if old <> invalid then style.Append(old)
+        style[key] = value
+        save("subtitle_style", style)
+    else
+        save(key, value)
+    end if
+end sub
+
+sub onClosed()
+    closePanel()
+end sub
+
+sub closePanel()
+    m.options.visible = false
+    m.rows.setFocus(true)
+end sub
+
+' save: shown at once; a failure to save is left quiet, as on the other apps.
+sub save(key as string, value as dynamic)
+    m.prefs[key] = value
+    body = {}
+    body[key] = value
+    callApi("PATCH", "/me/prefs", body, "onSaved")
+    draw()
+end sub
+
+sub onSaved(event as object)
+end sub
+
+function onKeyEvent(key as string, press as boolean) as boolean
+    if not press then return false
+    if m.options.visible then return true
+    return false
+end function

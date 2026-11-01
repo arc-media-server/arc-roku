@@ -1,5 +1,6 @@
 ' Searching as you type: half a second after the last letter, GET /search?q=. Right moves from the
-' keyboard to the results, Left from the first card back to the keyboard.
+' keyboard to the results, Left from the first card back to the keyboard. * on a result opens its
+' card menu (cardmenu.bs).
 
 sub init()
     m.keyboard = m.top.findNode("keyboard")
@@ -14,9 +15,13 @@ sub init()
     m.query = ""
     m.generation = 0
     m.content = invalid
+    m.cardPanel = m.top.findNode("cardPanel")
+    m.cardPanel.observeField("picked", "onCardPicked")
+    m.cardPanel.observeField("closed", "closeCardPanel")
 end sub
 
 sub takeFocus(_ = invalid as dynamic)
+    m.cardPanel.visible = false
     if m.content <> invalid and m.inResults = true
         m.results.setFocus(true)
     else
@@ -111,6 +116,11 @@ end sub
 
 function onKeyEvent(key as string, press as boolean) as boolean
     if not press then return false
+    if m.cardPanel.visible then return true
+    if key = "options" and m.results.hasFocus()
+        showMenu()
+        return true
+    end if
     if key = "right" and m.keyboard.isInFocusChain() and m.content <> invalid
         m.inResults = true
         m.results.setFocus(true)
@@ -130,3 +140,41 @@ function onKeyEvent(key as string, press as boolean) as boolean
     end if
     return false
 end function
+
+' --- the * menu on a result (cardmenu.bs) ---
+
+sub showMenu()
+    c = focusedCard()
+    entries = cardMenu(c)
+    if entries.Count() = 0 then return
+    m.menuCard = c
+    m.menuEntries = entries
+    list = []
+    for each e in entries
+        list.Push({ label: e.label, detail: "" })
+    end for
+    m.cardPanel.title = c.title
+    m.cardPanel.entries = list
+    m.cardPanel.selected = -1
+    m.cardPanel.visible = true
+    m.cardPanel.show = true
+end sub
+
+sub onCardPicked()
+    i = m.cardPanel.picked
+    closeCardPanel()
+    if i < 0 or i >= m.menuEntries.Count() then return
+    go = runCardAction(m.menuCard, m.menuEntries[i].act)
+    if go <> invalid then m.top.action = go
+end sub
+
+sub closeCardPanel()
+    m.cardPanel.visible = false
+    m.results.setFocus(true)
+end sub
+
+' A change is saved: search again so the results show it.
+sub onCardChanged(event as object)
+    m.query = ""
+    search()
+end sub
