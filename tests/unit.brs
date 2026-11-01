@@ -8,6 +8,7 @@ sub Main()
     testCaps()
     testHome()
     testBif()
+    testTracks()
     if m.failures = 0 then print "ALL PASSED" else print "FAILURES: "; m.failures
 end sub
 
@@ -148,4 +149,54 @@ sub pushLE(b as object, n as dynamic)
         b.Push(v mod 256)
         v = Int(v / 256)
     end for
+end sub
+
+sub testTracks()
+    eq(langKey("eng"), "en", "langKey maps three letters")
+    eq(langKey("pt-BR"), "pt", "langKey drops the region")
+    check(sameLanguage("ger", "de"), "sameLanguage across code styles")
+    check(not sameLanguage(invalid, "en"), "sameLanguage needs both")
+    eq(languageName("fre"), "French", "languageName")
+    eq(languageName("und"), "", "languageName undetermined")
+    eq(channelsName(6), "5.1", "channelsName 5.1")
+    eq(audioDetail({ codec: "eac3", channels: 6, title: "Commentary" }), "Dolby Digital Plus · 5.1 · Commentary", "audioDetail")
+    eq(subtitleDetail({ language: "en", title: "SDH", forced: false, hearing_impaired: true }), "SDH", "subtitleDetail drops a title that repeats SDH")
+
+    tracks = [
+        { id: "a", language: "en", forced: true },
+        { id: "b", language: "en", hearing_impaired: true },
+        { id: "c", language: "en" },
+        { id: "d", language: "fr" },
+        { id: "e", language: "en", image: true }
+    ]
+    eq(chooseSubtitle(tracks, "en", "fr", "").id, "c", "chooseSubtitle prefers a plain track")
+    eq(chooseSubtitle(tracks, "en", "en", "foreign").id, "a", "chooseSubtitle foreign mode falls back to forced in the audio's language")
+    check(chooseSubtitle(tracks, "fr", "de", "manual") = invalid, "chooseSubtitle manual picks nothing without forced in that language")
+    check(chooseSubtitle([{ id: "x", language: "en", image: true }], "en", "", "") = invalid, "chooseSubtitle skips picture subtitles")
+    eq(rememberedSubtitleLanguage({ language: "de" }, ""), "de", "remember a picked language")
+    eq(rememberedSubtitleLanguage(invalid, ""), "", "remember off in last-used mode")
+    check(rememberedSubtitleLanguage(invalid, "always") = invalid, "off doesn't change an always mode")
+
+    vtt = "WEBVTT" + Chr(13) + Chr(10) + Chr(10) + "1" + Chr(10) + "00:00:01.500 --> 00:00:03.000 align:start" + Chr(10) + "<i>Hello</i> &amp; welcome" + Chr(10) + "second line" + Chr(10) + Chr(10) + "00:02.000 --> 00:04.000" + Chr(10) + "<v Mal>Overlap" + Chr(10)
+    cues = parseVtt(vtt)
+    eq(cues.Count(), 2, "parseVtt finds the cues")
+    eq(cues[0].startMs, 1500, "parseVtt start")
+    eq(cues[0].endMs, 3000, "parseVtt end ignores settings")
+    eq(cues[1].startMs, 2000, "parseVtt minutes:seconds times")
+    eq(cues[0].text, "Hello & welcome" + Chr(10) + "second line", "parseVtt strips tags and keeps lines")
+    eq(cueText(cues, 1000), "", "cueText before any cue")
+    eq(cueText(cues, 2500), cues[0].text + Chr(10) + "Overlap", "cueText joins overlapping cues")
+    eq(cueText(cues, 3500), "Overlap", "cueText after the first ends")
+
+    plan = { markers: [{ kind: "intro", start_ms: 10000, end_ms: 40000 }, { kind: "credits", start_ms: 100000, end_ms: 120000 }] }
+    eq(skippable(plan, 12000).kind, "intro", "skippable in the intro")
+    check(skippable(plan, 39000) = invalid, "skippable not in the last 1.5 s")
+    eq(skipLabel("credits", true), "Play Next", "skipLabel credits with a next episode")
+
+    eq(kbpsName(1500), "1.5 Mbps", "kbpsName")
+    eq(qualityName(8000), "8 Mbps 1080p", "qualityName")
+    eq(FormatJson(qualityChoices({ source_kbps: 5000, server_limit_kbps: 3500 })), "[-1,0,3000,2000,1500,720]", "qualityChoices below source and limit")
+    eq(qualityLabel(0, { server_limit_kbps: 4000 }), "Maximum (4 Mbps 720p)", "qualityLabel capped")
+    eq(versionName({ edition: "Director's Cut", height: 2160, hdr: "HDR10", size: 25300000000 }), "Director's Cut · 4K · HDR10 · 25.3 GB", "versionName")
+    eq(chapterAt([{ start_ms: 0 }, { start_ms: 5000 }], 7000), 1, "chapterAt")
 end sub

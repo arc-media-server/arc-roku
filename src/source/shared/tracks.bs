@@ -1,0 +1,336 @@
+' The player's choices: audio and subtitle tracks, subtitles' cues, skip markers and quality
+' limits. Ported from arc-tv (src/lib/subtitles.ts, src/lib/format.ts and the player), which follow
+' the web and Android players, so a profile's choices behave the same on every app.
+
+' --- languages ---
+
+function languageNames() as object
+    return {
+        en: "English", fr: "French", de: "German", es: "Spanish", it: "Italian", pt: "Portuguese", nl: "Dutch", sv: "Swedish",
+        no: "Norwegian", nb: "Norwegian", da: "Danish", fi: "Finnish", pl: "Polish", cs: "Czech", sk: "Slovak", hu: "Hungarian",
+        ro: "Romanian", el: "Greek", tr: "Turkish", ru: "Russian", uk: "Ukrainian", ar: "Arabic", he: "Hebrew", hi: "Hindi",
+        ja: "Japanese", ko: "Korean", zh: "Chinese", th: "Thai", vi: "Vietnamese", id: "Indonesian", ms: "Malay", fa: "Persian",
+        bg: "Bulgarian", hr: "Croatian", sr: "Serbian", sl: "Slovenian", et: "Estonian", lv: "Latvian", lt: "Lithuanian",
+        is: "Icelandic", ga: "Irish", cy: "Welsh", ca: "Catalan", eu: "Basque", gl: "Galician", ta: "Tamil", te: "Telugu"
+    }
+end function
+
+function langKey(code as dynamic) as string
+    if code = invalid then return ""
+    base = LCase(code.ToStr()).Split("-")[0]
+    if base = invalid then return ""
+    base = base.Split("_")[0]
+    if base = invalid then return ""
+    three = {
+        eng: "en", fra: "fr", fre: "fr", deu: "de", ger: "de", spa: "es", ita: "it", por: "pt", nld: "nl", dut: "nl", swe: "sv",
+        nor: "no", nob: "nb", dan: "da", fin: "fi", pol: "pl", ces: "cs", cze: "cs", slk: "sk", slo: "sk", hun: "hu", ron: "ro",
+        rum: "ro", ell: "el", gre: "el", tur: "tr", rus: "ru", ukr: "uk", ara: "ar", heb: "he", hin: "hi", jpn: "ja", kor: "ko",
+        zho: "zh", chi: "zh", tha: "th", vie: "vi", ind: "id", msa: "ms", may: "ms", fas: "fa", per: "fa", bul: "bg", hrv: "hr",
+        srp: "sr", slv: "sl", est: "et", lav: "lv", lit: "lt", isl: "is", ice: "is", gle: "ga", cym: "cy", wel: "cy", cat: "ca",
+        eus: "eu", baq: "eu", glg: "gl", tam: "ta", tel: "te"
+    }
+    if three.DoesExist(base) then return three[base]
+    return base
+end function
+
+function sameLanguage(a as dynamic, b as dynamic) as boolean
+    if a = invalid or b = invalid then return false
+    ka = langKey(a)
+    return ka <> "" and ka = langKey(b)
+end function
+
+function languageName(code as dynamic) as string
+    if code = invalid or code = "" or code = "und" then return ""
+    names = languageNames()
+    k = langKey(code)
+    if names.DoesExist(k) then return tr(names[k])
+    return code
+end function
+
+' --- naming tracks in the menus ---
+
+function channelsName(n as dynamic) as string
+    if n = invalid or n = 0 then return ""
+    if n = 1 then return tr("Mono")
+    if n = 2 then return tr("Stereo")
+    if n = 6 then return "5.1"
+    if n = 8 then return "7.1"
+    return tr("%1 channels").Replace("%1", n.ToStr())
+end function
+
+function audioCodecName(codec as dynamic) as string
+    if codec = invalid or codec = "" then return ""
+    names = { aac: "AAC", ac3: "Dolby Digital", eac3: "Dolby Digital Plus", truehd: "Dolby TrueHD", dts: "DTS", flac: "FLAC", mp3: "MP3", opus: "Opus", vorbis: "Vorbis", alac: "ALAC" }
+    if names.DoesExist(codec) then return names[codec]
+    if Left(codec, 4) = "pcm_" then return "PCM"
+    return UCase(codec)
+end function
+
+function joinParts(parts as object, sep as string) as string
+    out = ""
+    for each p in parts
+        if p <> invalid and p <> ""
+            if out <> "" then out = out + sep
+            out = out + p
+        end if
+    end for
+    return out
+end function
+
+' trackName: "English", else the track's title, else "Track 2".
+function trackName(t as object, i as integer) as string
+    n = languageName(t.language)
+    if n = "" and t.title <> invalid then n = t.title
+    if n = "" then n = tr("Track %1").Replace("%1", (i + 1).ToStr())
+    return n
+end function
+
+function audioDetail(a as object) as string
+    title = ""
+    if a.title <> invalid then title = a.title
+    return joinParts([audioCodecName(a.codec), channelsName(a.channels), title], " · ")
+end function
+
+function subtitleDetail(s as object) as string
+    title = ""
+    if s.title <> invalid and not sameLanguage(s.title, s.language)
+        lt = LCase(s.title)
+        if lt <> "forced" and lt <> "sdh" then title = s.title
+    end if
+    forced = ""
+    if s.forced = true then forced = tr("Forced")
+    sdh = ""
+    if s.hearing_impaired = true then sdh = "SDH"
+    return joinParts([forced, sdh, title], " · ")
+end function
+
+' textSubtitles: the tracks Arc can turn into text (picture subtitles can't be drawn here).
+function textSubtitles(tracks as dynamic) as object
+    out = []
+    if tracks = invalid then return out
+    for each s in tracks
+        if s.image <> true then out.Push(s)
+    end for
+    return out
+end function
+
+' --- choosing a subtitle the way the profile wants ---
+
+' chooseSubtitle: the profile's language when its subtitle mode wants it, else a forced track in
+' the audio's language, else none (invalid). Modes: "" last used, "foreign", "always", "manual".
+function chooseSubtitle(tracks as dynamic, preferred as dynamic, audioLanguage as dynamic, mode as dynamic) as dynamic
+    text = textSubtitles(tracks)
+    if preferred = invalid then preferred = ""
+    if audioLanguage = invalid then audioLanguage = ""
+    if mode = invalid then mode = ""
+    wanted = true
+    if mode = "manual"
+        wanted = false
+    else if mode = "foreign"
+        wanted = preferred <> "" and audioLanguage <> "" and not sameLanguage(audioLanguage, preferred)
+    end if
+    if preferred <> "" and wanted
+        plain = invalid
+        notForced = invalid
+        first = invalid
+        for each s in text
+            if sameLanguage(s.language, preferred)
+                if first = invalid then first = s
+                if s.forced <> true and notForced = invalid then notForced = s
+                if s.forced <> true and s.hearing_impaired <> true and plain = invalid then plain = s
+            end if
+        end for
+        if plain <> invalid then return plain
+        if notForced <> invalid then return notForced
+        if first <> invalid then return first
+    end if
+    for each s in text
+        if s.forced = true and (s.language = invalid or audioLanguage = "" or sameLanguage(s.language, audioLanguage)) then return s
+    end for
+    return invalid
+end function
+
+' rememberedSubtitleLanguage: what to save when the viewer picks a track; invalid = nothing changes.
+function rememberedSubtitleLanguage(track as dynamic, mode as dynamic) as dynamic
+    if mode = invalid then mode = ""
+    if track <> invalid and track.forced <> true
+        if track.language = invalid then return ""
+        return track.language
+    end if
+    if track = invalid and mode = "" then return ""
+    return invalid
+end function
+
+' --- subtitle cues (Arc turns any text track into WebVTT) ---
+
+function vttTime(s as string) as integer
+    ms = 0.0
+    for each part in s.Trim().Split(":")
+        ms = ms * 60 + Val(part.Replace(",", "."))
+    end for
+    return Int(ms * 1000 + 0.5)
+end function
+
+' stripTags: keeps the words, drops <i>, <b>, voice and class tags, and decodes the common entities.
+function stripTags(s as string) as string
+    out = ""
+    inTag = false
+    for i = 1 to Len(s)
+        c = Mid(s, i, 1)
+        if c = "<"
+            inTag = true
+        else if c = ">" and inTag
+            inTag = false
+        else if not inTag
+            out = out + c
+        end if
+    end for
+    return out.Replace("&amp;", "&").Replace("&lt;", "<").Replace("&gt;", ">").Replace("&nbsp;", " ")
+end function
+
+' parseVtt: the cues as [{ startMs, endMs, text }] in milliseconds, sorted by start.
+function parseVtt(vtt as dynamic) as object
+    cues = []
+    if vtt = invalid then return cues
+    lines = vtt.Replace(Chr(13), "").Split(Chr(10))
+    i = 0
+    n = lines.Count()
+    while i < n
+        line = lines[i]
+        if line.Instr("-->") >= 0
+            halves = line.Split("-->")
+            startMs = vttTime(halves[0])
+            endText = halves[1].Trim()
+            sp = endText.Instr(" ")
+            if sp > 0 then endText = Left(endText, sp)
+            endMs = vttTime(endText)
+            text = ""
+            i = i + 1
+            while i < n and lines[i].Trim() <> ""
+                if text <> "" then text = text + Chr(10)
+                text = text + stripTags(lines[i])
+                i = i + 1
+            end while
+            if text.Trim() <> "" then cues.Push({ startMs: startMs, endMs: endMs, text: text })
+        else
+            i = i + 1
+        end if
+    end while
+    cues.SortBy("startMs")
+    return cues
+end function
+
+' cueText: the text showing at ms (overlapping cues joined), found by binary search on start.
+function cueText(cues as object, ms as double) as string
+    lo = 0
+    hi = cues.Count()
+    while lo < hi
+        middle = (lo + hi) \ 2
+        if cues[middle].startMs <= ms then lo = middle + 1 else hi = middle
+    end while
+    out = ""
+    i = lo - 1
+    while i >= 0 and i >= lo - 20
+        c = cues[i]
+        if c.endMs > ms
+            if out = "" then out = c.text else out = c.text + Chr(10) + out
+        end if
+        i = i - 1
+    end while
+    return out
+end function
+
+' --- skipping intros and credits ---
+
+' skippable: the marker to offer at ms (an intro or recap while it plays, or the credits), or invalid.
+function skippable(plan as dynamic, ms as double) as dynamic
+    if plan = invalid or plan.markers = invalid then return invalid
+    for each mk in plan.markers
+        if ms >= mk.start_ms and ms < mk.end_ms - 1500 then return mk
+    end for
+    return invalid
+end function
+
+function skipLabel(kind as string, hasNext as boolean) as string
+    if kind = "recap" then return tr("Skip Recap")
+    if kind = "credits"
+        if hasNext then return tr("Play Next")
+        return tr("Skip Credits")
+    end if
+    return tr("Skip Intro")
+end function
+
+' --- quality ---
+
+function kbpsName(kbps as integer) as string
+    if kbps >= 1000
+        whole = kbps \ 1000
+        tenth = (kbps mod 1000) \ 100
+        if tenth = 0 then return tr("%1 Mbps").Replace("%1", whole.ToStr())
+        return tr("%1 Mbps").Replace("%1", whole.ToStr() + "." + tenth.ToStr())
+    end if
+    return tr("%1 kbps").Replace("%1", kbps.ToStr())
+end function
+
+function qualityName(kbps as integer) as string
+    h = 360
+    if kbps >= 8000
+        h = 1080
+    else if kbps >= 2000
+        h = 720
+    else if kbps >= 1500
+        h = 480
+    end if
+    return kbpsName(kbps) + " " + h.ToStr() + "p"
+end function
+
+' qualityChoices: -1 automatic, 0 original (or the server's away limit), then the web player's
+' limits below the source's bitrate and the server's limit.
+function qualityChoices(plan as object) as object
+    src = 0
+    if plan.source_kbps <> invalid then src = plan.source_kbps
+    cap = 0
+    if plan.server_limit_kbps <> invalid then cap = plan.server_limit_kbps
+    out = [-1, 0]
+    for each q in [20000, 12000, 8000, 4000, 3000, 2000, 1500, 720]
+        if (src = 0 or q < src) and (cap = 0 or q < cap) then out.Push(q)
+    end for
+    return out
+end function
+
+function qualityLabel(q as integer, plan as object) as string
+    if q = -1 then return tr("Automatic")
+    if q > 0 then return qualityName(q)
+    if plan.server_limit_kbps <> invalid and plan.server_limit_kbps > 0 then return tr("Maximum (%1)").Replace("%1", qualityName(plan.server_limit_kbps))
+    return tr("Original")
+end function
+
+' --- versions and chapters ---
+
+function versionName(v as object) as string
+    res = ""
+    if v.height <> invalid and v.height > 0
+        if v.height >= 2000 then res = "4K" else res = v.height.ToStr() + "p"
+    end if
+    size = ""
+    if v.size <> invalid and v.size > 0
+        tenths = Int(v.size / 1e8 + 0.5)
+        size = (tenths \ 10).ToStr() + "." + (tenths mod 10).ToStr() + " GB"
+    end if
+    hdr = ""
+    if v.hdr <> invalid then hdr = v.hdr
+    codec = ""
+    if v.video_codec <> invalid then codec = UCase(v.video_codec)
+    if v.edition <> invalid and v.edition <> "" then return joinParts([v.edition, res, hdr, codec, size], " · ")
+    if res = "" then res = tr("Version")
+    return joinParts([res, hdr, codec, size], " · ")
+end function
+
+function chapterAt(chapters as dynamic, ms as double) as integer
+    at = -1
+    if chapters = invalid then return at
+    for i = 0 to chapters.Count() - 1
+        if chapters[i].start_ms <= ms then at = i
+    end for
+    return at
+end function

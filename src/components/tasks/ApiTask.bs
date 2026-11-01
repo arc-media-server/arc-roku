@@ -69,6 +69,7 @@ function apiCall(req as object) as object
     code = msg.GetResponseCode()
     text = msg.GetString()
     data = invalid
+    if req.text = true and code >= 200 and code < 300 then return { ok: true, status: code, data: text }
     if text <> invalid and text <> "" then data = ParseJson(text)
     if code >= 200 and code < 300 then return { ok: true, status: code, data: data }
     errText = msg.GetFailureReason()

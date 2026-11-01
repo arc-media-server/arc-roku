@@ -5,6 +5,8 @@
 ' A converted stream starts at the seek point (offset_ms), so the position is offset + the
 ' player's own. Progress goes to Arc every 10 seconds, on pause and on close; a converting session
 ' is pinged every 30 seconds and ended on close.
+' The * button opens audio, subtitles, quality, version and chapters, as the other players' menus.
+' Subtitles are drawn from Arc's WebVTT. Skip Intro / Credits and Up Next follow Arc's markers.
 
 sub init()
     m.video = m.top.findNode("video")
@@ -20,7 +22,28 @@ sub init()
     m.thumb = m.top.findNode("thumb")
     m.errorLabel = m.top.findNode("error")
     m.video.observeField("state", "onVideoState")
-    for each id in ["progressTimer", "pingTimer", "tick", "hideTimer", "seekTimer"]
+    m.subs = m.top.findNode("subs")
+    ' Up to four subtitle lines, each centred on its own box, as Arc's other players draw them.
+    m.subSize = 58
+    m.subLines = []
+    for i = 0 to 3
+        line = m.subs.createChild("Group")
+        back = line.createChild("Rectangle")
+        text = line.createChild("Label")
+        text.font = CreateObject("roSGNode", "Font")
+        text.font.uri = "font:SystemFontFile"
+        m.subLines.Push({ group: line, back: back, text: text })
+    end for
+    m.skip = m.top.findNode("skip")
+    m.skipText = m.top.findNode("skipText")
+    m.upNext = m.top.findNode("upNext")
+    m.upNextCount = m.top.findNode("upNextCount")
+    m.hint = m.top.findNode("hint")
+    m.chapterLabel = m.top.findNode("chapter")
+    m.options = m.top.findNode("options")
+    m.options.observeField("picked", "onOptionPicked")
+    m.options.observeField("closed", "onOptionsClosed")
+    for each id in ["progressTimer", "pingTimer", "tick", "hideTimer", "seekTimer", "upNextTimer"]
         t = m.top.findNode(id)
         t.observeField("fire", "on" + UCase(Left(id, 1)) + Mid(id, 2))
         m[id] = t
@@ -32,13 +55,53 @@ sub init()
     m.closed = false
     m.bif = invalid
     m.generation = 0
+    m.prefs = invalid
+    m.subtitle = invalid
+    m.cues = []
+    m.cuesFor = ""
+    m.maxKbps = 0
+    m.quality = -1
+    m.next = invalid
+    m.upNextIn = -1
+    m.creditsOffered = false
+    m.autoSkipped = {}
+    m.menu = ""
+    m.shownCue = ""
+    m.subsLift = false
+    m.subsTop = false
+    m.ended = false
+    m.skipMarker = invalid
+    m.menuValues = []
 end sub
 
 sub onParams()
     p = m.top.params
     m.top.findNode("title").text = valueOr(p.title, "")
     m.spinner.control = "start"
-    callApi("GET", "/items/" + escape(p.id), invalid, "onItem")
+    callApi("GET", "/me/prefs", invalid, "onPrefs")
+end sub
+
+' The profile's preferences (subtitle language and look, audio language, auto play and skip) come
+' first; without them playback still starts, with the file's defaults.
+sub onPrefs(event as object)
+    res = event.getData()
+    m.prefs = {}
+    if res.ok and res.data <> invalid then m.prefs = res.data
+    applySubtitleLook()
+    callApi("GET", "/items/" + escape(m.top.params.id), invalid, "onItem")
+end sub
+
+function pref(name as string, fallback as dynamic) as dynamic
+    if m.prefs = invalid or m.prefs[name] = invalid then return fallback
+    return m.prefs[name]
+end function
+
+' savePref: saves one preference for the profile; a failure is left quiet (the choice still applies now).
+sub savePref(name as string, value as dynamic)
+    m.prefs[name] = value
+    body = {}
+    body[name] = value
+    callApi("PATCH", "/me/prefs", body, "onIgnored")
 end sub
 
 function escape(s as string) as string
@@ -61,7 +124,7 @@ sub leaving(_ = invalid as dynamic)
     m.closed = true
     if m.plan <> invalid then report("stopped", positionMs())
     m.video.control = "stop"
-    for each t in [m.progressTimer, m.pingTimer, m.tick, m.hideTimer, m.seekTimer]
+    for each t in [m.progressTimer, m.pingTimer, m.tick, m.hideTimer, m.seekTimer, m.upNextTimer]
         t.control = "stop"
     end for
     endSession(m.plan)
@@ -84,10 +147,20 @@ sub onItem(event as object)
     end if
     ' The page that started playback knows the show and episode numbers in the viewer's order.
     if m.top.params.title <> invalid and m.top.params.title <> "" then title = m.top.params.title
-    if m.top.params.subtitle <> invalid and m.top.params.subtitle <> "" then sub2 = m.top.params.subtitle
+    if it.kind = "episode" and m.top.params.subtitle <> invalid and m.top.params.subtitle <> "" then sub2 = m.top.params.subtitle
+    if it.kind <> "episode" and it.year <> invalid then sub2 = it.year.ToStr()
     m.top.findNode("title").text = title
     m.top.findNode("subtitle").text = sub2
-    load(valueOr(m.top.params.startMs, 0))
+    load(valueOr(m.top.params.startMs, 0), {})
+    if it.kind = "episode" and pref("auto_play", true) <> false
+        callApi("GET", "/items/" + escape(it.id) + "/next", invalid, "onNext")
+    end if
+end sub
+
+sub onNext(event as object)
+    res = event.getData()
+    ' 204 (nothing next) comes back with no data.
+    if res.ok and res.data <> invalid and res.data.id <> invalid then m.next = res.data
 end sub
 
 ' --- starting (and restarting) the stream ---
@@ -105,14 +178,26 @@ function capsFor(attempt as string) as object
     return caps
 end function
 
-sub load(fromMs as dynamic)
+' load starts (or restarts) the stream at fromMs; opts may name another audio track or version.
+sub load(fromMs as dynamic, opts as object)
     m.generation = m.generation + 1
     old = m.plan
     m.spinner.visible = true
     m.spinner.control = "start"
     endSession(old)
     body = { caps: capsFor(m.attempt), start_ms: Int(fromMs) }
-    if old <> invalid then body.file_id = old.file_id
+    if opts.fileId <> invalid
+        body.file_id = opts.fileId
+    else if old <> invalid
+        body.file_id = old.file_id
+    end if
+    ' A new version starts with its own default audio.
+    if opts.audio <> invalid
+        body.audio_stream = opts.audio
+    else if opts.fileId = invalid and old <> invalid and old.audio_stream <> invalid and old.audio_stream >= 0
+        body.audio_stream = old.audio_stream
+    end if
+    if m.maxKbps > 0 then body.max_kbps = m.maxKbps
     callApi("POST", "/items/" + escape(m.item.id) + "/playback", body, "onPlan", { generation: m.generation, fromMs: fromMs })
 end sub
 
@@ -124,8 +209,23 @@ sub onPlan(event as object)
         return
     end if
     p = res.data
+    old = m.plan
     m.plan = p
     m.pendingFrom = res.tag.fromMs
+    if old = invalid
+        audioLang = invalid
+        if p.audio_tracks <> invalid
+            for each a in p.audio_tracks
+                if a.index = p.audio_stream then audioLang = a.language
+            end for
+        end if
+        setSubtitle(chooseSubtitle(p.subtitle_tracks, pref("subtitle_language", ""), audioLang, pref("subtitle_mode", "")))
+    else if m.subtitle <> invalid and not hasTrack(p.subtitle_tracks, m.subtitle.id)
+        setSubtitle(invalid)
+    else
+        loadCues()
+    end if
+    m.hint.text = tr("* Audio, subtitles and more")
     print "Arc: playback "; p.method; " (attempt "; m.attempt; ")"
     callApi("POST", "/cast", { url: p.url }, "onCast", res.tag)
 end sub
@@ -186,16 +286,21 @@ sub onVideoState()
         report("paused", positionMs())
     else if s = "finished"
         report("stopped", durationOf())
-        m.top.action = { go: "back" }
+        m.ended = true
+        if m.next <> invalid
+            if m.upNextIn < 0 then startUpNext()
+        else
+            m.top.action = { go: "back" }
+        end if
     else if s = "error"
         print "Arc: player error "; m.video.errorCode; " "; m.video.errorMsg; " ("; m.attempt; ")"
         at = positionMs()
         if m.attempt = "direct" and m.plan <> invalid and m.plan.method = "direct"
             m.attempt = "remux"
-            load(at)
+            load(at, {})
         else if m.attempt <> "convert"
             m.attempt = "convert"
-            load(at)
+            load(at, {})
         else
             fail(tr("This Roku couldn't play this title.") + " " + m.video.errorMsg)
         end if
@@ -260,8 +365,10 @@ end sub
 ' --- controls ---
 
 sub onTick()
-    if not m.controls.visible then return
     at = positionMs()
+    drawSubtitles(at)
+    drawSkip(at)
+    if not m.controls.visible then return
     if m.scrub >= 0 then at = m.scrub
     drawTimeline(at)
 end sub
@@ -276,6 +383,11 @@ sub drawTimeline(at as double)
     m.bar.width = w
     m.head.translation = [120 + w - 3, 932]
     m.positionLabel.text = formatClock(at)
+    m.chapterLabel.text = ""
+    if m.plan <> invalid and m.plan.chapters <> invalid and m.plan.chapters.Count() > 1
+        c = chapterAt(m.plan.chapters, at)
+        if c >= 0 then m.chapterLabel.text = valueOr(m.plan.chapters[c].title, "")
+    end if
     m.remainingLabel.text = "-" + formatClock(d - at)
     if m.scrub >= 0 and m.bif <> invalid
         path = bifThumb(m.bif, at)
@@ -338,7 +450,7 @@ sub seekTo(ms as double)
     if rel >= 0 and available > 0 and rel <= available - 2000
         m.video.seek = rel / 1000
     else
-        load(ms)
+        load(ms, {})
     end if
 end sub
 
@@ -356,6 +468,24 @@ end sub
 
 function onKeyEvent(key as string, press as boolean) as boolean
     if not press then return false
+    ' Keys the options panel leaves (it keeps the focus while open) go nowhere else.
+    if m.options.visible then return true
+    if m.upNextIn >= 0
+        if key = "OK" or key = "play"
+            playNext()
+        else if key = "back"
+            cancelUpNext()
+        end if
+        return true
+    end if
+    if key = "options"
+        openMenu("")
+        return true
+    end if
+    if key = "OK" and m.skip.visible
+        skipNow()
+        return true
+    end if
     if key = "back"
         if m.controls.visible and m.scrub >= 0
             ' Back while seeking cancels the seek.
@@ -387,7 +517,7 @@ function onKeyEvent(key as string, press as boolean) as boolean
         nudge(30000)
         return true
     end if
-    if key = "up" or key = "down" or key = "options"
+    if key = "up" or key = "down"
         showControls()
         return true
     end if
@@ -416,4 +546,365 @@ sub removeThumbs()
     for each name in fs.GetDirectoryListing("tmp:/")
         if Left(name, 4) = "arc-" then fs.Delete("tmp:/" + name)
     end for
+end sub
+
+' --- subtitles ---
+
+' applySubtitleLook: the profile's subtitle size, colour and background (Settings in Arc).
+sub applySubtitleLook()
+    style = pref("subtitle_style", {})
+    if style = invalid then style = {}
+    size = 0.0533
+    if style.size = "small" then size = 0.045
+    if style.size = "large" then size = 0.065
+    if style.size = "huge" then size = 0.08
+    m.subSize = Int(1080 * size)
+    color = "0xFFFFFFFF"
+    if style.color = "yellow" then color = "0xFFE14DFF"
+    back = "0x000000A6"
+    if style.background = "solid" then back = "0x000000FF"
+    for each line in m.subLines
+        line.text.font.size = m.subSize
+        line.text.color = color
+        line.back.color = back
+        line.back.visible = style.background <> "none"
+    end for
+    m.subsTop = style.position = "top"
+end sub
+
+function hasTrack(tracks as dynamic, id as dynamic) as boolean
+    if tracks = invalid then return false
+    for each t in tracks
+        if t.id = id then return true
+    end for
+    return false
+end function
+
+sub setSubtitle(track as dynamic)
+    m.subtitle = track
+    loadCues()
+end sub
+
+' loadCues fetches the chosen track as WebVTT for the file that's playing (once per track and file).
+sub loadCues()
+    if m.subtitle = invalid or m.plan = invalid
+        m.cues = []
+        m.cuesFor = ""
+        drawSubtitles(positionMs())
+        return
+    end if
+    key = m.subtitle.id + "@" + m.plan.file_id.ToStr()
+    if key = m.cuesFor then return
+    m.cuesFor = key
+    m.cues = []
+    path = "/items/" + escape(m.item.id) + "/subtitles/" + escape(m.subtitle.id) + "/vtt?file=" + m.plan.file_id.ToStr()
+    task = CreateObject("roSGNode", "ApiTask")
+    task.request = { method: "GET", path: path, text: true, tag: key }
+    task.observeField("response", "onCues")
+    keepTask(task)
+    task.control = "RUN"
+end sub
+
+sub onCues(event as object)
+    res = event.getData()
+    if res.tag <> m.cuesFor then return
+    if res.ok then m.cues = parseVtt(res.data)
+    print "Arc: subtitles loaded, "; m.cues.Count(); " cues"
+end sub
+
+sub drawSubtitles(at as double)
+    text = ""
+    if m.subtitle <> invalid and m.cues.Count() > 0 then text = cueText(m.cues, at)
+    if text = m.shownCue and m.subsLift = m.controls.visible then return
+    m.shownCue = text
+    m.subsLift = m.controls.visible
+    lines = []
+    if text <> "" then lines = text.Split(Chr(10))
+    ' The last lines win when a cue has more than there are rows.
+    while lines.Count() > m.subLines.Count()
+        lines.Shift()
+    end while
+    lineHeight = Int(m.subSize * 1.35)
+    bottom = 990
+    if m.controls.visible then bottom = 800
+    top = bottom - lineHeight * lines.Count()
+    if m.subsTop = true then top = 80
+    for i = 0 to m.subLines.Count() - 1
+        row = m.subLines[i]
+        if i < lines.Count() and lines[i].Trim() <> ""
+            row.text.text = lines[i]
+            r = row.text.boundingRect()
+            w = r.width
+            x = Int((1920 - w) / 2)
+            y = top + i * lineHeight
+            row.text.translation = [x, y + Int((lineHeight - r.height) / 2)]
+            row.back.translation = [x - 14, y]
+            row.back.width = w + 28
+            row.back.height = lineHeight
+            row.group.visible = true
+        else
+            row.group.visible = false
+        end if
+    end for
+end sub
+
+' --- skipping intros and credits, and Up Next ---
+
+sub drawSkip(at as double)
+    mk = skippable(m.plan, at)
+    if mk = invalid or m.upNextIn >= 0
+        m.skip.visible = false
+        return
+    end if
+    ' Skip Intros Automatically (the profile's auto_skip): each intro or recap once, so seeking
+    ' back into one plays it.
+    if mk.kind <> "credits" and pref("auto_skip", false) = true
+        key = mk.kind + ":" + mk.start_ms.ToStr()
+        if not m.autoSkipped.DoesExist(key)
+            m.autoSkipped[key] = true
+            seekTo(mk.end_ms)
+            return
+        end if
+    end if
+    ' The credits bring Up Next forward, once.
+    if mk.kind = "credits" and m.next <> invalid and not m.creditsOffered
+        m.creditsOffered = true
+        startUpNext()
+        return
+    end if
+    m.skipMarker = mk
+    m.skipText.text = skipLabel(mk.kind, m.next <> invalid)
+    m.skip.visible = true
+end sub
+
+sub skipNow()
+    mk = m.skipMarker
+    m.skip.visible = false
+    if mk = invalid then return
+    if mk.kind = "credits" and m.next <> invalid
+        playNext()
+    else
+        seekTo(mk.end_ms)
+    end if
+end sub
+
+sub startUpNext()
+    n = m.next
+    if n = invalid then return
+    m.upNextIn = 10
+    m.top.findNode("upNextHeading").text = joinParts([tr("Up next"), episodeCode(n)], " · ")
+    m.top.findNode("upNextTitle").text = valueOr(n.title, "")
+    thumb = m.top.findNode("upNextThumb")
+    shareSignIn([thumb])
+    if n.images <> invalid
+        if n.images.primary <> invalid
+            thumb.uri = imageUrl(n.images.primary)
+        else if n.images.series_backdrop <> invalid
+            thumb.uri = imageUrl(n.images.series_backdrop)
+        end if
+    end if
+    m.top.findNode("upNextKeys").text = tr("OK to play now · Back to keep watching")
+    drawUpNext()
+    m.upNext.visible = true
+    m.skip.visible = false
+    m.upNextTimer.control = "start"
+end sub
+
+sub drawUpNext()
+    m.upNextCount.text = tr("Playing in %1").Replace("%1", m.upNextIn.ToStr())
+end sub
+
+sub onUpNextTimer()
+    m.upNextIn = m.upNextIn - 1
+    if m.upNextIn <= 0
+        playNext()
+    else
+        drawUpNext()
+    end if
+end sub
+
+sub cancelUpNext()
+    m.upNextIn = -1
+    m.upNextTimer.control = "stop"
+    m.upNext.visible = false
+    if m.ended = true then m.top.action = { go: "back" }
+end sub
+
+sub playNext()
+    n = m.next
+    m.upNextTimer.control = "stop"
+    m.upNextIn = -1
+    if n = invalid then return
+    startAt = 0
+    if n.user_data <> invalid and n.user_data.played <> true and n.user_data.position_ms <> invalid then startAt = n.user_data.position_ms
+    title = m.top.findNode("title").text
+    if n.series_title <> invalid then title = n.series_title
+    print "Arc: playing the next episode"
+    m.top.action = { go: "play", replace: true, id: n.id, startMs: startAt, title: title, subtitle: joinParts([episodeCode(n), valueOr(n.title, "")], " · ") }
+end sub
+
+' --- the options menu (* button) ---
+
+' openMenu shows the list of sections ("") or one section's choices.
+sub openMenu(section as string)
+    p = m.plan
+    if p = invalid then return
+    m.menu = section
+    entries = []
+    selected = -1
+    m.menuValues = []
+    if section = ""
+        m.options.title = tr("Options")
+        audio = audioTrack(p)
+        if p.audio_tracks <> invalid and p.audio_tracks.Count() > 0
+            detail = ""
+            if audio <> invalid then detail = trackName(audio, 0)
+            entries.Push({ label: tr("Audio"), detail: detail })
+            m.menuValues.Push("audio")
+        end if
+        if textSubtitles(p.subtitle_tracks).Count() > 0
+            detail = tr("Off")
+            if m.subtitle <> invalid then detail = trackName(m.subtitle, 0)
+            entries.Push({ label: tr("Subtitles"), detail: detail })
+            m.menuValues.Push("subtitles")
+        end if
+        entries.Push({ label: tr("Quality"), detail: qualityLabel(m.quality, p) })
+        m.menuValues.Push("quality")
+        if p.versions <> invalid and p.versions.Count() > 1
+            entries.Push({ label: tr("Version"), detail: "" })
+            m.menuValues.Push("version")
+        end if
+        if p.chapters <> invalid and p.chapters.Count() > 1
+            entries.Push({ label: tr("Chapters"), detail: "" })
+            m.menuValues.Push("chapters")
+        end if
+    else if section = "audio"
+        m.options.title = tr("Audio")
+        i = 0
+        for each a in p.audio_tracks
+            if a.index = p.audio_stream then selected = i
+            entries.Push({ label: trackName(a, i), detail: audioDetail(a) })
+            m.menuValues.Push(a.index)
+            i = i + 1
+        end for
+    else if section = "subtitles"
+        m.options.title = tr("Subtitles")
+        entries.Push({ label: tr("Off"), detail: "" })
+        m.menuValues.Push(invalid)
+        selected = 0
+        i = 0
+        for each s in textSubtitles(p.subtitle_tracks)
+            if m.subtitle <> invalid and m.subtitle.id = s.id then selected = i + 1
+            entries.Push({ label: trackName(s, i), detail: subtitleDetail(s) })
+            m.menuValues.Push(s)
+            i = i + 1
+        end for
+    else if section = "quality"
+        m.options.title = tr("Quality")
+        i = 0
+        for each q in qualityChoices(p)
+            if q = m.quality then selected = i
+            entries.Push({ label: qualityLabel(q, p), detail: "" })
+            m.menuValues.Push(q)
+            i = i + 1
+        end for
+    else if section = "version"
+        m.options.title = tr("Version")
+        i = 0
+        for each v in p.versions
+            if v.file_id = p.file_id then selected = i
+            entries.Push({ label: versionName(v), detail: "" })
+            m.menuValues.Push(v.file_id)
+            i = i + 1
+        end for
+    else if section = "chapters"
+        m.options.title = tr("Chapters")
+        at = chapterAt(p.chapters, positionMs())
+        i = 0
+        for each c in p.chapters
+            name = valueOr(c.title, "")
+            if name = "" then name = tr("Chapter %1").Replace("%1", (i + 1).ToStr())
+            entries.Push({ label: name, detail: formatClock(c.start_ms) })
+            m.menuValues.Push(c.start_ms)
+            i = i + 1
+        end for
+        selected = at
+        if selected < 0 then selected = 0
+    end if
+    m.options.entries = entries
+    m.options.selected = selected
+    m.options.visible = true
+    m.controls.visible = false
+    m.options.show = true
+end sub
+
+function audioTrack(p as object) as dynamic
+    if p.audio_tracks = invalid then return invalid
+    for each a in p.audio_tracks
+        if a.index = p.audio_stream then return a
+    end for
+    return invalid
+end function
+
+sub onOptionPicked()
+    i = m.options.picked
+    if i < 0 or i >= m.menuValues.Count() then return
+    v = m.menuValues[i]
+    section = m.menu
+    if section = ""
+        openMenu(v)
+        return
+    end if
+    closeMenu()
+    if section = "audio"
+        chooseAudio(v)
+    else if section = "subtitles"
+        chooseSubtitleTrack(v)
+    else if section = "quality"
+        chooseQuality(v)
+    else if section = "version"
+        if v <> m.plan.file_id then load(positionMs(), { fileId: v })
+    else if section = "chapters"
+        seekTo(v)
+    end if
+end sub
+
+sub onOptionsClosed()
+    ' Back from a section goes to the list of sections; from the list, back to the video.
+    if m.menu <> ""
+        openMenu("")
+    else
+        closeMenu()
+    end if
+end sub
+
+sub closeMenu()
+    m.menu = ""
+    m.options.visible = false
+    m.top.setFocus(true)
+end sub
+
+sub chooseAudio(index as integer)
+    p = m.plan
+    if p = invalid or index = p.audio_stream then return
+    for each a in p.audio_tracks
+        if a.index = index and a.language <> invalid and a.language <> pref("audio_language", "") then savePref("audio_language", a.language)
+    end for
+    load(positionMs(), { audio: index })
+end sub
+
+sub chooseSubtitleTrack(track as dynamic)
+    lang = rememberedSubtitleLanguage(track, pref("subtitle_mode", ""))
+    if lang <> invalid and lang <> pref("subtitle_language", "") then savePref("subtitle_language", lang)
+    setSubtitle(track)
+end sub
+
+sub chooseQuality(q as integer)
+    if q = m.quality then return
+    m.quality = q
+    limit = 0
+    if q > 0 then limit = q
+    if limit = m.maxKbps then return
+    m.maxKbps = limit
+    load(positionMs(), {})
 end sub
