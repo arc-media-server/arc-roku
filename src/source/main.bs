@@ -1,0 +1,20 @@
+' Arc for Roku: opens the one scene. Everything else happens in MainScene and its screens.
+sub Main(args as object)
+    screen = CreateObject("roSGScreen")
+    port = CreateObject("roMessagePort")
+    screen.setMessagePort(port)
+    scene = screen.CreateScene("MainScene")
+    screen.show()
+    scene.launchArgs = args
+    input = CreateObject("roInput")
+    input.setMessagePort(port)
+    while true
+        msg = wait(0, port)
+        if type(msg) = "roSGScreenEvent" and msg.isScreenClosed()
+            return
+        else if type(msg) = "roInputEvent" and msg.isInput()
+            ' A deep link while running (Roku's input launch): the scene opens the title.
+            scene.inputArgs = msg.getInfo()
+        end if
+    end while
+end sub

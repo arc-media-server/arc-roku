@@ -1,0 +1,85 @@
+' Text shown under titles: lengths, episode numbers, resume points. Matches the web's and the
+' other TV apps' wording through tr().
+
+' formatRuntime: 95 -> "1h 35m", 42 -> "42m".
+function formatRuntime(minutes as integer) as string
+    if minutes <= 0 then return ""
+    h = minutes \ 60
+    m = minutes mod 60
+    if h = 0 then return tr("%1m").Replace("%1", m.ToStr())
+    if m = 0 then return tr("%1h").Replace("%1", h.ToStr())
+    return tr("%1h %2m").Replace("%1", h.ToStr()).Replace("%2", m.ToStr())
+end function
+
+' formatClock: 3725000 ms -> "1:02:05", 65000 -> "1:05".
+function formatClock(ms as dynamic) as string
+    total = Int(ms / 1000)
+    if total < 0 then total = 0
+    h = total \ 3600
+    m = (total mod 3600) \ 60
+    s = total mod 60
+    ss = s.ToStr()
+    if s < 10 then ss = "0" + ss
+    if h > 0
+        mm = m.ToStr()
+        if m < 10 then mm = "0" + mm
+        return h.ToStr() + ":" + mm + ":" + ss
+    end if
+    return m.ToStr() + ":" + ss
+end function
+
+' episodeCode: S1 E4 for an episode, "" otherwise.
+function episodeCode(item as object) as string
+    if item = invalid or item.kind <> "episode" then return ""
+    if item.season_number = invalid or item.episode_number = invalid then return ""
+    return "S" + item.season_number.ToStr() + " E" + item.episode_number.ToStr()
+end function
+
+' resumeMs is where a title carries on from, or 0 when it isn't part-way through.
+function resumeMs(item as object) as integer
+    if item = invalid or item.user_data = invalid then return 0
+    ud = item.user_data
+    if ud.played = true then return 0
+    if ud.position_ms = invalid then return 0
+    return ud.position_ms
+end function
+
+function durationMs(item as object) as integer
+    if item = invalid then return 0
+    if item.runtime_min <> invalid and item.runtime_min > 0 then return item.runtime_min * 60000
+    return 0
+end function
+
+' metaLine: the year (or episode code and name), rating, length and up to two genres, joined by " · ".
+function metaLine(item as object) as string
+    parts = []
+    code = episodeCode(item)
+    if code <> ""
+        parts.Push(code)
+    else if item.year <> invalid and item.year > 0
+        parts.Push(item.year.ToStr())
+    end if
+    if item.content_rating <> invalid and item.content_rating <> "" then parts.Push(item.content_rating)
+    if item.runtime_min <> invalid then
+        rt = formatRuntime(item.runtime_min)
+        if rt <> "" then parts.Push(rt)
+    end if
+    if item.genres <> invalid
+        n = 0
+        for each g in item.genres
+            if n < 2 then parts.Push(g)
+            n = n + 1
+        end for
+    end if
+    return parts.Join(" · ")
+end function
+
+' playLabel: "Play", "Resume from 12:04", "Play S1 E2", "Resume S1 E2".
+function playLabel(item as object) as string
+    code = episodeCode(item)
+    r = resumeMs(item)
+    if r > 0 and code <> "" then return tr("Resume %1").Replace("%1", code)
+    if r > 0 then return tr("Resume from %1").Replace("%1", formatClock(r))
+    if code <> "" then return tr("Play %1").Replace("%1", code)
+    return tr("Play")
+end function

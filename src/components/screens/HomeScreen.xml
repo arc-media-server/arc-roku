@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Home, as the Apple TV app's and Arc's other TV apps': the focused title's artwork fills the
+     screen with its logo, details and overview, and the profile's rows sit below. -->
+<component name="HomeScreen" extends="Group">
+    <interface>
+        <field id="params" type="assocarray" />
+        <field id="action" type="assocarray" alwaysNotify="true" />
+        <function name="takeFocus" />
+        <function name="leaving" />
+        <function name="returned" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/source/shared/http.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/api.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/format.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/caps.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/home.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/cards.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/browse.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/cardmenu.bs" />
+    <children>
+        <Poster id="backdrop" width="1920" height="1080" loadDisplayMode="scaleToZoom" loadWidth="1920" loadHeight="1080" />
+        <Poster uri="pkg:/images/shade.png" width="1920" height="1080" />
+        <Poster id="logo" translation="[120, 110]" width="640" height="200" loadDisplayMode="scaleToFit" loadWidth="640" loadHeight="200" />
+        <Label id="heroTitle" translation="[120, 180]" width="1100" font="font:LargeBoldSystemFont" color="0xF0F4F4FF" />
+        <Label id="heroMeta" translation="[120, 340]" width="1100" font="font:SmallSystemFont" color="0xC6D0D0FF" />
+        <Label id="heroOverview" translation="[120, 390]" width="900" height="130" wrap="true" maxLines="3" font="font:SmallSystemFont" color="0xC6D0D0FF" />
+        <RowList id="rows" translation="[120, 560]" itemComponentName="CardItem" numRows="2" itemSize="[1800, 400]"
+            rowItemSpacing="[[28, 0]]" itemSpacing="[0, 48]" showRowLabel="[true]" rowLabelOffset="[[0, 16]]"
+            rowLabelColor="0xF0F4F4FF" rowLabelFont="font:MediumBoldSystemFont" drawFocusFeedback="false"
+            rowFocusAnimationStyle="floatingFocus" vertFocusAnimationStyle="fixedFocus" />
+        <Label id="empty" translation="[120, 620]" width="1400" wrap="true" font="font:MediumSystemFont" color="0x9AA7A7FF" visible="false" />
+        <Label id="hint" translation="[1000, 60]" width="800" horizAlign="right" font="font:SmallestSystemFont" color="0x9AA7A7FF" />
+        <OptionsPanel id="nav" side="left" visible="false" />
+        <OptionsPanel id="cardPanel" visible="false" />
+        <Timer id="heroDelay" repeat="false" duration="0.3" />
+    </children>
+</component>

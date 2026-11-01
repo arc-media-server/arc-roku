@@ -1,0 +1,171 @@
+' Home's rows, arranged as the web's and the other apps' (web/src/lib/home.ts resolveRows,
+' arc-tv src/lib/home.ts): carrying on watching and the seasonal row first, then the Watchlist
+' where it sits among the libraries, each library's Recently Added and its own filter rows in the
+' profile's library order, and collections and playlists last. The layout is arranged on the web
+' (Edit Home, Reorder libraries); the Roku follows it.
+'
+' Each row is { id, title, style ("poster" or "thumb"), path, shape }, where path is the /api/v1
+' request for its titles and shape says how the answer is laid out: "list" (an array of titles),
+' "page" ({ items }), "recent" (a TV library's recent cards), "collection" ({ items }) or
+' "playlist" ({ entries: [{ item }] }).
+
+function resolveHomeRows(prefs as object, libraries as object, today as object) as object
+    saved = {}
+    home = []
+    if prefs <> invalid and prefs.home <> invalid then home = prefs.home
+    for each r in home
+        saved[r.id] = r
+    end for
+    rows = []
+    split = prefs <> invalid and prefs.split_up_next = true
+
+    if shownRow(saved, "continue")
+        path = "/home/continue"
+        if not split then path = path + "?with_up_next=1"
+        rows.Push({ id: "continue", title: tr("Continue Watching"), style: rowStyle(saved, "continue", "thumb"), path: path, shape: "list" })
+    end if
+    if split and shownRow(saved, "next-up")
+        rows.Push({ id: "next-up", title: tr("Up Next"), style: rowStyle(saved, "next-up", "thumb"), path: "/home/next-up", shape: "list" })
+    end if
+    pick = seasonalPick(today)
+    if pick <> invalid and shownRow(saved, "seasonal")
+        rows.Push({ id: "seasonal", title: pick.title, style: "poster", path: "/items" + queryString(pick.query), shape: "page" })
+    end if
+
+    libs = orderLibraries(libraries, prefs)
+    watchlistAt = 0
+    if prefs <> invalid and prefs.watchlist_position <> invalid then watchlistAt = prefs.watchlist_position
+    if watchlistAt < 0 then watchlistAt = 0
+    if watchlistAt > libs.Count() then watchlistAt = libs.Count()
+    watchlist = { id: "watchlist", title: tr("Watchlist"), style: "poster", path: "/watchlist", shape: "list" }
+    for i = 0 to libs.Count() - 1
+        lib = libs[i]
+        if i = watchlistAt and shownRow(saved, "watchlist") then rows.Push(watchlist)
+        look = "poster"
+        if lib.kind = "videos" then look = "thumb"
+        recent = "recent:" + lib.id.ToStr()
+        if shownRow(saved, recent)
+            title = tr("Recently Added in %1").Replace("%1", lib.name)
+            showsOnly = saved[recent] <> invalid and saved[recent].shows_only = true
+            if lib.kind = "shows" and not showsOnly
+                rows.Push({ id: recent, title: title, style: look, path: "/libraries/" + lib.id.ToStr() + "/recent-shows", shape: "recent" })
+            else
+                rows.Push({ id: recent, title: title, style: look, path: "/items" + queryString({ library_id: lib.id, kind: libraryItemKind(lib), sort: "added", limit: 24 }), shape: "page" })
+            end if
+        end if
+        for each row in home
+            if row.id.StartsWith("custom:") and row.hidden <> true and row.filter <> invalid and row.title <> invalid and row.title <> ""
+                if valueString(row.filter.library_id) = lib.id.ToStr()
+                    rows.Push({ id: row.id, title: row.title, style: look, path: "/items" + queryString(customQuery(row.filter, lib)), shape: "page" })
+                end if
+            end if
+        end for
+    end for
+    if watchlistAt = libs.Count() and shownRow(saved, "watchlist") then rows.Push(watchlist)
+    for each row in home
+        if row.hidden <> true
+            title = ""
+            if row.title <> invalid then title = row.title
+            if row.id.StartsWith("collection:")
+                rows.Push({ id: row.id, title: title, style: "poster", path: "/collections/" + row.id.Mid(11), shape: "collection" })
+            else if row.id.StartsWith("playlist:")
+                rows.Push({ id: row.id, title: title, style: "poster", path: "/playlists/" + row.id.Mid(9), shape: "playlist" })
+            end if
+        end if
+    end for
+    return rows
+end function
+
+function shownRow(saved as object, id as string) as boolean
+    return not (saved[id] <> invalid and saved[id].hidden = true)
+end function
+
+function rowStyle(saved as object, id as string, fallback as string) as string
+    r = saved[id]
+    if r = invalid or r.style = invalid then return fallback
+    if r.style = "poster" then return "poster"
+    if r.style = "thumb" or r.style = "arc" then return "thumb"
+    return fallback
+end function
+
+function libraryItemKind(lib as object) as string
+    if lib.kind = "shows" then return "series"
+    return "movie"
+end function
+
+' orderLibraries: the profile's own order (prefs.library_order), Arc's order for the rest.
+function orderLibraries(libraries as object, prefs as object) as object
+    order = []
+    if prefs <> invalid and prefs.library_order <> invalid then order = prefs.library_order
+    placed = []
+    rest = []
+    for each id in order
+        for each lib in libraries
+            if lib.id = id then placed.Push(lib)
+        end for
+    end for
+    for each lib in libraries
+        if not arrayHas(order, lib.id) then rest.Push(lib)
+    end for
+    placed.Append(rest)
+    return placed
+end function
+
+' customQuery: the /items query for a filter row saved on the web.
+function customQuery(filter as object, lib as object) as object
+    out = {}
+    for each k in ["library_id", "genre", "language", "label", "decade", "resolution", "unwatched", "added_within", "min_runtime", "max_runtime", "min_rating", "sort"]
+        v = filter[k]
+        if v <> invalid
+            s = valueString(v)
+            if s <> "" and s <> "0" then out[k] = s
+        end if
+    end for
+    out.kind = libraryItemKind(lib)
+    out.limit = "24"
+    return out
+end function
+
+' seasonalPick: the seasonal row for today's date (Valentine's, Halloween, Christmas), or invalid.
+function seasonalPick(today as object) as dynamic
+    if today = invalid then return invalid
+    md = today.GetMonth() * 100 + today.GetDayOfMonth()
+    if md >= 201 and md <= 214 then return { title: tr("Romance for Valentine's Day"), query: { kind: "movie", genre: "Romance", sort: "shuffle", limit: 24 } }
+    if md >= 1001 and md <= 1031 then return { title: tr("Horror for Halloween"), query: { kind: "movie", genre: "Horror", sort: "shuffle", limit: 24 } }
+    if md >= 1201 and md <= 1231 then return { title: tr("Christmas Films"), query: { kind: "movie", about: "christmas,santa,xmas,north pole,reindeer,elves", sort: "shuffle", limit: 24 } }
+    return invalid
+end function
+
+' rowItems takes a row's answer and returns its titles as a list of { item, key, season, episodes }.
+function rowItems(shape as string, data as dynamic) as object
+    out = []
+    if data = invalid then return out
+    if shape = "list"
+        for each it in data
+            out.Push({ item: it, key: it.id })
+        end for
+    else if shape = "page" or shape = "collection"
+        if data.items <> invalid
+            for each it in data.items
+                out.Push({ item: it, key: it.id })
+            end for
+        end if
+    else if shape = "recent"
+        for each c in data
+            card = { item: c.item, key: c.type + ":" + c.item.id }
+            if c.type = "season"
+                card.season = c.season_number
+                card.episodes = c.episodes
+                card.seasonPoster = c.season_poster
+            end if
+            out.Push(card)
+        end for
+    else if shape = "playlist"
+        if data.entries <> invalid
+            for each e in data.entries
+                out.Push({ item: e.item, key: "entry:" + valueString(e.entry_id) })
+            end for
+        end if
+    end if
+    return out
+end function

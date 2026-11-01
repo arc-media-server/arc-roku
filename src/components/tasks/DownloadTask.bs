@@ -1,0 +1,23 @@
+sub init()
+    m.top.functionName = "work"
+end sub
+
+sub work()
+    url = absoluteUrl(m.global.server, m.top.path)
+    t = CreateObject("roUrlTransfer")
+    port = CreateObject("roMessagePort")
+    t.SetMessagePort(port)
+    t.SetUrl(url)
+    if Left(url, 8) = "https://"
+        t.SetCertificatesFile("common:/certs/ca-bundle.crt")
+        t.InitClientCertificates()
+    end if
+    if m.global.token <> "" then t.AddHeader("Authorization", "Bearer " + m.global.token)
+    ok = false
+    if t.AsyncGetToFile(m.top.target)
+        msg = wait(60000, port)
+        if type(msg) = "roUrlEvent" and msg.GetResponseCode() = 200 then ok = true
+        if type(msg) <> "roUrlEvent" then t.AsyncCancel()
+    end if
+    m.top.ok = ok
+end sub

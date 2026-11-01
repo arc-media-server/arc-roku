@@ -1,0 +1,71 @@
+' Building Arc's /api/v1 addresses. Arc's own links (artwork, streams) start "/api/..."; the same
+' paths answer under /api/v1, which is the stable API every Arc app uses.
+
+' apiPath turns "/items/1", "/api/items/1" or "/api/v1/items/1" into "/api/v1/items/1".
+function apiPath(path as string) as string
+    if Left(path, 8) = "/api/v1/" then return path
+    if Left(path, 5) = "/api/" then return "/api/v1/" + Mid(path, 6)
+    if Left(path, 1) <> "/" then path = "/" + path
+    return "/api/v1" + path
+end function
+
+' absoluteUrl puts the server in front of a path, leaving full URLs alone.
+function absoluteUrl(server as string, path as string) as string
+    if path = "" then return ""
+    if Left(path, 7) = "http://" or Left(path, 8) = "https://" then return path
+    return trimSlash(server) + apiPath(path)
+end function
+
+function trimSlash(s as string) as string
+    while Len(s) > 0 and Right(s, 1) = "/"
+        s = Left(s, Len(s) - 1)
+    end while
+    return s
+end function
+
+' normaliseServer turns what someone typed ("192.168.1.20", "arc.local:8099/") into an address.
+function normaliseServer(typed as string) as string
+    s = trimSlash(typed.Trim())
+    if s = "" then return ""
+    if Left(s, 7) <> "http://" and Left(s, 8) <> "https://" then s = "http://" + s
+    ' No port given: Arc's default.
+    hostPart = s.Mid(s.Instr("//") + 2)
+    if hostPart.Instr(":") < 0 and hostPart.Instr("/") < 0 and Left(s, 8) <> "https://" then s = s + ":8099"
+    return s
+end function
+
+' queryString encodes an associative array as "?a=1&b=two" (keys in sorted order, empty values left out).
+function queryString(params as object) as string
+    if params = invalid then return ""
+    keys = []
+    for each k in params
+        keys.Push(k)
+    end for
+    keys.Sort()
+    parts = []
+    t = CreateObject("roUrlTransfer")
+    for each k in keys
+        v = params[k]
+        if v <> invalid
+            s = valueString(v)
+            if s <> "" then parts.Push(t.Escape(k) + "=" + t.Escape(s))
+        end if
+    end for
+    if parts.Count() = 0 then return ""
+    return "?" + parts.Join("&")
+end function
+
+function valueString(v as dynamic) as string
+    if v = invalid then return ""
+    if GetInterface(v, "ifString") <> invalid then return v
+    if GetInterface(v, "ifBoolean") <> invalid
+        if v then return "1"
+        return ""
+    end if
+    if GetInterface(v, "ifInt") <> invalid or GetInterface(v, "ifLongInt") <> invalid then return v.ToStr()
+    if GetInterface(v, "ifFloat") <> invalid or GetInterface(v, "ifDouble") <> invalid
+        if v = Int(v) then return Int(v).ToStr()
+        return Str(v).Trim()
+    end if
+    return ""
+end function

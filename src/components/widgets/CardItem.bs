@@ -1,0 +1,67 @@
+sub init()
+    m.edge = m.top.findNode("edge")
+    m.blank = m.top.findNode("blank")
+    m.picture = m.top.findNode("picture")
+    m.track = m.top.findNode("track")
+    m.bar = m.top.findNode("bar")
+    m.tick = m.top.findNode("tick")
+    m.line1 = m.top.findNode("line1")
+    m.line2 = m.top.findNode("line2")
+    m.picture.setHttpAgent(m.top.getScene().getHttpAgent())
+end sub
+
+sub onContent()
+    c = m.top.itemContent
+    if c = invalid then return
+    m.picture.uri = c.HDPosterUrl
+    m.line1.text = c.title
+    m.line2.text = c.line2
+    layout()
+end sub
+
+' Posters fill the card; 16:9 pictures leave room for two lines of text under them.
+sub layout()
+    c = m.top.itemContent
+    w = m.top.width
+    h = m.top.height
+    if w <= 0 or h <= 0 then return
+    ' "named" (people): a poster with the name and role under it.
+    named = c <> invalid and c.style = "named"
+    thumb = c <> invalid and (c.style = "thumb" or named)
+    ph = h
+    if thumb then ph = Int(w * 9 / 16)
+    if named then ph = h - 90
+    for each n in [m.blank, m.picture]
+        n.width = w
+        n.height = ph
+    end for
+    m.picture.loadWidth = w
+    m.picture.loadHeight = ph
+    m.edge.translation = [-5, -5]
+    m.edge.width = w + 10
+    m.edge.height = ph + 10
+    m.line1.visible = thumb
+    m.line2.visible = thumb
+    m.line1.translation = [0, ph + 14]
+    m.line1.width = w
+    m.line2.translation = [0, ph + 50]
+    m.line2.width = w
+    progress = 0.0
+    if c <> invalid then progress = c.progress
+    m.track.visible = progress > 0
+    m.bar.visible = progress > 0
+    if progress > 0
+        m.track.translation = [16, ph - 22]
+        m.track.width = w - 32
+        m.track.height = 8
+        m.bar.translation = [16, ph - 22]
+        m.bar.width = (w - 32) * progress
+        m.bar.height = 8
+    end if
+    m.tick.visible = c <> invalid and c.played = true and progress = 0
+    m.tick.translation = [w - 52, 12]
+end sub
+
+sub onFocus()
+    m.edge.opacity = m.top.focusPercent
+end sub

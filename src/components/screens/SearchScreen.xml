@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Search, as Plex's and Arc's other TV apps: a keyboard on the left and the results beside it
+     (titles, episodes, collections, people) as they're typed. -->
+<component name="SearchScreen" extends="Group">
+    <interface>
+        <field id="params" type="assocarray" />
+        <field id="action" type="assocarray" alwaysNotify="true" />
+        <function name="takeFocus" />
+        <function name="leaving" />
+        <function name="returned" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/source/shared/http.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/api.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/format.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/caps.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/home.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/cards.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/browse.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/cardmenu.bs" />
+    <children>
+        <Rectangle width="1920" height="1080" color="0x0B1214FF" />
+        <Label id="heading" translation="[80, 70]" width="600" font="font:LargeBoldSystemFont" color="0xF0F4F4FF" />
+        <MiniKeyboard id="keyboard" translation="[60, 170]" />
+        <RowList id="results" translation="[680, 120]" itemComponentName="CardItem" numRows="2" itemSize="[1200, 420]"
+            rowItemSpacing="[[28, 0]]" itemSpacing="[0, 40]" showRowLabel="[true]" rowLabelOffset="[[0, 16]]"
+            rowLabelColor="0xF0F4F4FF" rowLabelFont="font:MediumBoldSystemFont" drawFocusFeedback="false"
+            rowFocusAnimationStyle="floatingFocus" vertFocusAnimationStyle="fixedFocus" />
+        <Label id="note" translation="[680, 180]" width="1160" wrap="true" font="font:MediumSystemFont" color="0x9AA7A7FF" />
+        <OptionsPanel id="cardPanel" visible="false" />
+        <Timer id="typing" repeat="false" duration="0.5" />
+    </children>
+</component>

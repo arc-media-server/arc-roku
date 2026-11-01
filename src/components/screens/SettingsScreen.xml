@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Settings, as the LG/Samsung app's: the profile's playback and subtitle choices (saved to the
+     profile, so every app follows them), then this Roku's profile, server and sign-in. -->
+<component name="SettingsScreen" extends="Group">
+    <interface>
+        <field id="params" type="assocarray" />
+        <field id="action" type="assocarray" alwaysNotify="true" />
+        <function name="takeFocus" />
+        <function name="leaving" />
+        <function name="returned" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/source/shared/http.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/api.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/tracks.bs" />
+    <children>
+        <Rectangle width="1920" height="1080" color="0x0B1214FF" />
+        <Label id="heading" translation="[120, 70]" width="1000" font="font:LargeBoldSystemFont" color="0xF0F4F4FF" />
+        <LabelList id="rows" translation="[120, 180]" itemSize="[1100, 64]" numRows="12" vertFocusAnimationStyle="floatingFocus"
+            color="0xC6D0D0FF" focusedColor="0x0B1214FF" focusBitmapBlendColor="0x2BB3A3FF" />
+        <Label id="note" translation="[1300, 180]" width="500" wrap="true" font="font:SmallSystemFont" color="0x9AA7A7FF" />
+        <Label id="about" translation="[1300, 800]" width="500" wrap="true" font="font:SmallestSystemFont" color="0x9AA7A7FF" />
+        <OptionsPanel id="options" visible="false" />
+    </children>
+</component>

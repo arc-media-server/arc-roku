@@ -1,0 +1,28 @@
+sub init()
+    m.back = m.top.findNode("back")
+    m.text = m.top.findNode("text")
+end sub
+
+sub onContent()
+    c = m.top.itemContent
+    if c <> invalid then m.text.text = c.title
+end sub
+
+sub layout()
+    for each n in [m.back, m.text]
+        n.width = m.top.width
+        n.height = m.top.height
+    end for
+end sub
+
+' The focused button is white with dark text, as Roku's own buttons, while its row has the focus.
+sub onFocus()
+    on = m.top.focusPercent * m.top.rowFocusPercent
+    if on > 0.5
+        m.back.color = "0xF0F4F4FF"
+        m.text.color = "0x0B1214FF"
+    else
+        m.back.color = "0xFFFFFF26"
+        m.text.color = "0xF0F4F4FF"
+    end if
+end sub

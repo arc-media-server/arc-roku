@@ -1,0 +1,119 @@
+' What this Roku can play, in the shape Arc's POST /api/v1/items/{id}/playback takes as "caps".
+' Arc picks direct play, repackaging or conversion from it. Roku's own checks (CanDecodeVideo,
+' CanDecodeAudio, GetDisplayProperties) answer for the box and the TV it's plugged into.
+
+' deviceCaps asks the Roku.
+function deviceCaps() as object
+    di = CreateObject("roDeviceInfo")
+    video = {}
+    video.h264 = canVideo(di, "h264", "high", "mp4")
+    video.hevc = canVideo(di, "hevc", "main", "mp4")
+    video.hevc10 = canVideo(di, "hevc", "main 10", "mp4")
+    video.vp9 = canVideo(di, "vp9", "", "mkv")
+    audio = {}
+    passthrough = {}
+    for each codec in ["aac", "mp3", "ac3", "eac3", "flac", "opus", "vorbis", "alac", "pcm", "dts", "truehd"]
+        audio[codec] = canAudio(di, codec, false)
+        passthrough[codec] = canAudio(di, codec, true)
+    end for
+    display = di.GetDisplayProperties()
+    if display = invalid then display = {}
+    return buildCaps(video, audio, passthrough, display, modeHeight(di.GetVideoMode()), outputChannels(di.GetAudioOutputChannel()))
+end function
+
+function canVideo(di as object, codec as string, profile as string, container as string) as boolean
+    q = { Codec: codec, Container: container }
+    if profile <> "" then q.Profile = profile
+    r = di.CanDecodeVideo(q)
+    return r <> invalid and r.Result = true
+end function
+
+function canAudio(di as object, codec as string, passThru as boolean) as boolean
+    q = { Codec: codec }
+    if passThru then q.PassThru = 1
+    r = di.CanDecodeAudio(q)
+    return r <> invalid and r.Result = true
+end function
+
+' modeHeight: "2160p60b10" -> 2160, "1080p" -> 1080, "720p" -> 720.
+function modeHeight(mode as dynamic) as integer
+    if mode = invalid or mode = "" then return 1080
+    digits = ""
+    for i = 0 to Len(mode) - 1
+        c = mode.Mid(i, 1)
+        if c >= "0" and c <= "9"
+            digits = digits + c
+        else
+            exit for
+        end if
+    end for
+    if digits = "" then return 1080
+    return digits.ToInt()
+end function
+
+' outputChannels: Roku's audio output setting ("Stereo", "5.1 surround", ...) as a channel count.
+function outputChannels(setting as dynamic) as integer
+    if setting = invalid then return 2
+    s = LCase(setting)
+    if s.Instr("7.1") >= 0 then return 8
+    if s.Instr("5.1") >= 0 or s.Instr("surround") >= 0 or s.Instr("auto") >= 0 then return 6
+    return 2
+end function
+
+' buildCaps turns what the Roku said into Arc's caps. Kept apart from deviceCaps so it can be
+' tested without a Roku.
+function buildCaps(video as object, audio as object, passthrough as object, display as object, height as integer, channels as integer) as object
+    containers = ["mp4", "mkv", "webm", "mpegts"]
+    v = []
+    ' Every Roku plays H.264, and Arc converts to it, so it is always listed (a Roku that answers
+    ' CanDecodeVideo oddly would otherwise be told nothing can be played).
+    v.Push("h264")
+    if video.hevc = true then v.Push("hevc")
+    if video.vp9 = true then v.Push("vp9")
+    ' Roku plays AV1 only from DASH, which Arc doesn't send, so AV1 files are converted.
+    a = []
+    for each codec in ["aac", "mp3", "ac3", "eac3", "flac", "opus", "vorbis", "alac", "pcm"]
+        if audio[codec] = true then a.Push(codec)
+    end for
+    ' Arc's converted streams always carry AAC, which every Roku plays.
+    if not arrayHas(a, "aac") then a.Push("aac")
+    pass = []
+    for each codec in ["ac3", "eac3", "dts", "truehd"]
+        if passthrough[codec] = true then pass.Push(codec)
+    end for
+    hdr = []
+    if display.Hdr10 = true then hdr.Push("hdr10")
+    if display.HLG = true then hdr.Push("hlg")
+    if display.DolbyVision = true then hdr.Push("dolby_vision")
+    ' Roku shows HDR10+ only from AV1 over DASH; HEVC HDR10+ plays as HDR10, which Arc allows for.
+    caps = {
+        containers: containers,
+        video: v,
+        audio: a,
+        audio_passthrough: pass,
+        hdr_formats: hdr,
+        max_height: height,
+        max_audio_channels: channels,
+        video_profiles: { h264: ["Baseline", "Main", "High"] }
+    }
+    if video.hevc = true
+        if video.hevc10 = true
+            caps.video_profiles.hevc = ["Main", "Main 10"]
+            caps.max_bit_depth = 10
+        else
+            caps.video_profiles.hevc = ["Main"]
+            caps.max_bit_depth = 8
+        end if
+    else
+        caps.max_bit_depth = 8
+    end if
+    if display.DolbyVision = true then caps.dolby_vision_profiles = [5, 8]
+    return caps
+end function
+
+function arrayHas(list as object, value as dynamic) as boolean
+    for each x in list
+        if x = value then return true
+    end for
+    return false
+end function
