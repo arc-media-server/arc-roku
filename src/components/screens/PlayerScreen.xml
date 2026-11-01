@@ -30,7 +30,7 @@
                 <Poster id="thumb" translation="[5, 5]" width="320" height="180" />
             </Group>
             <Rectangle id="track" translation="[120, 940]" width="1680" height="8" color="0xFFFFFF55" />
-            <Rectangle id="bar" translation="[120, 940]" width="0" height="8" color="0x2BB3A3FF" />
+            <Rectangle id="bar" translation="[120, 940]" width="0" height="8" color="0xF5F5F7FF" />
             <Rectangle id="head" translation="[120, 932]" width="6" height="24" color="0xFFFFFFFF" />
             <Label id="position" translation="[120, 970]" width="400" font="font:SmallSystemFont" color="0xF0F4F4FF" />
             <Label id="remaining" translation="[1400, 970]" width="400" horizAlign="right" font="font:SmallSystemFont" color="0xF0F4F4FF" />
@@ -45,7 +45,7 @@
         <Group id="upNext" visible="false" translation="[1160, 640]">
             <Rectangle width="660" height="340" color="0x0B1214F0" />
             <Poster id="upNextThumb" translation="[30, 30]" width="320" height="180" loadDisplayMode="scaleToZoom" />
-            <Label id="upNextHeading" translation="[370, 30]" width="260" font="font:SmallestBoldSystemFont" color="0x2BB3A3FF" />
+            <Label id="upNextHeading" translation="[370, 30]" width="260" font="font:SmallestBoldSystemFont" color="0xF5F5F7FF" />
             <Label id="upNextTitle" translation="[370, 66]" width="260" height="140" wrap="true" maxLines="3" font="font:SmallSystemFont" color="0xF0F4F4FF" />
             <Label id="upNextCount" translation="[30, 230]" width="600" font="font:SmallBoldSystemFont" color="0xF0F4F4FF" />
             <Label id="upNextKeys" translation="[30, 280]" width="600" font="font:SmallestSystemFont" color="0xC6D0D0FF" />
