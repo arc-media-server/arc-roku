@@ -1,0 +1,30 @@
+sub init()
+    m.top.findNode("title").text = tr("Can't reach Arc")
+    m.buttons = m.top.findNode("buttons")
+    m.buttons.buttons = [tr("Try again"), tr("Use another server")]
+    m.buttons.observeField("buttonSelected", "onButton")
+end sub
+
+sub onParams()
+    msg = m.top.params.message
+    if msg = invalid then msg = ""
+    m.top.findNode("message").text = tr("Check that Arc is running and this Roku is on the same network.") + " " + msg
+end sub
+
+sub takeFocus(_ = invalid as dynamic)
+    m.buttons.setFocus(true)
+end sub
+
+sub leaving(_ = invalid as dynamic)
+end sub
+
+sub returned(_ = invalid as dynamic)
+end sub
+
+sub onButton()
+    if m.buttons.buttonSelected = 0
+        m.top.action = { go: "retry" }
+    else
+        m.top.action = { go: "otherServer" }
+    end if
+end sub

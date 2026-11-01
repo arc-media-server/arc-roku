@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- A button in a title page's row of actions (Play, Mark as watched, ...): a one-row RowList of
+     these lays them out side by side on every Roku. -->
+<component name="ActionButton" extends="Group">
+    <interface>
+        <field id="itemContent" type="node" onChange="onContent" />
+        <field id="width" type="float" onChange="layout" />
+        <field id="height" type="float" onChange="layout" />
+        <field id="focusPercent" type="float" onChange="onFocus" />
+        <field id="rowFocusPercent" type="float" onChange="onFocus" />
+    </interface>
+    <children>
+        <Rectangle id="back" color="0xFFFFFF26" />
+        <Label id="text" horizAlign="center" vertAlign="center" font="font:SmallBoldSystemFont" color="0xF0F4F4FF" />
+    </children>
+</component>

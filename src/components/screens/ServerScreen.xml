@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Finding Arc: the servers that answered on this network, then "Enter an address". -->
+<component name="ServerScreen" extends="Group">
+    <interface>
+        <field id="params" type="assocarray" />
+        <field id="action" type="assocarray" alwaysNotify="true" />
+        <function name="takeFocus" />
+        <function name="leaving" />
+        <function name="returned" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/source/shared/http.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/api.bs" />
+    <children>
+        <Poster uri="pkg:/images/icon_fhd.png" width="270" height="202" translation="[825, 120]" />
+        <Label id="title" width="1920" horizAlign="center" translation="[0, 360]" font="font:LargeBoldSystemFont" color="0xF0F4F4FF" />
+        <Label id="lead" width="1200" horizAlign="center" wrap="true" translation="[360, 430]" font="font:MediumSystemFont" color="0x9AA7A7FF" />
+        <LabelList id="list" translation="[660, 540]" itemSize="[600, 72]" itemSpacing="[0, 8]" numRows="6"
+            color="0xF0F4F4FF" focusedColor="0x0B0F10FF" focusBitmapUri="pkg:/images/white.png" />
+        <Label id="status" width="1920" horizAlign="center" translation="[0, 1000]" font="font:SmallSystemFont" color="0x9AA7A7FF" />
+    </children>
+</component>

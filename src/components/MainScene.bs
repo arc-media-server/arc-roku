@@ -1,0 +1,208 @@
+' Where the app starts and how screens lead to each other:
+'   no server        -> ServerScreen (finds Arc on the network, or takes an address)
+'   no sign-in       -> SignInScreen (a code to approve from Arc's "Link a Device")
+'   no profile       -> ProfilesScreen ("Who's watching?")
+'   otherwise        -> HomeScreen, then DetailsScreen and PlayerScreen on top.
+' Back closes the screen on top; on Home it leaves the app.
+
+sub init()
+    m.global.addFields({ server: "", token: "", serverName: "", profile: {}, caps: {}, unauthorized: false })
+    m.global.observeField("unauthorized", "onUnauthorized")
+    m.screens = m.top.findNode("screens")
+    m.spinner = m.top.findNode("spinner")
+    m.spinner.poster.uri = "pkg:/images/spinner.png"
+    m.stack = []
+    m.pendingLink = invalid
+    m.global.caps = deviceCaps()
+    m.global.server = readSetting("server")
+    m.global.serverName = readSetting("serverName")
+    setToken(readSetting("token"))
+    start()
+end sub
+
+sub start()
+    if m.global.server = ""
+        replaceAll("ServerScreen", {})
+    else if m.global.token = ""
+        replaceAll("SignInScreen", {})
+    else
+        showSpinner(true)
+        callApi("GET", "/auth/status", invalid, "onStatus")
+    end if
+end sub
+
+sub onStatus(event as object)
+    showSpinner(false)
+    res = event.getData()
+    if not res.ok
+        if res.status = 401
+            signOutLocally()
+            return
+        end if
+        ' Arc can't be reached: offer to try again or pick another server.
+        replaceAll("ProblemScreen", { message: res.error })
+        return
+    end if
+    s = res.data
+    if s.signed_in <> true
+        signOutLocally()
+    else if s.profile = invalid
+        replaceAll("ProfilesScreen", {})
+    else
+        m.global.profile = s.profile
+        replaceAll("HomeScreen", {})
+        openPendingLink()
+    end if
+end sub
+
+sub setToken(token as string)
+    m.global.token = token
+    agent = m.top.getHttpAgent()
+    ' Every picture and stream the scene loads from Arc carries the sign-in.
+    if token <> ""
+        agent.SetHeaders({ "Authorization": "Bearer " + token })
+    else
+        agent.SetHeaders({})
+    end if
+    agent.SetCertificatesFile("common:/certs/ca-bundle.crt")
+    agent.InitClientCertificates()
+end sub
+
+sub signOutLocally()
+    clearSetting("token")
+    setToken("")
+    m.global.profile = {}
+    replaceAll("SignInScreen", {})
+end sub
+
+sub onUnauthorized()
+    if m.global.unauthorized = true
+        m.global.unauthorized = false
+        signOutLocally()
+    end if
+end sub
+
+' --- the stack of screens ---
+
+function push(name as string, params as object) as object
+    if m.stack.Count() > 0 then m.stack.Peek().visible = false
+    screen = CreateObject("roSGNode", name)
+    screen.params = params
+    screen.observeField("action", "onAction")
+    m.screens.appendChild(screen)
+    m.stack.Push(screen)
+    screen.callFunc("takeFocus", invalid)
+    return screen
+end function
+
+sub pop()
+    if m.stack.Count() = 0 then return
+    screen = m.stack.Pop()
+    screen.unobserveField("action")
+    screen.callFunc("leaving", invalid)
+    m.screens.removeChild(screen)
+    if m.stack.Count() > 0
+        top = m.stack.Peek()
+        top.visible = true
+        top.callFunc("returned", invalid)
+        top.callFunc("takeFocus", invalid)
+    end if
+end sub
+
+sub replaceAll(name as string, params as object)
+    while m.stack.Count() > 0
+        pop()
+    end while
+    push(name, params)
+end sub
+
+sub showSpinner(on as boolean)
+    m.spinner.visible = on
+    if on then m.spinner.control = "start" else m.spinner.control = "stop"
+end sub
+
+' --- what screens ask for ---
+
+sub onAction(event as object)
+    a = event.getData()
+    if a = invalid or a.go = invalid then return
+    go = a.go
+    if go = "server"
+        m.global.server = a.url
+        m.global.serverName = a.name
+        writeSetting("server", a.url)
+        writeSetting("serverName", a.name)
+        replaceAll("SignInScreen", {})
+    else if go = "otherServer"
+        clearSetting("token")
+        setToken("")
+        replaceAll("ServerScreen", {})
+    else if go = "token"
+        writeSetting("token", a.token)
+        setToken(a.token)
+        replaceAll("ProfilesScreen", {})
+    else if go = "retry"
+        start()
+    else if go = "profile"
+        m.global.profile = a.profile
+        replaceAll("HomeScreen", {})
+        openPendingLink()
+    else if go = "profiles"
+        callApi("DELETE", "/auth/profile", invalid, "onIgnored")
+        replaceAll("ProfilesScreen", {})
+    else if go = "signOut"
+        callApi("POST", "/auth/logout", invalid, "onIgnored")
+        signOutLocally()
+    else if go = "open"
+        push("DetailsScreen", { id: a.id, episodeId: a.episodeId })
+    else if go = "play"
+        ' Up Next replaces the player that's finishing.
+        if a.replace = true then pop()
+        push("PlayerScreen", { id: a.id, startMs: a.startMs, title: a.title, subtitle: a.subtitle })
+    else if go = "playExtra"
+        push("PlayerScreen", { extra: { url: a.url }, title: a.title, subtitle: a.subtitle })
+    else if go = "grid"
+        push("GridScreen", { title: a.title, source: a.source })
+    else if go = "search"
+        push("SearchScreen", {})
+    else if go = "settings"
+        push("SettingsScreen", {})
+    else if go = "back"
+        pop()
+    end if
+end sub
+
+sub onIgnored(event as object)
+end sub
+
+function onKeyEvent(key as string, press as boolean) as boolean
+    if not press then return false
+    if key = "back" and m.stack.Count() > 1
+        pop()
+        return true
+    end if
+    return false
+end function
+
+' --- deep links (Roku's search and Continue Watching launch the app with a contentId) ---
+
+sub onLaunchArgs()
+    noteLink(m.top.launchArgs)
+end sub
+
+sub onInputArgs()
+    noteLink(m.top.inputArgs)
+    if m.global.profile <> invalid and m.global.profile.id <> invalid then openPendingLink()
+end sub
+
+sub noteLink(args as dynamic)
+    if args = invalid or args.contentId = invalid or args.contentId = "" then return
+    m.pendingLink = { id: args.contentId, play: args.mediaType = "movie" or args.mediaType = "episode" }
+end sub
+
+sub openPendingLink()
+    link = m.pendingLink
+    if link = invalid then return
+    m.pendingLink = invalid
+    push("DetailsScreen", { id: link.id })
+end sub

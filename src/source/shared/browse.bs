@@ -1,0 +1,209 @@
+' Browsing beyond Home: what each grid asks Arc for and how its answers become cards. One grid
+' screen shows them all (a library's titles, its collections and folders, a collection, the
+' watchlist, playlists, a person's titles), as the other apps share their grid.
+
+' libraryQueryDefaults: a library's sort and filters before the viewer changes them (title, A to Z).
+function libraryQueryDefaults() as object
+    return { sort: "title", reverse: false, unwatched: false, genre: "", decade: "", resolution: "" }
+end function
+
+' browsePath: the request for a grid's page. source: { kind, id, libraryKind, path }.
+function browsePath(source as object, q as dynamic, offset as integer, limit as integer) as string
+    kind = source.kind
+    if kind = "library"
+        params = { library_id: source.id, kind: libraryItemKind({ kind: source.libraryKind }), sort: q.sort, limit: limit }
+        if offset > 0 then params.offset = offset
+        if q.reverse = true and q.sort <> "shuffle" then params.reverse = true
+        if q.unwatched = true then params.unwatched = true
+        if q.genre <> "" then params.genre = q.genre
+        if q.decade <> "" then params.decade = q.decade
+        if q.resolution <> "" then params.resolution = q.resolution
+        return "/items" + queryString(params)
+    end if
+    if kind = "collections" then return "/libraries/" + valueString(source.id) + "/collections"
+    if kind = "folders"
+        path = "/libraries/" + valueString(source.id) + "/folders"
+        if source.path <> invalid and source.path <> "" then path = path + queryString({ path: source.path })
+        return path
+    end if
+    if kind = "collection" then return "/collections/" + CreateObject("roUrlTransfer").Escape(source.id)
+    if kind = "playlist" then return "/playlists/" + CreateObject("roUrlTransfer").Escape(source.id)
+    if kind = "person" then return "/people/" + valueString(source.id)
+    if kind = "watchlist" then return "/watchlist"
+    if kind = "playlists" then return "/playlists"
+    return ""
+end function
+
+' browsePaged: whether a grid loads in pages (a library's titles) or all at once.
+function browsePaged(source as object) as boolean
+    return source.kind = "library"
+end function
+
+' browseCards: Arc's answer as cards ({ item, line2 }) for fillCard, and the total when paged.
+function browseCards(source as object, data as dynamic) as object
+    out = { cards: [], total: 0 }
+    if data = invalid then return out
+    kind = source.kind
+    if kind = "library"
+        if data.items <> invalid
+            for each it in data.items
+                out.cards.Push({ item: it })
+            end for
+        end if
+        if data.total <> invalid then out.total = data.total
+    else if kind = "collections"
+        for each c in data
+            out.cards.Push({ item: { id: c.id, kind: "collection", title: c.title, images: valueOr(c.images, {}) }, line2: countLine(c.count) })
+        end for
+    else if kind = "folders"
+        if data.folders <> invalid
+            for each f in data.folders
+                out.cards.Push({ item: { id: "folder:" + f.path, kind: "folder", title: f.name, path: f.path, images: { primary: f.cover, backdrop: f.cover } }, line2: countLine(f.count) })
+            end for
+        end if
+        if data.items <> invalid
+            for each it in data.items
+                out.cards.Push({ item: it })
+            end for
+        end if
+    else if kind = "collection"
+        if data.items <> invalid
+            for each it in data.items
+                out.cards.Push({ item: it })
+            end for
+        end if
+    else if kind = "playlist"
+        if data.entries <> invalid
+            for each e in data.entries
+                if e.item <> invalid then out.cards.Push({ item: e.item })
+            end for
+        end if
+    else if kind = "person"
+        if data.credits <> invalid
+            for each c in data.credits
+                if c.item <> invalid
+                    line = invalid
+                    if c.character <> invalid and c.character <> "" then line = c.character
+                    out.cards.Push({ item: c.item, line2: line })
+                end if
+            end for
+        end if
+    else if kind = "watchlist"
+        for each it in data
+            out.cards.Push({ item: it })
+        end for
+    else if kind = "playlists"
+        for each p in data
+            cover = invalid
+            if p.images <> invalid and p.images.Count() > 0 then cover = p.images[0]
+            out.cards.Push({ item: { id: p.id, kind: "playlist", title: p.title, images: { primary: cover, backdrop: cover } }, line2: countLine(p.count) })
+        end for
+    end if
+    if out.total = 0 then out.total = out.cards.Count()
+    return out
+end function
+
+function countLine(n as dynamic) as dynamic
+    if n = invalid then return invalid
+    if n = 1 then return tr("1 title")
+    return tr("%1 titles").Replace("%1", n.ToStr())
+end function
+
+' browseStyle: posters, or 16:9 pictures for home videos and folders.
+function browseStyle(source as object) as string
+    if source.kind = "folders" then return "thumb"
+    if source.kind = "library" and source.libraryKind = "videos" then return "thumb"
+    return "poster"
+end function
+
+' --- sort and filters, as the web and TV apps name them ---
+
+function sortChoices() as object
+    return ["title", "added", "watched", "release", "year", "rating", "runtime", "shuffle"]
+end function
+
+function sortName(s as string) as string
+    names = { title: tr("Title"), added: tr("Date added"), watched: tr("Last watched"), release: tr("Release date"), year: tr("Year"), rating: tr("Rating"), runtime: tr("Length"), shuffle: tr("Shuffle") }
+    if names.DoesExist(s) then return names[s]
+    return tr("Title")
+end function
+
+' sortDirections: the usual direction's name, then the other's.
+function sortDirections(s as string) as object
+    if s = "title" then return [tr("A to Z"), tr("Z to A")]
+    if s = "rating" then return [tr("Highest first"), tr("Lowest first")]
+    if s = "runtime" then return [tr("Longest first"), tr("Shortest first")]
+    if s = "watched" then return [tr("Most recent first"), tr("Least recent first")]
+    return [tr("Newest first"), tr("Oldest first")]
+end function
+
+function resolutionName(v as string) as string
+    names = { "4k": "4K", "1080": "1080p", "720": "720p", sd: "SD" }
+    if names.DoesExist(v) then return names[v]
+    return v
+end function
+
+' querySummary: "Title · A to Z · Unwatched · Drama", shown under a library's name.
+function querySummary(q as object) as string
+    parts = [sortName(q.sort)]
+    if q.sort <> "shuffle"
+        d = sortDirections(q.sort)
+        if q.reverse = true then parts.Push(d[1]) else parts.Push(d[0])
+    end if
+    if q.unwatched = true then parts.Push(tr("Unwatched"))
+    if q.genre <> "" then parts.Push(q.genre)
+    if q.decade <> "" then parts.Push(tr("%1s").Replace("%1", q.decade))
+    if q.resolution <> "" then parts.Push(resolutionName(q.resolution))
+    return joinWith(parts, " · ")
+end function
+
+function joinWith(parts as object, sep as string) as string
+    out = ""
+    for each p in parts
+        if p <> invalid and p <> ""
+            if out <> "" then out = out + sep
+            out = out + p
+        end if
+    end for
+    return out
+end function
+
+' searchCards: /search's answer as rows of cards: titles, episodes, collections and people.
+function searchRows(data as dynamic) as object
+    rows = []
+    if data = invalid then return rows
+    titles = []
+    for each key in ["movies", "shows"]
+        if data[key] <> invalid
+            for each it in data[key]
+                titles.Push({ item: it })
+            end for
+        end if
+    end for
+    if titles.Count() > 0 then rows.Push({ title: tr("Titles"), style: "poster", cards: titles })
+    if data.episodes <> invalid and data.episodes.Count() > 0
+        eps = []
+        for each it in data.episodes
+            eps.Push({ item: it })
+        end for
+        rows.Push({ title: tr("Episodes"), style: "thumb", cards: eps })
+    end if
+    if data.collections <> invalid and data.collections.Count() > 0
+        rows.Push({ title: tr("Collections"), style: "poster", cards: browseCards({ kind: "collections" }, data.collections).cards })
+    end if
+    if data.people <> invalid and data.people.Count() > 0
+        people = []
+        for each p in data.people
+            people.Push({ item: { id: p.id.ToStr(), kind: "person", title: p.name, images: { primary: p.image } }, line2: personRole(p.known_for) })
+        end for
+        rows.Push({ title: tr("People"), style: "poster", cards: people })
+    end if
+    return rows
+end function
+
+function personRole(knownFor as dynamic) as dynamic
+    if knownFor = invalid then return invalid
+    names = { actor: tr("Actor"), director: tr("Director"), writer: tr("Writer"), producer: tr("Producer") }
+    if names.DoesExist(knownFor) then return names[knownFor]
+    return invalid
+end function

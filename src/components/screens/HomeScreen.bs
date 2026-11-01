@@ -1,0 +1,292 @@
+' Home's rows load together: each row asks Arc for its titles, and rows are placed in the
+' profile's order as soon as every row above them has answered. Rows with nothing in them are
+' left out, as on the web. The * button opens the focused card's menu (cardmenu.bs).
+' Left from the first card opens the list of places: Search, the libraries (with the Watchlist
+' where the profile put it) and Playlists, as the other apps' side rail.
+
+sub init()
+    m.rows = m.top.findNode("rows")
+    m.backdrop = m.top.findNode("backdrop")
+    m.logo = m.top.findNode("logo")
+    m.heroTitle = m.top.findNode("heroTitle")
+    m.heroMeta = m.top.findNode("heroMeta")
+    m.heroOverview = m.top.findNode("heroOverview")
+    shareSignIn([m.backdrop, m.logo])
+    m.empty = m.top.findNode("empty")
+    m.top.findNode("hint").text = tr("Left for libraries and search · * for options")
+    m.nav = m.top.findNode("nav")
+    m.nav.observeField("picked", "onNavPicked")
+    m.nav.observeField("closed", "onNavClosed")
+    m.cardPanel = m.top.findNode("cardPanel")
+    m.cardPanel.observeField("picked", "onCardPicked")
+    m.cardPanel.observeField("closed", "closeCardPanel")
+    m.navPlaces = []
+    m.heroDelay = m.top.findNode("heroDelay")
+    m.heroDelay.observeField("fire", "showHero")
+    m.rows.observeField("rowItemFocused", "onFocusMoved")
+    m.rows.observeField("rowItemSelected", "onSelected")
+    m.content = CreateObject("roSGNode", "ContentNode")
+    m.rows.content = m.content
+    m.sizes = []
+    m.heights = []
+    m.prefs = invalid
+    m.libraries = invalid
+    load()
+end sub
+
+sub takeFocus(_ = invalid as dynamic)
+    m.nav.visible = false
+    m.cardPanel.visible = false
+    m.rows.setFocus(true)
+end sub
+
+sub leaving(_ = invalid as dynamic)
+end sub
+
+' Back from a title or the player: rows load again (Continue Watching will have changed).
+sub returned(_ = invalid as dynamic)
+    load()
+end sub
+
+sub load()
+    m.prefs = invalid
+    m.libraries = invalid
+    m.generation = CreateObject("roDateTime").AsSeconds().ToStr() + Rnd(100000).ToStr()
+    callApi("GET", "/me/prefs", invalid, "onPrefs", m.generation)
+    callApi("GET", "/libraries", invalid, "onLibraries", m.generation)
+end sub
+
+sub onPrefs(event as object)
+    res = event.getData()
+    if res.tag <> m.generation then return
+    m.prefs = {}
+    if res.ok and res.data <> invalid then m.prefs = res.data
+    resolve()
+end sub
+
+sub onLibraries(event as object)
+    res = event.getData()
+    if res.tag <> m.generation then return
+    if not res.ok
+        showEmpty(tr("Couldn't load Home.") + " " + res.error)
+        return
+    end if
+    m.libraries = res.data
+    if m.libraries = invalid then m.libraries = []
+    resolve()
+end sub
+
+sub resolve()
+    if m.prefs = invalid or m.libraries = invalid then return
+    m.specs = resolveHomeRows(m.prefs, m.libraries, CreateObject("roDateTime"))
+    m.results = []
+    for i = 0 to m.specs.Count() - 1
+        m.results.Push(invalid)
+        callApi("GET", m.specs[i].path, invalid, "onRow", { generation: m.generation, index: i })
+    end for
+    m.placed = 0
+    m.newContent = CreateObject("roSGNode", "ContentNode")
+    m.newSizes = []
+    m.newHeights = []
+    if m.specs.Count() = 0 then showEmpty(tr("Nothing here yet. Add a library in Arc's settings on the web."))
+end sub
+
+sub onRow(event as object)
+    res = event.getData()
+    if res.tag = invalid or res.tag.generation <> m.generation then return
+    i = res.tag.index
+    if res.ok then m.results[i] = rowItems(m.specs[i].shape, res.data) else m.results[i] = []
+    placeRows()
+end sub
+
+' placeRows adds every row whose turn has come: all rows above it have answered.
+sub placeRows()
+    added = false
+    while m.placed < m.specs.Count() and m.results[m.placed] <> invalid
+        spec = m.specs[m.placed]
+        cards = m.results[m.placed]
+        m.placed = m.placed + 1
+        if cards.Count() > 0
+            row = m.newContent.createChild("ContentNode")
+            row.title = spec.title
+            for each card in cards
+                node = row.createChild("ContentNode")
+                node.addFields(cardFields())
+                fillCard(node, card, spec.style)
+            end for
+            if spec.style = "thumb"
+                m.newSizes.Push([400, 330])
+                m.newHeights.Push(400)
+            else
+                m.newSizes.Push([220, 330])
+                m.newHeights.Push(400)
+            end if
+            added = true
+        end if
+    end while
+    if added or m.placed = m.specs.Count() then swapIn()
+end sub
+
+' swapIn shows the rows placed so far, keeping focus where it was when Home is reloaded.
+sub swapIn()
+    focused = m.rows.rowItemFocused
+    m.rows.rowItemSize = m.newSizes
+    m.rows.rowHeights = m.newHeights
+    m.rows.content = m.newContent
+    m.content = m.newContent
+    if m.newContent.getChildCount() = 0
+        if m.placed = m.specs.Count() then showEmpty(tr("Nothing to show yet. Titles appear here once Arc has scanned your libraries."))
+        return
+    end if
+    m.empty.visible = false
+    if focused <> invalid and focused.Count() = 2 and focused[0] < m.newContent.getChildCount()
+        row = m.newContent.getChild(focused[0])
+        col = focused[1]
+        if col >= row.getChildCount() then col = row.getChildCount() - 1
+        if col < 0 then col = 0
+        m.rows.jumpToRowItem = [focused[0], col]
+    end if
+    onFocusMoved()
+end sub
+
+sub showEmpty(text as string)
+    m.empty.text = text
+    m.empty.visible = true
+end sub
+
+function focusedCard() as dynamic
+    f = m.rows.rowItemFocused
+    if f = invalid or f.Count() < 2 or m.content = invalid then return invalid
+    row = m.content.getChild(f[0])
+    if row = invalid then return invalid
+    return row.getChild(f[1])
+end function
+
+' The hero follows focus after a moment's rest, so scrolling along a row stays smooth.
+sub onFocusMoved()
+    m.heroDelay.control = "stop"
+    m.heroDelay.control = "start"
+end sub
+
+sub showHero()
+    c = focusedCard()
+    if c = invalid then return
+    m.backdrop.uri = c.backdrop
+    m.logo.uri = c.logo
+    m.heroTitle.visible = c.logo = ""
+    m.heroTitle.text = c.title
+    meta = c.meta
+    m.heroMeta.text = meta
+    m.heroOverview.text = c.overview
+end sub
+
+sub onSelected()
+    c = focusedCard()
+    if c = invalid then return
+    ' An episode opens its show's page, landing on that episode (as Plex and Arc's other apps).
+    if c.kind = "episode" and c.parentId <> ""
+        m.top.action = { go: "open", id: c.parentId, episodeId: c.itemId }
+    else
+        m.top.action = { go: "open", id: c.itemId }
+    end if
+end sub
+
+function onKeyEvent(key as string, press as boolean) as boolean
+    if not press then return false
+    if m.nav.visible or m.cardPanel.visible then return true
+    if key = "play"
+        c = focusedCard()
+        if c <> invalid and (c.kind = "movie" or c.kind = "episode")
+            m.top.action = { go: "play", id: c.itemId, startMs: c.resumeMs, title: c.title, subtitle: c.line2 }
+            return true
+        end if
+    else if key = "options"
+        showMenu()
+        return true
+    else if key = "left"
+        openNav()
+        return true
+    end if
+    return false
+end function
+
+' --- the list of places (Left) ---
+
+sub openNav()
+    if m.libraries = invalid then return
+    places = [{ label: tr("Search"), go: { go: "search" } }]
+    libs = orderLibraries(m.libraries, m.prefs)
+    watchlistAt = 0
+    if m.prefs <> invalid and m.prefs.watchlist_position <> invalid then watchlistAt = m.prefs.watchlist_position
+    if watchlistAt < 0 then watchlistAt = 0
+    if watchlistAt > libs.Count() then watchlistAt = libs.Count()
+    watchlist = { label: tr("Watchlist"), go: { go: "grid", title: tr("Watchlist"), source: { kind: "watchlist" } } }
+    for i = 0 to libs.Count() - 1
+        if i = watchlistAt then places.Push(watchlist)
+        lib = libs[i]
+        places.Push({ label: lib.name, go: { go: "grid", title: lib.name, source: { kind: "library", id: lib.id, libraryKind: lib.kind } } })
+    end for
+    if watchlistAt >= libs.Count() then places.Push(watchlist)
+    places.Push({ label: tr("Playlists"), go: { go: "grid", title: tr("Playlists"), source: { kind: "playlists" } } })
+    places.Push({ label: tr("Settings"), go: { go: "settings" } })
+    entries = []
+    for each p in places
+        entries.Push({ label: p.label, detail: "" })
+    end for
+    m.navPlaces = places
+    m.nav.title = m.global.serverName
+    m.nav.entries = entries
+    m.nav.selected = -1
+    m.nav.visible = true
+    m.nav.show = true
+end sub
+
+sub onNavPicked()
+    i = m.nav.picked
+    if i < 0 or i >= m.navPlaces.Count() then return
+    m.nav.visible = false
+    m.rows.setFocus(true)
+    m.top.action = m.navPlaces[i].go
+end sub
+
+sub onNavClosed()
+    m.nav.visible = false
+    m.rows.setFocus(true)
+end sub
+
+' --- the * menu on a card (cardmenu.bs) ---
+
+sub showMenu()
+    c = focusedCard()
+    entries = cardMenu(c)
+    if entries.Count() = 0 then return
+    m.menuCard = c
+    m.menuEntries = entries
+    list = []
+    for each e in entries
+        list.Push({ label: e.label, detail: "" })
+    end for
+    m.cardPanel.title = c.title
+    m.cardPanel.entries = list
+    m.cardPanel.selected = -1
+    m.cardPanel.visible = true
+    m.cardPanel.show = true
+end sub
+
+sub onCardPicked()
+    i = m.cardPanel.picked
+    closeCardPanel()
+    if i < 0 or i >= m.menuEntries.Count() then return
+    go = runCardAction(m.menuCard, m.menuEntries[i].act)
+    if go <> invalid then m.top.action = go
+end sub
+
+sub closeCardPanel()
+    m.cardPanel.visible = false
+    m.rows.setFocus(true)
+end sub
+
+' A card's watched or Watchlist change is saved: Home loads again (rows may change).
+sub onCardChanged(event as object)
+    load()
+end sub

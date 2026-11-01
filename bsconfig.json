@@ -1,0 +1,11 @@
+{
+  "rootDir": "src",
+  "files": ["manifest", "source/**/*", "components/**/*", "images/**/*", "locale/**/*"],
+  "stagingDir": "out/staging",
+  "outFile": "out/arc-roku.zip",
+  "createPackage": true,
+  "retainStagingDir": true,
+  "diagnosticFilters": [],
+  "autoImportComponentScript": true,
+  "sourceMap": false
+}

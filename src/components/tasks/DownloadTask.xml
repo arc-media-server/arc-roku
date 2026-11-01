@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Saves one file from Arc (with the sign-in) to the Roku's tmp:/ storage. -->
+<component name="DownloadTask" extends="Task">
+    <interface>
+        <field id="path" type="string" />
+        <field id="target" type="string" />
+        <!-- true once saved, false if it couldn't be -->
+        <field id="ok" type="boolean" alwaysNotify="true" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/source/shared/http.bs" />
+</component>

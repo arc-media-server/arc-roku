@@ -1,0 +1,39 @@
+' The * menu on a title's card, as the other apps' card menu (TitleMenu): play, play from the
+' beginning, mark watched or unwatched, add to or remove from the Watchlist, go to the show.
+' Screens show cardMenu's entries in an OptionsPanel and call runCardAction with the one picked;
+' a change calls the screen's onCardChanged when Arc has saved it.
+
+' cardMenu: [{ label, act }] for a card node (cardFields), or [] when the card isn't a title.
+function cardMenu(node as dynamic) as object
+    out = []
+    if node = invalid then return out
+    kind = node.kind
+    if kind <> "movie" and kind <> "series" and kind <> "episode" then return out
+    if kind <> "series"
+        if node.resumeMs > 0
+            out.Push({ label: tr("Resume"), act: "play" })
+            out.Push({ label: tr("Play from the beginning"), act: "restart" })
+        else
+            out.Push({ label: tr("Play"), act: "play" })
+        end if
+    end if
+    if node.played then out.Push({ label: tr("Mark as unwatched"), act: "unwatched" }) else out.Push({ label: tr("Mark as watched"), act: "watched" })
+    if kind <> "episode"
+        if node.watchlisted then out.Push({ label: tr("Remove from Watchlist"), act: "unlist" }) else out.Push({ label: tr("Add to Watchlist"), act: "list" })
+    end if
+    if kind = "episode" and node.parentId <> "" then out.Push({ label: tr("Go to show"), act: "show" })
+    if kind <> "episode" then out.Push({ label: tr("Go to details"), act: "open" })
+    return out
+end function
+
+' runCardAction: does what was picked; returns the screen action to send, if any (play or open).
+function runCardAction(node as object, act as string) as dynamic
+    id = CreateObject("roUrlTransfer").Escape(node.itemId)
+    if act = "play" then return { go: "play", id: node.itemId, startMs: node.resumeMs, title: node.title, subtitle: node.line2 }
+    if act = "restart" then return { go: "play", id: node.itemId, startMs: 0, title: node.title, subtitle: node.line2 }
+    if act = "show" then return { go: "open", id: node.parentId, episodeId: node.itemId }
+    if act = "open" then return { go: "open", id: node.itemId }
+    if act = "watched" or act = "unwatched" then callApi("PUT", "/items/" + id + "/played", { played: act = "watched" }, "onCardChanged")
+    if act = "list" or act = "unlist" then callApi("PUT", "/items/" + id + "/watchlist", { on: act = "list" }, "onCardChanged")
+    return invalid
+end function

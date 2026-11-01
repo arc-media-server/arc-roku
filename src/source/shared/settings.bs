@@ -1,0 +1,24 @@
+' The few things the app remembers between launches, in the device registry: the server's
+' address and the sign-in token Arc gave this Roku. Nothing else is stored.
+
+function settingsSection() as object
+    return CreateObject("roRegistrySection", "arc")
+end function
+
+function readSetting(key as string) as string
+    sec = settingsSection()
+    if sec.Exists(key) then return sec.Read(key)
+    return ""
+end function
+
+sub writeSetting(key as string, value as string)
+    sec = settingsSection()
+    sec.Write(key, value)
+    sec.Flush()
+end sub
+
+sub clearSetting(key as string)
+    sec = settingsSection()
+    sec.Delete(key)
+    sec.Flush()
+end sub

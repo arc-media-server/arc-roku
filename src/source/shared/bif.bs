@@ -1,0 +1,47 @@
+' Reading timeline thumbnails from a BIF file (Arc's /trickplay/{file}/bif, saved to tmp:/):
+' a 64-byte header (magic, version, count, interval in ms), an index of (time, offset) pairs
+' ending with 0xffffffff, then each thumbnail as a JPEG.
+
+' bifIndex returns { interval, offsets } for a BIF file, or invalid if it isn't one.
+function bifIndex(path as string) as dynamic
+    head = CreateObject("roByteArray")
+    if not head.ReadFile(path, 0, 64) or head.Count() < 64 then return invalid
+    magic = [&h89, &h42, &h49, &h46, &h0d, &h0a, &h1a, &h0a]
+    for i = 0 to 7
+        if head[i] <> magic[i] then return invalid
+    end for
+    count = le32(head, 12)
+    interval = le32(head, 16)
+    if interval = 0 then interval = 1000
+    if count <= 0 or count > 100000 then return invalid
+    index = CreateObject("roByteArray")
+    if not index.ReadFile(path, 64, 8 * (count + 1)) then return invalid
+    offsets = []
+    for i = 0 to count
+        offsets.Push(le32(index, 8 * i + 4))
+    end for
+    return { interval: interval, offsets: offsets, count: count, path: path }
+end function
+
+' le32 reads an unsigned little-endian 32-bit number (as a double, so values over 2^31 stay right).
+function le32(b as object, at as integer) as double
+    return b[at] + b[at + 1] * 256# + b[at + 2] * 65536# + b[at + 3] * 16777216#
+end function
+
+' bifThumb writes the thumbnail nearest ms to tmp:/ and returns its path, or "".
+function bifThumb(bif as object, ms as double) as string
+    if bif = invalid then return ""
+    i = Int(ms / bif.interval + 0.5)
+    if i < 0 then i = 0
+    if i > bif.count - 1 then i = bif.count - 1
+    out = "tmp:/arc-thumb-" + i.ToStr() + ".jpg"
+    fs = CreateObject("roFileSystem")
+    if fs.Exists(out) then return out
+    start = bif.offsets[i]
+    size = bif.offsets[i + 1] - start
+    if size <= 0 then return ""
+    jpeg = CreateObject("roByteArray")
+    if not jpeg.ReadFile(bif.path, start, size) then return ""
+    if not jpeg.WriteFile(out) then return ""
+    return out
+end function

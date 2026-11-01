@@ -1,0 +1,37 @@
+' Starting Arc calls from a screen: callApi runs an ApiTask and calls the screen's function
+' "callback" with the response node event. Tasks are kept until they finish.
+
+function callApi(method as string, path as string, body as dynamic, callback as string, tag = invalid as dynamic) as object
+    task = CreateObject("roSGNode", "ApiTask")
+    task.request = { method: method, path: path, body: body, tag: tag }
+    task.observeField("response", callback)
+    keepTask(task)
+    task.control = "RUN"
+    return task
+end function
+
+sub keepTask(task as object)
+    if m.tasks = invalid then m.tasks = []
+    live = []
+    for each t in m.tasks
+        if t.state = "run" or t.state = "init" then live.Push(t)
+    end for
+    live.Push(task)
+    m.tasks = live
+end sub
+
+' imageUrl: an Arc artwork path as a full address the Poster node can load (the sign-in goes in
+' the scene's HTTP headers).
+function imageUrl(path as dynamic) as string
+    if path = invalid or path = "" then return ""
+    return absoluteUrl(m.global.server, path)
+end function
+
+' shareSignIn gives Posters the scene's HTTP agent, which carries the sign-in header (Roku shares
+' it by default; saying so explicitly keeps it working where a node was given its own agent).
+sub shareSignIn(nodes as object)
+    agent = m.top.getScene().getHttpAgent()
+    for each n in nodes
+        n.setHttpAgent(agent)
+    end for
+end sub

@@ -1,0 +1,376 @@
+' A grid of cards from one source (browse.bs). A library's titles load 60 at a time as the focus
+' nears the end; everything else loads at once. OK opens a title (an episode opens its show at that
+' episode), a collection, playlist or folder opens another grid; Play plays a movie or episode.
+
+sub init()
+    m.grid = m.top.findNode("grid")
+    m.titleLabel = m.top.findNode("title")
+    m.summary = m.top.findNode("summary")
+    m.hint = m.top.findNode("hint")
+    m.empty = m.top.findNode("empty")
+    m.spinner = m.top.findNode("spinner")
+    m.spinner.poster.uri = "pkg:/images/spinner.png"
+    m.options = m.top.findNode("options")
+    m.options.observeField("picked", "onOptionPicked")
+    m.options.observeField("closed", "onOptionsClosed")
+    m.grid.observeField("itemFocused", "onFocused")
+    m.grid.observeField("itemSelected", "onSelected")
+    m.page = 60
+    m.loading = false
+    m.generation = 0
+    m.facets = invalid
+    m.menu = ""
+    m.menuValues = []
+end sub
+
+sub onParams()
+    p = m.top.params
+    m.source = p.source
+    m.libraryView = m.source.kind
+    m.query = libraryQueryDefaults()
+    m.titleLabel.text = valueOr(p.title, "")
+    if m.source.kind = "library"
+        m.hint.text = tr("* for options, sort and filter")
+        callApi("GET", "/libraries/" + valueString(m.source.id) + "/facets", invalid, "onFacets")
+    end if
+    reload()
+end sub
+
+sub takeFocus(_ = invalid as dynamic)
+    if m.options.visible
+        m.options.show = true
+    else
+        m.grid.setFocus(true)
+    end if
+end sub
+
+sub leaving(_ = invalid as dynamic)
+end sub
+
+' Back from a title: watched marks and progress may have changed; the grid loads again where it was.
+sub returned(_ = invalid as dynamic)
+    m.keepFocus = m.grid.itemFocused
+    reload()
+end sub
+
+' --- loading ---
+
+sub reload()
+    m.generation = m.generation + 1
+    m.style = browseStyle(m.source)
+    if m.style = "thumb"
+        m.grid.numColumns = 4
+        m.grid.itemSize = [400, 330]
+        m.grid.itemSpacing = [26, 36]
+        m.grid.numRows = 3
+    else
+        m.grid.numColumns = 7
+        m.grid.itemSize = [220, 330]
+        m.grid.itemSpacing = [32, 40]
+        m.grid.numRows = 3
+    end if
+    m.content = CreateObject("roSGNode", "ContentNode")
+    m.loaded = 0
+    m.total = -1
+    m.loading = false
+    m.empty.visible = false
+    m.spinner.visible = true
+    m.spinner.control = "start"
+    showSummary()
+    loadMore()
+end sub
+
+sub loadMore()
+    if m.loading then return
+    if m.total >= 0 and m.loaded >= m.total then return
+    m.loading = true
+    callApi("GET", browsePath(m.source, m.query, m.loaded, m.page), invalid, "onPage", m.generation)
+end sub
+
+sub onPage(event as object)
+    res = event.getData()
+    if res.tag <> m.generation then return
+    m.loading = false
+    m.spinner.visible = false
+    m.spinner.control = "stop"
+    if not res.ok
+        showEmpty(tr("Couldn't load this.") + " " + res.error)
+        return
+    end if
+    page = browseCards(m.source, res.data)
+    first = m.loaded = 0
+    for each card in page.cards
+        node = m.content.createChild("ContentNode")
+        node.addFields(cardFields())
+        fillCard(node, card, m.style)
+    end for
+    m.loaded = m.loaded + page.cards.Count()
+    m.total = page.total
+    if not browsePaged(m.source) or page.cards.Count() = 0 then m.total = m.loaded
+    if m.source.kind = "person" and res.data <> invalid and res.data.person <> invalid then m.titleLabel.text = res.data.person.name
+    if m.source.kind = "collection" and res.data <> invalid and res.data.collection <> invalid then m.titleLabel.text = res.data.collection.title
+    if m.source.kind = "playlist" and res.data <> invalid and res.data.playlist <> invalid then m.titleLabel.text = res.data.playlist.title
+    if first
+        m.grid.content = m.content
+        if m.loaded = 0 then showEmpty(tr("Nothing here."))
+        if m.keepFocus <> invalid and m.keepFocus > 0 and m.keepFocus < m.loaded then m.grid.jumpToItem = m.keepFocus
+        m.keepFocus = invalid
+    end if
+    showSummary()
+end sub
+
+sub onFacets(event as object)
+    res = event.getData()
+    if res.ok then m.facets = res.data
+end sub
+
+sub showSummary()
+    if m.source.kind = "library"
+        text = querySummary(m.query)
+        if m.total > 0 then text = countLine(m.total) + " · " + text
+        m.summary.text = text
+    else if m.source.kind = "collections"
+        m.summary.text = tr("Collections")
+    else if m.source.kind = "folders"
+        m.summary.text = tr("Folders")
+    else if m.total > 0
+        m.summary.text = countLine(m.total)
+    else
+        m.summary.text = ""
+    end if
+end sub
+
+sub showEmpty(text as string)
+    m.empty.text = text
+    m.empty.visible = true
+end sub
+
+sub onFocused()
+    ' The next page loads while two rows are still left.
+    if m.grid.itemFocused >= m.loaded - m.grid.numColumns * 2 then loadMore()
+end sub
+
+' --- opening ---
+
+function focusedCard() as dynamic
+    i = m.grid.itemFocused
+    if m.content = invalid or i < 0 or i >= m.content.getChildCount() then return invalid
+    return m.content.getChild(i)
+end function
+
+sub onSelected()
+    c = focusedCard()
+    if c = invalid then return
+    libId = invalid
+    if m.source.id <> invalid then libId = m.source.id
+    if c.kind = "episode" and c.parentId <> ""
+        m.top.action = { go: "open", id: c.parentId, episodeId: c.itemId }
+    else if c.kind = "collection"
+        m.top.action = { go: "grid", title: c.title, source: { kind: "collection", id: c.itemId } }
+    else if c.kind = "playlist"
+        m.top.action = { go: "grid", title: c.title, source: { kind: "playlist", id: c.itemId } }
+    else if c.kind = "person"
+        m.top.action = { go: "grid", title: c.title, source: { kind: "person", id: c.itemId } }
+    else if c.kind = "folder"
+        m.top.action = { go: "grid", title: c.title, source: { kind: "folders", id: libId, libraryKind: m.source.libraryKind, path: c.path } }
+    else
+        m.top.action = { go: "open", id: c.itemId }
+    end if
+end sub
+
+function onKeyEvent(key as string, press as boolean) as boolean
+    if not press then return false
+    if m.options.visible then return true
+    if key = "play"
+        c = focusedCard()
+        if c <> invalid and (c.kind = "movie" or c.kind = "episode")
+            m.top.action = { go: "play", id: c.itemId, startMs: c.resumeMs, title: c.title, subtitle: c.line2 }
+            return true
+        end if
+    else if key = "options"
+        openMenu("")
+        return true
+    end if
+    return false
+end function
+
+' --- a library's view, sort and filters (* button) ---
+
+sub openMenu(section as string)
+    m.menu = section
+    entries = []
+    values = []
+    selected = -1
+    q = m.query
+    if section = ""
+        ' The focused card's actions come first, then a library's view, sort and filters.
+        card = focusedCard()
+        for each e in cardMenu(card)
+            entries.Push({ label: e.label, detail: "" })
+            values.Push({ act: e.act })
+        end for
+        m.menuCard = card
+        if entries.Count() > 0 then m.options.title = card.title else m.options.title = tr("Sort and filter")
+        if m.top.params.source.kind <> "library"
+            if entries.Count() = 0 then return
+        else
+            entries.Push({ label: tr("Show"), detail: viewName(m.libraryView) })
+            values.Push("view")
+        end if
+        if m.top.params.source.kind = "library" and m.libraryView = "library"
+            entries.Push({ label: tr("Sort by"), detail: sortName(q.sort) })
+            values.Push("sort")
+            if q.sort <> "shuffle"
+                d = sortDirections(q.sort)
+                detail = d[0]
+                if q.reverse then detail = d[1]
+                entries.Push({ label: tr("Order"), detail: detail })
+                values.Push("order")
+            end if
+            detail = tr("All")
+            if q.unwatched then detail = tr("Unwatched")
+            entries.Push({ label: tr("Watched"), detail: detail })
+            values.Push("unwatched")
+            for each f in facetSections()
+                detail = tr("Any")
+                if q[f.key] <> "" then detail = f.name(q[f.key])
+                entries.Push({ label: f.label, detail: detail })
+                values.Push(f.key)
+            end for
+        end if
+    else if section = "view"
+        m.options.title = tr("Show")
+        views = ["library", "collections"]
+        if m.source.libraryKind = "videos" then views.Push("folders")
+        for i = 0 to views.Count() - 1
+            if views[i] = m.libraryView then selected = i
+            entries.Push({ label: viewName(views[i]), detail: "" })
+            values.Push(views[i])
+        end for
+    else if section = "sort"
+        m.options.title = tr("Sort by")
+        choices = sortChoices()
+        for i = 0 to choices.Count() - 1
+            if choices[i] = q.sort then selected = i
+            entries.Push({ label: sortName(choices[i]), detail: "" })
+            values.Push(choices[i])
+        end for
+    else if section = "order"
+        m.options.title = tr("Order")
+        d = sortDirections(q.sort)
+        entries = [{ label: d[0], detail: "" }, { label: d[1], detail: "" }]
+        values = [false, true]
+        selected = 0
+        if q.reverse then selected = 1
+    else if section = "unwatched"
+        m.options.title = tr("Watched")
+        entries = [{ label: tr("All"), detail: "" }, { label: tr("Unwatched"), detail: "" }]
+        values = [false, true]
+        selected = 0
+        if q.unwatched then selected = 1
+    else
+        for each f in facetSections()
+            if f.key = section
+                m.options.title = f.label
+                entries.Push({ label: tr("Any"), detail: "" })
+                values.Push("")
+                selected = 0
+                i = 1
+                for each v in f.values
+                    if v.value = q[section] then selected = i
+                    entries.Push({ label: f.name(v.value), detail: countLine(v.count) })
+                    values.Push(v.value)
+                    i = i + 1
+                end for
+            end if
+        end for
+    end if
+    m.menuValues = values
+    m.options.entries = entries
+    m.options.selected = selected
+    m.options.visible = true
+    m.options.show = true
+end sub
+
+' facetSections: the filters this library has values for (from /libraries/{id}/facets).
+function facetSections() as object
+    out = []
+    f = m.facets
+    if f = invalid then return out
+    if f.genres <> invalid and f.genres.Count() > 0 then out.Push({ key: "genre", label: tr("Genre"), values: f.genres, name: plainName })
+    if f.decades <> invalid and f.decades.Count() > 0 then out.Push({ key: "decade", label: tr("Decade"), values: f.decades, name: decadeName })
+    if f.resolutions <> invalid and f.resolutions.Count() > 0 then out.Push({ key: "resolution", label: tr("Resolution"), values: f.resolutions, name: resolutionName })
+    return out
+end function
+
+function plainName(v as dynamic) as string
+    return valueString(v)
+end function
+
+function decadeName(v as dynamic) as string
+    return tr("%1s").Replace("%1", valueString(v))
+end function
+
+function viewName(v as string) as string
+    if v = "collections" then return tr("Collections")
+    if v = "folders" then return tr("Folders")
+    return tr("Titles")
+end function
+
+sub onOptionPicked()
+    i = m.options.picked
+    if i < 0 or i >= m.menuValues.Count() then return
+    v = m.menuValues[i]
+    section = m.menu
+    if section = "" and type(v) = "roAssociativeArray"
+        m.menu = ""
+        m.options.visible = false
+        m.grid.setFocus(true)
+        go = runCardAction(m.menuCard, v.act)
+        if go <> invalid then m.top.action = go
+        return
+    end if
+    if section = ""
+        openMenu(v)
+        return
+    end if
+    if section = "view"
+        m.libraryView = v
+        m.source = { kind: v, id: m.top.params.source.id, libraryKind: m.top.params.source.libraryKind }
+    else if section = "sort"
+        if v <> m.query.sort then m.query.reverse = false
+        m.query.sort = v
+    else if section = "order"
+        m.query.reverse = v
+    else if section = "unwatched"
+        m.query.unwatched = v
+    else
+        m.query[section] = valueString(v)
+    end if
+    reload()
+    if section = "view"
+        ' Another view is a different grid: the panel closes onto it.
+        m.menu = ""
+        m.options.visible = false
+        m.grid.setFocus(true)
+    else
+        ' Back to the list of sections, so several can be changed in a row; the grid follows now.
+        openMenu("")
+    end if
+end sub
+
+' A card's watched or Watchlist change is saved: the grid loads again where it was.
+sub onCardChanged(event as object)
+    m.keepFocus = m.grid.itemFocused
+    reload()
+end sub
+
+sub onOptionsClosed()
+    if m.menu <> ""
+        openMenu("")
+    else
+        m.menu = ""
+        m.options.visible = false
+        m.grid.setFocus(true)
+    end if
+end sub

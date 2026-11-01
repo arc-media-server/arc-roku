@@ -1,0 +1,111 @@
+sub init()
+    m.top.findNode("title").text = tr("Find your Arc server")
+    m.top.findNode("lead").text = tr("Pick the server Arc is running on. It needs to be on the same network as this Roku, or you can type its address.")
+    m.list = m.top.findNode("list")
+    m.status = m.top.findNode("status")
+    m.found = []
+    m.list.observeField("itemSelected", "onSelected")
+    showList()
+    m.status.text = tr("Looking on your network…")
+    m.discover = CreateObject("roSGNode", "DiscoverTask")
+    m.discover.observeField("found", "onFound")
+    m.discover.observeField("done", "onDone")
+    m.discover.control = "RUN"
+end sub
+
+sub takeFocus(_ = invalid as dynamic)
+    m.list.setFocus(true)
+end sub
+
+sub leaving(_ = invalid as dynamic)
+    if m.discover <> invalid then m.discover.control = "STOP"
+end sub
+
+sub returned(_ = invalid as dynamic)
+end sub
+
+sub onFound()
+    m.found = m.discover.found
+    showList()
+end sub
+
+sub onDone()
+    if m.found.Count() = 0
+        m.status.text = tr("No Arc servers answered. Check Arc is running, or type its address.")
+    else
+        m.status.text = ""
+    end if
+end sub
+
+sub showList()
+    content = CreateObject("roSGNode", "ContentNode")
+    for each s in m.found
+        row = content.createChild("ContentNode")
+        row.title = s.name + "  ·  " + s.url.Replace("http://", "")
+    end for
+    other = content.createChild("ContentNode")
+    other.title = tr("Enter an address")
+    m.list.content = content
+end sub
+
+sub onSelected()
+    i = m.list.itemSelected
+    if i < m.found.Count()
+        s = m.found[i]
+        m.top.action = { go: "server", url: s.url, name: s.name }
+    else
+        askAddress()
+    end if
+end sub
+
+sub askAddress()
+    d = CreateObject("roSGNode", "StandardKeyboardDialog")
+    d.title = tr("Arc's address")
+    d.message = [tr("For example 192.168.1.20 or arc.example.com. Arc's port, 8099, is added if you leave it out.")]
+    d.buttons = [tr("Connect"), tr("Cancel")]
+    d.observeField("buttonSelected", "onAddressButton")
+    m.dialog = d
+    m.top.getScene().dialog = d
+end sub
+
+sub onAddressButton()
+    d = m.dialog
+    if d.buttonSelected = 0
+        url = normaliseServer(d.text)
+        d.close = true
+        if url = "" then return
+        m.status.text = tr("Connecting…")
+        task = CreateObject("roSGNode", "ApiTask")
+        task.request = { method: "GET", path: "/discover", server: url, noAuth: true, tag: url, timeoutMs: 8000 }
+        task.observeField("response", "onChecked")
+        keepTask(task)
+        task.control = "RUN"
+    else
+        d.close = true
+    end if
+end sub
+
+' /discover answers only on the home network; from elsewhere (a remote address) it's 404, so
+' that still counts as Arc if /auth/status answers like Arc.
+sub onChecked(event as object)
+    res = event.getData()
+    url = res.tag
+    if res.ok and res.data <> invalid and res.data.product = "arc"
+        m.top.action = { go: "server", url: url, name: res.data.name }
+        return
+    end if
+    task = CreateObject("roSGNode", "ApiTask")
+    task.request = { method: "GET", path: "/auth/status", server: url, noAuth: true, tag: url, timeoutMs: 8000 }
+    task.observeField("response", "onStatusChecked")
+    keepTask(task)
+    task.control = "RUN"
+end sub
+
+sub onStatusChecked(event as object)
+    res = event.getData()
+    if res.ok and res.data <> invalid and res.data.signed_in <> invalid
+        m.top.action = { go: "server", url: res.tag, name: res.tag.Replace("http://", "").Replace("https://", "") }
+    else
+        m.status.text = tr("Couldn't find Arc at that address.")
+    end if
+end sub
