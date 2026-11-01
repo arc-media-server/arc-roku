@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- The player's side panel (the * button): a list of sections, then one section's choices with the
+     current one ticked. Set "title", "entries" ([{ label, detail }]) and "selected" (-1: a plain
+     list); "picked" is set to the chosen index, "closed" when Back leaves it. -->
+<component name="OptionsPanel" extends="Group">
+    <interface>
+        <field id="title" type="string" onChange="onTitle" />
+        <field id="entries" type="array" />
+        <field id="selected" type="integer" value="-1" />
+        <field id="show" type="boolean" alwaysNotify="true" onChange="onShow" />
+        <field id="picked" type="integer" alwaysNotify="true" />
+        <field id="closed" type="boolean" alwaysNotify="true" />
+    </interface>
+    <children>
+        <Rectangle width="760" height="1080" translation="[1160, 0]" color="0x0B1214F0" />
+        <Label id="heading" translation="[1220, 80]" width="640" font="font:MediumBoldSystemFont" color="0xF0F4F4FF" />
+        <LabelList id="plain" translation="[1220, 160]" itemSize="[640, 72]" numRows="11" vertFocusAnimationStyle="floatingFocus"
+            color="0xC6D0D0FF" focusedColor="0x0B1214FF" focusBitmapBlendColor="0x2BB3A3FF" />
+        <RadioButtonList id="radio" translation="[1220, 160]" itemSize="[640, 72]" numRows="11" vertFocusAnimationStyle="floatingFocus"
+            color="0xC6D0D0FF" focusedColor="0x0B1214FF" focusBitmapBlendColor="0x2BB3A3FF" visible="false" />
+    </children>
+</component>

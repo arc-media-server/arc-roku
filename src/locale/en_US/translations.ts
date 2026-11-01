@@ -5,8 +5,24 @@
 <context>
 <name>default</name>
 <message>
+  <source>* Audio, subtitles and more</source>
+  <translation>* Audio, subtitles and more</translation>
+</message>
+<message>
   <source>* for options</source>
   <translation>* for options</translation>
+</message>
+<message>
+  <source>%1 channels</source>
+  <translation>%1 channels</translation>
+</message>
+<message>
+  <source>%1 kbps</source>
+  <translation>%1 kbps</translation>
+</message>
+<message>
+  <source>%1 Mbps</source>
+  <translation>%1 Mbps</translation>
 </message>
 <message>
   <source>%1 new episodes</source>
@@ -45,12 +61,28 @@
   <translation>Arc's address</translation>
 </message>
 <message>
+  <source>Audio</source>
+  <translation>Audio</translation>
+</message>
+<message>
+  <source>Automatic</source>
+  <translation>Automatic</translation>
+</message>
+<message>
   <source>Can't reach Arc</source>
   <translation>Can't reach Arc</translation>
 </message>
 <message>
   <source>Cancel</source>
   <translation>Cancel</translation>
+</message>
+<message>
+  <source>Chapter %1</source>
+  <translation>Chapter %1</translation>
+</message>
+<message>
+  <source>Chapters</source>
+  <translation>Chapters</translation>
 </message>
 <message>
   <source>Check that Arc is running and this Roku is on the same network.</source>
@@ -105,6 +137,10 @@
   <translation>For example 192.168.1.20 or arc.example.com. Arc's port, 8099, is added if you leave it out.</translation>
 </message>
 <message>
+  <source>Forced</source>
+  <translation>Forced</translation>
+</message>
+<message>
   <source>Go to show</source>
   <translation>Go to show</translation>
 </message>
@@ -125,6 +161,14 @@
   <translation>Mark as watched</translation>
 </message>
 <message>
+  <source>Maximum (%1)</source>
+  <translation>Maximum (%1)</translation>
+</message>
+<message>
+  <source>Mono</source>
+  <translation>Mono</translation>
+</message>
+<message>
   <source>New code</source>
   <translation>New code</translation>
 </message>
@@ -141,12 +185,28 @@
   <translation>Nothing to show yet. Titles appear here once Arc has scanned your libraries.</translation>
 </message>
 <message>
+  <source>Off</source>
+  <translation>Off</translation>
+</message>
+<message>
   <source>OK</source>
   <translation>OK</translation>
 </message>
 <message>
+  <source>OK to play now · Back to keep watching</source>
+  <translation>OK to play now · Back to keep watching</translation>
+</message>
+<message>
   <source>On your phone or computer, open Arc, choose Link a Device from your profile menu, and type this code.</source>
   <translation>On your phone or computer, open Arc, choose Link a Device from your profile menu, and type this code.</translation>
+</message>
+<message>
+  <source>Options</source>
+  <translation>Options</translation>
+</message>
+<message>
+  <source>Original</source>
+  <translation>Original</translation>
 </message>
 <message>
   <source>Paused</source>
@@ -173,12 +233,24 @@
   <translation>Play from the beginning</translation>
 </message>
 <message>
+  <source>Play Next</source>
+  <translation>Play Next</translation>
+</message>
+<message>
   <source>Playback was stopped from Arc.</source>
   <translation>Playback was stopped from Arc.</translation>
 </message>
 <message>
+  <source>Playing in %1</source>
+  <translation>Playing in %1</translation>
+</message>
+<message>
   <source>Press Back to close.</source>
   <translation>Press Back to close.</translation>
+</message>
+<message>
+  <source>Quality</source>
+  <translation>Quality</translation>
 </message>
 <message>
   <source>Recently Added in %1</source>
@@ -217,6 +289,26 @@
   <translation>Signed in as %1</translation>
 </message>
 <message>
+  <source>Skip Credits</source>
+  <translation>Skip Credits</translation>
+</message>
+<message>
+  <source>Skip Intro</source>
+  <translation>Skip Intro</translation>
+</message>
+<message>
+  <source>Skip Recap</source>
+  <translation>Skip Recap</translation>
+</message>
+<message>
+  <source>Stereo</source>
+  <translation>Stereo</translation>
+</message>
+<message>
+  <source>Subtitles</source>
+  <translation>Subtitles</translation>
+</message>
+<message>
   <source>Switch profile</source>
   <translation>Switch profile</translation>
 </message>
@@ -233,8 +325,16 @@
   <translation>This Roku couldn't play this title.</translation>
 </message>
 <message>
+  <source>Track %1</source>
+  <translation>Track %1</translation>
+</message>
+<message>
   <source>Try again</source>
   <translation>Try again</translation>
+</message>
+<message>
+  <source>Up next</source>
+  <translation>Up next</translation>
 </message>
 <message>
   <source>Up Next</source>
@@ -243,6 +343,10 @@
 <message>
   <source>Use another server</source>
   <translation>Use another server</translation>
+</message>
+<message>
+  <source>Version</source>
+  <translation>Version</translation>
 </message>
 <message>
   <source>Waiting for the code to be approved…</source>

@@ -2,7 +2,8 @@
 <!-- One call to Arc's /api/v1, off the render thread. Set "request" and observe "response". -->
 <component name="ApiTask" extends="Task">
     <interface>
-        <!-- { method, path, body, tag }: tag comes back untouched for the caller. -->
+        <!-- { method, path, body, tag, text }: tag comes back untouched for the caller; text: true
+             returns the body as a string instead of parsed JSON (subtitles). -->
         <field id="request" type="assocarray" />
         <!-- { ok, status, data, error, tag } -->
         <field id="response" type="assocarray" />

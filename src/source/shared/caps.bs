@@ -65,7 +65,9 @@ end function
 function buildCaps(video as object, audio as object, passthrough as object, display as object, height as integer, channels as integer) as object
     containers = ["mp4", "mkv", "webm", "mpegts"]
     v = []
-    if video.h264 = true then v.Push("h264")
+    ' Every Roku plays H.264, and Arc converts to it, so it is always listed (a Roku that answers
+    ' CanDecodeVideo oddly would otherwise be told nothing can be played).
+    v.Push("h264")
     if video.hevc = true then v.Push("hevc")
     if video.vp9 = true then v.Push("vp9")
     ' Roku plays AV1 only from DASH, which Arc doesn't send, so AV1 files are converted.

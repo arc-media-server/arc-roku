@@ -1,0 +1,54 @@
+sub init()
+    m.heading = m.top.findNode("heading")
+    m.plain = m.top.findNode("plain")
+    m.radio = m.top.findNode("radio")
+    m.plain.observeField("itemSelected", "onPlainPick")
+    m.radio.observeField("itemSelected", "onRadioPick")
+end sub
+
+sub onTitle()
+    m.heading.text = m.top.title
+end sub
+
+' onShow fills the list for the current title, entries and selected, and takes the focus.
+sub onShow()
+    content = CreateObject("roSGNode", "ContentNode")
+    for each e in m.top.entries
+        row = content.createChild("ContentNode")
+        text = e.label
+        if e.detail <> invalid and e.detail <> "" then text = text + "   " + e.detail
+        row.title = text
+    end for
+    sel = m.top.selected
+    if sel >= 0
+        m.plain.visible = false
+        m.radio.visible = true
+        m.radio.content = content
+        m.radio.checkedItem = sel
+        m.radio.jumpToItem = sel
+        m.radio.setFocus(true)
+    else
+        m.radio.visible = false
+        m.plain.visible = true
+        m.plain.content = content
+        m.plain.jumpToItem = 0
+        m.plain.setFocus(true)
+    end if
+end sub
+
+sub onPlainPick()
+    m.top.picked = m.plain.itemSelected
+end sub
+
+sub onRadioPick()
+    m.top.picked = m.radio.itemSelected
+end sub
+
+function onKeyEvent(key as string, press as boolean) as boolean
+    if not press then return false
+    if key = "back" or key = "options" or key = "left"
+        m.top.closed = true
+        return true
+    end if
+    return false
+end function

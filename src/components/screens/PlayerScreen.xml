@@ -13,9 +13,13 @@
     <script type="text/brightscript" uri="pkg:/source/shared/api.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/format.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/bif.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/tracks.bs" />
     <children>
         <Rectangle width="1920" height="1080" color="0x000000FF" />
         <Video id="video" width="1920" height="1080" enableUI="false" />
+        <!-- Subtitles are drawn here from Arc's WebVTT, as the LG/Samsung app does: the same look
+             (the profile's size, colour, background and position) on every Roku. -->
+        <Group id="subs" />
         <BusySpinner id="spinner" translation="[912, 492]" />
         <Group id="controls" visible="false">
             <Poster uri="pkg:/images/shade.png" width="1920" height="1080" rotation="0" opacity="0.8" />
@@ -31,12 +35,28 @@
             <Label id="position" translation="[120, 970]" width="400" font="font:SmallSystemFont" color="0xF0F4F4FF" />
             <Label id="remaining" translation="[1400, 970]" width="400" horizAlign="right" font="font:SmallSystemFont" color="0xF0F4F4FF" />
             <Label id="state" translation="[0, 880]" width="1920" horizAlign="center" font="font:SmallBoldSystemFont" color="0xF0F4F4FF" />
+            <Label id="hint" translation="[1100, 80]" width="700" horizAlign="right" font="font:SmallestSystemFont" color="0xC6D0D0FF" />
+            <Label id="chapter" translation="[120, 880]" width="900" font="font:SmallestSystemFont" color="0xC6D0D0FF" />
         </Group>
+        <Group id="skip" visible="false" translation="[1460, 840]">
+            <Rectangle width="340" height="72" color="0xF0F4F4FF" />
+            <Label id="skipText" width="340" height="72" horizAlign="center" vertAlign="center" font="font:SmallBoldSystemFont" color="0x0B1214FF" />
+        </Group>
+        <Group id="upNext" visible="false" translation="[1160, 640]">
+            <Rectangle width="660" height="340" color="0x0B1214F0" />
+            <Poster id="upNextThumb" translation="[30, 30]" width="320" height="180" loadDisplayMode="scaleToZoom" />
+            <Label id="upNextHeading" translation="[370, 30]" width="260" font="font:SmallestBoldSystemFont" color="0x2BB3A3FF" />
+            <Label id="upNextTitle" translation="[370, 66]" width="260" height="140" wrap="true" maxLines="3" font="font:SmallSystemFont" color="0xF0F4F4FF" />
+            <Label id="upNextCount" translation="[30, 230]" width="600" font="font:SmallBoldSystemFont" color="0xF0F4F4FF" />
+            <Label id="upNextKeys" translation="[30, 280]" width="600" font="font:SmallestSystemFont" color="0xC6D0D0FF" />
+        </Group>
+        <OptionsPanel id="options" visible="false" />
         <Label id="error" translation="[160, 460]" width="1600" horizAlign="center" wrap="true" font="font:MediumSystemFont" color="0xF0F4F4FF" visible="false" />
         <Timer id="progressTimer" repeat="true" duration="10" />
         <Timer id="pingTimer" repeat="true" duration="30" />
-        <Timer id="tick" repeat="true" duration="0.5" />
+        <Timer id="tick" repeat="true" duration="0.25" />
         <Timer id="hideTimer" repeat="false" duration="5" />
         <Timer id="seekTimer" repeat="false" duration="0.9" />
+        <Timer id="upNextTimer" repeat="true" duration="1" />
     </children>
 </component>
