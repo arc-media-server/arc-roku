@@ -15,6 +15,7 @@
     <script type="text/brightscript" uri="pkg:/source/shared/caps.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/home.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/cards.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/browse.bs" />
     <children>
         <Poster id="backdrop" width="1920" height="1080" loadDisplayMode="scaleToZoom" loadWidth="1920" loadHeight="1080" />
         <Poster uri="pkg:/images/shade.png" width="1920" height="1080" />
@@ -27,7 +28,8 @@
             rowLabelColor="0xF0F4F4FF" rowLabelFont="font:MediumBoldSystemFont" drawFocusFeedback="false"
             rowFocusAnimationStyle="floatingFocus" vertFocusAnimationStyle="fixedFocus" />
         <Label id="empty" translation="[120, 620]" width="1400" wrap="true" font="font:MediumSystemFont" color="0x9AA7A7FF" visible="false" />
-        <Label id="hint" translation="[1400, 60]" width="400" horizAlign="right" font="font:SmallestSystemFont" color="0x9AA7A7FF" />
+        <Label id="hint" translation="[1000, 60]" width="800" horizAlign="right" font="font:SmallestSystemFont" color="0x9AA7A7FF" />
+        <OptionsPanel id="nav" side="left" visible="false" />
         <Timer id="heroDelay" repeat="false" duration="0.3" />
     </children>
 </component>

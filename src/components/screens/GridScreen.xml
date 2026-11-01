@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- A grid of titles: a library (with its collections and folders), a collection, the watchlist,
+     playlists and a playlist, or a person's titles. params: { title, source: { kind, id,
+     libraryKind, path } } (see source/shared/browse.bs). The * button sorts and filters a library. -->
+<component name="GridScreen" extends="Group">
+    <interface>
+        <field id="params" type="assocarray" onChange="onParams" />
+        <field id="action" type="assocarray" alwaysNotify="true" />
+        <function name="takeFocus" />
+        <function name="leaving" />
+        <function name="returned" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/source/shared/http.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/api.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/format.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/caps.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/home.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/cards.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/browse.bs" />
+    <children>
+        <Rectangle width="1920" height="1080" color="0x0B1214FF" />
+        <Label id="title" translation="[120, 70]" width="1300" font="font:LargeBoldSystemFont" color="0xF0F4F4FF" />
+        <Label id="summary" translation="[120, 150]" width="1300" font="font:SmallSystemFont" color="0x9AA7A7FF" />
+        <Label id="hint" translation="[1300, 80]" width="500" horizAlign="right" font="font:SmallestSystemFont" color="0x9AA7A7FF" />
+        <MarkupGrid id="grid" translation="[120, 230]" itemComponentName="CardItem" drawFocusFeedback="false"
+            vertFocusAnimationStyle="fixedFocusWrap" />
+        <Label id="empty" translation="[120, 300]" width="1500" wrap="true" font="font:MediumSystemFont" color="0x9AA7A7FF" visible="false" />
+        <BusySpinner id="spinner" translation="[912, 560]" />
+        <OptionsPanel id="options" visible="false" />
+    </children>
+</component>

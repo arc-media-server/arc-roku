@@ -1,0 +1,132 @@
+' Searching as you type: half a second after the last letter, GET /search?q=. Right moves from the
+' keyboard to the results, Left from the first card back to the keyboard.
+
+sub init()
+    m.keyboard = m.top.findNode("keyboard")
+    m.results = m.top.findNode("results")
+    m.note = m.top.findNode("note")
+    m.top.findNode("heading").text = tr("Search")
+    m.typing = m.top.findNode("typing")
+    m.typing.observeField("fire", "search")
+    m.keyboard.observeField("text", "onText")
+    m.results.observeField("rowItemSelected", "onSelected")
+    m.note.text = tr("Search for films, shows, episodes, collections and people.")
+    m.query = ""
+    m.generation = 0
+    m.content = invalid
+end sub
+
+sub takeFocus(_ = invalid as dynamic)
+    if m.content <> invalid and m.inResults = true
+        m.results.setFocus(true)
+    else
+        m.keyboard.setFocus(true)
+    end if
+end sub
+
+sub leaving(_ = invalid as dynamic)
+end sub
+
+sub returned(_ = invalid as dynamic)
+end sub
+
+sub onText()
+    m.typing.control = "stop"
+    m.typing.control = "start"
+end sub
+
+sub search()
+    q = m.keyboard.text.Trim()
+    if q = m.query then return
+    m.query = q
+    m.generation = m.generation + 1
+    if q = ""
+        showRows([])
+        m.note.text = tr("Search for films, shows, episodes, collections and people.")
+        return
+    end if
+    callApi("GET", "/search" + queryString({ q: q }), invalid, "onResults", m.generation)
+end sub
+
+sub onResults(event as object)
+    res = event.getData()
+    if res.tag <> m.generation then return
+    if not res.ok
+        showRows([])
+        m.note.text = tr("Couldn't search.") + " " + res.error
+        return
+    end if
+    rows = searchRows(res.data)
+    showRows(rows)
+    if rows.Count() = 0 then m.note.text = tr("Nothing matches “%1”.").Replace("%1", m.query) else m.note.text = ""
+end sub
+
+sub showRows(rows as object)
+    content = CreateObject("roSGNode", "ContentNode")
+    sizes = []
+    heights = []
+    for each r in rows
+        row = content.createChild("ContentNode")
+        row.title = r.title
+        for each card in r.cards
+            node = row.createChild("ContentNode")
+            node.addFields(cardFields())
+            fillCard(node, card, r.style)
+        end for
+        if r.style = "thumb" then sizes.Push([400, 330]) else sizes.Push([220, 330])
+        heights.Push(420)
+    end for
+    m.results.rowItemSize = sizes
+    m.results.rowHeights = heights
+    m.results.content = content
+    m.content = content
+    if rows.Count() = 0
+        m.content = invalid
+        m.inResults = false
+        if not m.keyboard.isInFocusChain() then m.keyboard.setFocus(true)
+    end if
+end sub
+
+function focusedCard() as dynamic
+    f = m.results.rowItemFocused
+    if f = invalid or f.Count() < 2 or m.content = invalid then return invalid
+    row = m.content.getChild(f[0])
+    if row = invalid then return invalid
+    return row.getChild(f[1])
+end function
+
+sub onSelected()
+    c = focusedCard()
+    if c = invalid then return
+    if c.kind = "episode" and c.parentId <> ""
+        m.top.action = { go: "open", id: c.parentId, episodeId: c.itemId }
+    else if c.kind = "collection"
+        m.top.action = { go: "grid", title: c.title, source: { kind: "collection", id: c.itemId } }
+    else if c.kind = "person"
+        m.top.action = { go: "grid", title: c.title, source: { kind: "person", id: c.itemId } }
+    else
+        m.top.action = { go: "open", id: c.itemId }
+    end if
+end sub
+
+function onKeyEvent(key as string, press as boolean) as boolean
+    if not press then return false
+    if key = "right" and m.keyboard.isInFocusChain() and m.content <> invalid
+        m.inResults = true
+        m.results.setFocus(true)
+        return true
+    end if
+    if key = "left" and m.results.hasFocus()
+        m.inResults = false
+        m.keyboard.setFocus(true)
+        return true
+    end if
+    if key = "play"
+        c = focusedCard()
+        if c <> invalid and m.results.hasFocus() and (c.kind = "movie" or c.kind = "episode")
+            m.top.action = { go: "play", id: c.itemId, startMs: c.resumeMs, title: c.title, subtitle: c.line2 }
+            return true
+        end if
+    end if
+    return false
+end function

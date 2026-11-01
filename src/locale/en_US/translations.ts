@@ -9,8 +9,8 @@
   <translation>* Audio, subtitles and more</translation>
 </message>
 <message>
-  <source>* for options</source>
-  <translation>* for options</translation>
+  <source>* to sort and filter</source>
+  <translation>* to sort and filter</translation>
 </message>
 <message>
   <source>%1 channels</source>
@@ -29,6 +29,10 @@
   <translation>%1 new episodes</translation>
 </message>
 <message>
+  <source>%1 titles</source>
+  <translation>%1 titles</translation>
+</message>
+<message>
   <source>%1's PIN</source>
   <translation>%1's PIN</translation>
 </message>
@@ -45,8 +49,32 @@
   <translation>%1m</translation>
 </message>
 <message>
+  <source>%1s</source>
+  <translation>%1s</translation>
+</message>
+<message>
+  <source>1 title</source>
+  <translation>1 title</translation>
+</message>
+<message>
+  <source>A to Z</source>
+  <translation>A to Z</translation>
+</message>
+<message>
+  <source>Actor</source>
+  <translation>Actor</translation>
+</message>
+<message>
   <source>Add to Watchlist</source>
   <translation>Add to Watchlist</translation>
+</message>
+<message>
+  <source>All</source>
+  <translation>All</translation>
+</message>
+<message>
+  <source>Any</source>
+  <translation>Any</translation>
 </message>
 <message>
   <source>Arc couldn't start this title.</source>
@@ -93,6 +121,10 @@
   <translation>Christmas Films</translation>
 </message>
 <message>
+  <source>Collections</source>
+  <translation>Collections</translation>
+</message>
+<message>
   <source>Connect</source>
   <translation>Connect</translation>
 </message>
@@ -121,16 +153,44 @@
   <translation>Couldn't load this title.</translation>
 </message>
 <message>
+  <source>Couldn't load this.</source>
+  <translation>Couldn't load this.</translation>
+</message>
+<message>
   <source>Couldn't reach Arc.</source>
   <translation>Couldn't reach Arc.</translation>
+</message>
+<message>
+  <source>Couldn't search.</source>
+  <translation>Couldn't search.</translation>
+</message>
+<message>
+  <source>Date added</source>
+  <translation>Date added</translation>
+</message>
+<message>
+  <source>Decade</source>
+  <translation>Decade</translation>
+</message>
+<message>
+  <source>Director</source>
+  <translation>Director</translation>
 </message>
 <message>
   <source>Enter an address</source>
   <translation>Enter an address</translation>
 </message>
 <message>
+  <source>Episodes</source>
+  <translation>Episodes</translation>
+</message>
+<message>
   <source>Find your Arc server</source>
   <translation>Find your Arc server</translation>
+</message>
+<message>
+  <source>Folders</source>
+  <translation>Folders</translation>
 </message>
 <message>
   <source>For example 192.168.1.20 or arc.example.com. Arc's port, 8099, is added if you leave it out.</source>
@@ -141,16 +201,48 @@
   <translation>Forced</translation>
 </message>
 <message>
+  <source>Genre</source>
+  <translation>Genre</translation>
+</message>
+<message>
   <source>Go to show</source>
   <translation>Go to show</translation>
+</message>
+<message>
+  <source>Highest first</source>
+  <translation>Highest first</translation>
 </message>
 <message>
   <source>Horror for Halloween</source>
   <translation>Horror for Halloween</translation>
 </message>
 <message>
+  <source>Last watched</source>
+  <translation>Last watched</translation>
+</message>
+<message>
+  <source>Least recent first</source>
+  <translation>Least recent first</translation>
+</message>
+<message>
+  <source>Left for libraries and search · * for options</source>
+  <translation>Left for libraries and search · * for options</translation>
+</message>
+<message>
+  <source>Length</source>
+  <translation>Length</translation>
+</message>
+<message>
+  <source>Longest first</source>
+  <translation>Longest first</translation>
+</message>
+<message>
   <source>Looking on your network…</source>
   <translation>Looking on your network…</translation>
+</message>
+<message>
+  <source>Lowest first</source>
+  <translation>Lowest first</translation>
 </message>
 <message>
   <source>Mark as unwatched</source>
@@ -169,8 +261,16 @@
   <translation>Mono</translation>
 </message>
 <message>
+  <source>Most recent first</source>
+  <translation>Most recent first</translation>
+</message>
+<message>
   <source>New code</source>
   <translation>New code</translation>
+</message>
+<message>
+  <source>Newest first</source>
+  <translation>Newest first</translation>
 </message>
 <message>
   <source>No Arc servers answered. Check Arc is running, or type its address.</source>
@@ -179,6 +279,14 @@
 <message>
   <source>Nothing here yet. Add a library in Arc's settings on the web.</source>
   <translation>Nothing here yet. Add a library in Arc's settings on the web.</translation>
+</message>
+<message>
+  <source>Nothing here.</source>
+  <translation>Nothing here.</translation>
+</message>
+<message>
+  <source>Nothing matches “%1”.</source>
+  <translation>Nothing matches “%1”.</translation>
 </message>
 <message>
   <source>Nothing to show yet. Titles appear here once Arc has scanned your libraries.</source>
@@ -197,6 +305,10 @@
   <translation>OK to play now · Back to keep watching</translation>
 </message>
 <message>
+  <source>Oldest first</source>
+  <translation>Oldest first</translation>
+</message>
+<message>
   <source>On your phone or computer, open Arc, choose Link a Device from your profile menu, and type this code.</source>
   <translation>On your phone or computer, open Arc, choose Link a Device from your profile menu, and type this code.</translation>
 </message>
@@ -205,12 +317,20 @@
   <translation>Options</translation>
 </message>
 <message>
+  <source>Order</source>
+  <translation>Order</translation>
+</message>
+<message>
   <source>Original</source>
   <translation>Original</translation>
 </message>
 <message>
   <source>Paused</source>
   <translation>Paused</translation>
+</message>
+<message>
+  <source>People</source>
+  <translation>People</translation>
 </message>
 <message>
   <source>Pick the server Arc is running on. It needs to be on the same network as this Roku, or you can type its address.</source>
@@ -245,20 +365,40 @@
   <translation>Playing in %1</translation>
 </message>
 <message>
+  <source>Playlists</source>
+  <translation>Playlists</translation>
+</message>
+<message>
   <source>Press Back to close.</source>
   <translation>Press Back to close.</translation>
+</message>
+<message>
+  <source>Producer</source>
+  <translation>Producer</translation>
 </message>
 <message>
   <source>Quality</source>
   <translation>Quality</translation>
 </message>
 <message>
+  <source>Rating</source>
+  <translation>Rating</translation>
+</message>
+<message>
   <source>Recently Added in %1</source>
   <translation>Recently Added in %1</translation>
 </message>
 <message>
+  <source>Release date</source>
+  <translation>Release date</translation>
+</message>
+<message>
   <source>Remove from Watchlist</source>
   <translation>Remove from Watchlist</translation>
+</message>
+<message>
+  <source>Resolution</source>
+  <translation>Resolution</translation>
 </message>
 <message>
   <source>Resume %1</source>
@@ -273,8 +413,28 @@
   <translation>Romance for Valentine's Day</translation>
 </message>
 <message>
+  <source>Search</source>
+  <translation>Search</translation>
+</message>
+<message>
+  <source>Search for films, shows, episodes, collections and people.</source>
+  <translation>Search for films, shows, episodes, collections and people.</translation>
+</message>
+<message>
   <source>Season %1</source>
   <translation>Season %1</translation>
+</message>
+<message>
+  <source>Shortest first</source>
+  <translation>Shortest first</translation>
+</message>
+<message>
+  <source>Show</source>
+  <translation>Show</translation>
+</message>
+<message>
+  <source>Shuffle</source>
+  <translation>Shuffle</translation>
 </message>
 <message>
   <source>Sign in to %1</source>
@@ -301,6 +461,14 @@
   <translation>Skip Recap</translation>
 </message>
 <message>
+  <source>Sort and filter</source>
+  <translation>Sort and filter</translation>
+</message>
+<message>
+  <source>Sort by</source>
+  <translation>Sort by</translation>
+</message>
+<message>
   <source>Stereo</source>
   <translation>Stereo</translation>
 </message>
@@ -325,12 +493,24 @@
   <translation>This Roku couldn't play this title.</translation>
 </message>
 <message>
+  <source>Title</source>
+  <translation>Title</translation>
+</message>
+<message>
+  <source>Titles</source>
+  <translation>Titles</translation>
+</message>
+<message>
   <source>Track %1</source>
   <translation>Track %1</translation>
 </message>
 <message>
   <source>Try again</source>
   <translation>Try again</translation>
+</message>
+<message>
+  <source>Unwatched</source>
+  <translation>Unwatched</translation>
 </message>
 <message>
   <source>Up next</source>
@@ -353,12 +533,28 @@
   <translation>Waiting for the code to be approved…</translation>
 </message>
 <message>
+  <source>Watched</source>
+  <translation>Watched</translation>
+</message>
+<message>
   <source>Watchlist</source>
   <translation>Watchlist</translation>
 </message>
 <message>
   <source>Who's watching?</source>
   <translation>Who's watching?</translation>
+</message>
+<message>
+  <source>Writer</source>
+  <translation>Writer</translation>
+</message>
+<message>
+  <source>Year</source>
+  <translation>Year</translation>
+</message>
+<message>
+  <source>Z to A</source>
+  <translation>Z to A</translation>
 </message>
 </context>
 </TS>

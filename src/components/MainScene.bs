@@ -159,6 +159,10 @@ sub onAction(event as object)
         ' Up Next replaces the player that's finishing.
         if a.replace = true then pop()
         push("PlayerScreen", { id: a.id, startMs: a.startMs, title: a.title, subtitle: a.subtitle })
+    else if go = "grid"
+        push("GridScreen", { title: a.title, source: a.source })
+    else if go = "search"
+        push("SearchScreen", {})
     else if go = "back"
         pop()
     end if

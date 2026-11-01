@@ -6,6 +6,10 @@ sub init()
     m.radio.observeField("itemSelected", "onRadioPick")
 end sub
 
+sub onSide()
+    if m.top.side = "left" then m.top.translation = [-1160, 0] else m.top.translation = [0, 0]
+end sub
+
 sub onTitle()
     m.heading.text = m.top.title
 end sub
@@ -46,7 +50,9 @@ end sub
 
 function onKeyEvent(key as string, press as boolean) as boolean
     if not press then return false
-    if key = "back" or key = "options" or key = "left"
+    closeKey = "left"
+    if m.top.side = "left" then closeKey = "right"
+    if key = "back" or key = "options" or key = closeKey
         m.top.closed = true
         return true
     end if
