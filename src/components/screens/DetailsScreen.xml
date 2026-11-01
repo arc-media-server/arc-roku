@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- A title's page, as Arc's other TV apps': the artwork full screen, its logo, details and
+     overview, the buttons (Play or Resume, Play from the beginning, Watched, Watchlist), and for a
+     show, a row of episodes for each season. -->
+<component name="DetailsScreen" extends="Group">
+    <interface>
+        <field id="params" type="assocarray" onChange="onParams" />
+        <field id="action" type="assocarray" alwaysNotify="true" />
+        <function name="takeFocus" />
+        <function name="leaving" />
+        <function name="returned" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/source/shared/http.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/api.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/format.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/cards.bs" />
+    <children>
+        <Poster id="backdrop" width="1920" height="1080" loadDisplayMode="scaleToZoom" loadWidth="1920" loadHeight="1080" />
+        <Poster uri="pkg:/images/shade.png" width="1920" height="1080" />
+        <Poster id="logo" translation="[120, 110]" width="640" height="200" loadDisplayMode="scaleToFit" loadWidth="640" loadHeight="200" />
+        <Label id="title" translation="[120, 180]" width="1200" font="font:LargeBoldSystemFont" color="0xF0F4F4FF" />
+        <Label id="meta" translation="[120, 340]" width="1300" font="font:SmallSystemFont" color="0xC6D0D0FF" />
+        <Label id="overview" translation="[120, 390]" width="1000" height="170" wrap="true" maxLines="4" font="font:SmallSystemFont" color="0xC6D0D0FF" />
+        <ButtonGroup id="buttons" iconUri="" focusedIconUri="" translation="[120, 590]" layoutDirection="horiz" itemSpacings="[20]" minWidth="240" />
+        <RowList id="episodes" translation="[120, 720]" itemComponentName="CardItem" numRows="1" itemSize="[1800, 380]"
+            rowItemSize="[[400, 330]]" rowItemSpacing="[[28, 0]]" itemSpacing="[0, 40]" showRowLabel="[true]"
+            rowLabelOffset="[[0, 16]]" rowLabelColor="0xF0F4F4FF" rowLabelFont="font:MediumBoldSystemFont"
+            drawFocusFeedback="false" rowFocusAnimationStyle="floatingFocus" visible="false" />
+        <Label id="error" translation="[120, 680]" width="1400" wrap="true" font="font:SmallSystemFont" color="0xF59E9EFF" />
+    </children>
+</component>

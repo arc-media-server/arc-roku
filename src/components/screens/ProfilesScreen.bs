@@ -1,0 +1,96 @@
+sub init()
+    m.top.findNode("title").text = tr("Who's watching?")
+    m.grid = m.top.findNode("grid")
+    m.error = m.top.findNode("error")
+    m.buttons = m.top.findNode("buttons")
+    m.buttons.buttons = [tr("Sign out")]
+    m.buttons.observeField("buttonSelected", "onSignOut")
+    m.grid.observeField("itemSelected", "onChosen")
+    m.profiles = []
+    callApi("GET", "/auth/status", invalid, "onStatus")
+end sub
+
+sub takeFocus(_ = invalid as dynamic)
+    if m.profiles.Count() > 0 then m.grid.setFocus(true) else m.buttons.setFocus(true)
+end sub
+
+sub leaving(_ = invalid as dynamic)
+end sub
+
+sub returned(_ = invalid as dynamic)
+end sub
+
+sub onStatus(event as object)
+    res = event.getData()
+    if not res.ok
+        m.error.text = res.error
+        return
+    end if
+    m.profiles = res.data.profiles
+    if m.profiles = invalid then m.profiles = []
+    content = CreateObject("roSGNode", "ContentNode")
+    for each p in m.profiles
+        c = content.createChild("ContentNode")
+        c.addFields({ color: p.color, hasPin: p.has_pin = true })
+        c.title = p.name
+    end for
+    n = m.profiles.Count()
+    if n > 5 then n = 5
+    if n < 1 then n = 1
+    m.grid.numColumns = n
+    ' Centred: each profile is 280 wide with 40 between.
+    m.grid.translation = [(1920 - (n * 280 + (n - 1) * 40)) / 2, 380]
+    m.grid.content = content
+    takeFocus()
+end sub
+
+sub onChosen()
+    p = m.profiles[m.grid.itemSelected]
+    m.error.text = ""
+    if p.has_pin = true
+        askPin(p)
+    else
+        choose(p, "")
+    end if
+end sub
+
+sub askPin(p as object)
+    d = CreateObject("roSGNode", "StandardPinPadDialog")
+    d.title = tr("%1's PIN").Replace("%1", p.name)
+    d.pinPad.pinLength = 4
+    d.buttons = [tr("OK"), tr("Cancel")]
+    d.observeField("buttonSelected", "onPinButton")
+    m.pinFor = p
+    m.dialog = d
+    m.top.getScene().dialog = d
+end sub
+
+sub onPinButton()
+    d = m.dialog
+    pin = d.pin
+    d.close = true
+    if d.buttonSelected = 0 then choose(m.pinFor, pin)
+end sub
+
+sub choose(p as object, pin as string)
+    body = { id: p.id }
+    if pin <> "" then body.pin = pin
+    callApi("POST", "/auth/profile", body, "onProfile", p)
+end sub
+
+sub onProfile(event as object)
+    res = event.getData()
+    if res.ok
+        profile = res.data
+        if profile = invalid then profile = res.tag
+        m.top.action = { go: "profile", profile: profile }
+    else if res.status = 401 or res.status = 403
+        m.error.text = tr("That PIN isn't right.")
+    else
+        m.error.text = res.error
+    end if
+end sub
+
+sub onSignOut()
+    m.top.action = { go: "signOut" }
+end sub

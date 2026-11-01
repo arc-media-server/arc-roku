@@ -1,0 +1,419 @@
+' Playing a title, as Arc's other players do:
+'   1. POST /items/{id}/playback with this Roku's caps: Arc says direct play, repackage or convert.
+'   2. POST /cast turns the stream into a link with the sign-in in it (as the LG/Samsung app does).
+'   3. If the Roku can't play what it said it could, try again repackaged, then converted.
+' A converted stream starts at the seek point (offset_ms), so the position is offset + the
+' player's own. Progress goes to Arc every 10 seconds, on pause and on close; a converting session
+' is pinged every 30 seconds and ended on close.
+
+sub init()
+    m.video = m.top.findNode("video")
+    m.spinner = m.top.findNode("spinner")
+    m.spinner.poster.uri = "pkg:/images/spinner.png"
+    m.controls = m.top.findNode("controls")
+    m.bar = m.top.findNode("bar")
+    m.head = m.top.findNode("head")
+    m.positionLabel = m.top.findNode("position")
+    m.remainingLabel = m.top.findNode("remaining")
+    m.stateLabel = m.top.findNode("state")
+    m.thumbGroup = m.top.findNode("thumbGroup")
+    m.thumb = m.top.findNode("thumb")
+    m.errorLabel = m.top.findNode("error")
+    m.video.observeField("state", "onVideoState")
+    for each id in ["progressTimer", "pingTimer", "tick", "hideTimer", "seekTimer"]
+        t = m.top.findNode(id)
+        t.observeField("fire", "on" + UCase(Left(id, 1)) + Mid(id, 2))
+        m[id] = t
+    end for
+    m.plan = invalid
+    m.item = invalid
+    m.attempt = "direct"
+    m.scrub = -1
+    m.closed = false
+    m.bif = invalid
+    m.generation = 0
+end sub
+
+sub onParams()
+    p = m.top.params
+    m.top.findNode("title").text = valueOr(p.title, "")
+    m.spinner.control = "start"
+    callApi("GET", "/items/" + escape(p.id), invalid, "onItem")
+end sub
+
+function escape(s as string) as string
+    return CreateObject("roUrlTransfer").Escape(s)
+end function
+
+function valueOr(v as dynamic, fallback as dynamic) as dynamic
+    if v = invalid then return fallback
+    return v
+end function
+
+sub takeFocus(_ = invalid as dynamic)
+    m.top.setFocus(true)
+end sub
+
+sub returned(_ = invalid as dynamic)
+end sub
+
+sub leaving(_ = invalid as dynamic)
+    m.closed = true
+    if m.plan <> invalid then report("stopped", positionMs())
+    m.video.control = "stop"
+    for each t in [m.progressTimer, m.pingTimer, m.tick, m.hideTimer, m.seekTimer]
+        t.control = "stop"
+    end for
+    endSession(m.plan)
+    removeThumbs()
+end sub
+
+sub onItem(event as object)
+    res = event.getData()
+    if not res.ok
+        fail(tr("Couldn't load this title.") + " " + res.error)
+        return
+    end if
+    m.item = res.data
+    it = m.item
+    title = it.title
+    sub2 = ""
+    if it.kind = "episode"
+        if it.series_title <> invalid then title = it.series_title
+        sub2 = episodeCode(it) + " · " + valueOr(it.title, "")
+    end if
+    ' The page that started playback knows the show and episode numbers in the viewer's order.
+    if m.top.params.title <> invalid and m.top.params.title <> "" then title = m.top.params.title
+    if m.top.params.subtitle <> invalid and m.top.params.subtitle <> "" then sub2 = m.top.params.subtitle
+    m.top.findNode("title").text = title
+    m.top.findNode("subtitle").text = sub2
+    load(valueOr(m.top.params.startMs, 0))
+end sub
+
+' --- starting (and restarting) the stream ---
+
+' capsFor: what to tell Arc on each try. Empty lists ask for more: no containers means "repackage
+' it", no video codecs "convert the video" (web/src/lib/playback.ts fallbackCaps).
+function capsFor(attempt as string) as object
+    caps = {}
+    caps.Append(m.global.caps)
+    if attempt = "remux" then caps.containers = []
+    if attempt = "convert"
+        caps.containers = []
+        caps.video = []
+    end if
+    return caps
+end function
+
+sub load(fromMs as dynamic)
+    m.generation = m.generation + 1
+    old = m.plan
+    m.spinner.visible = true
+    m.spinner.control = "start"
+    endSession(old)
+    body = { caps: capsFor(m.attempt), start_ms: Int(fromMs) }
+    if old <> invalid then body.file_id = old.file_id
+    callApi("POST", "/items/" + escape(m.item.id) + "/playback", body, "onPlan", { generation: m.generation, fromMs: fromMs })
+end sub
+
+sub onPlan(event as object)
+    res = event.getData()
+    if res.tag.generation <> m.generation or m.closed then return
+    if not res.ok
+        fail(tr("Arc couldn't start this title.") + " " + res.error)
+        return
+    end if
+    p = res.data
+    m.plan = p
+    m.pendingFrom = res.tag.fromMs
+    print "Arc: playback "; p.method; " (attempt "; m.attempt; ")"
+    callApi("POST", "/cast", { url: p.url }, "onCast", res.tag)
+end sub
+
+sub onCast(event as object)
+    res = event.getData()
+    if res.tag.generation <> m.generation or m.closed then return
+    if not res.ok or res.data = invalid or res.data.url = invalid
+        fail(tr("Arc couldn't start this title.") + " " + res.error)
+        return
+    end if
+    p = m.plan
+    content = CreateObject("roSGNode", "ContentNode")
+    content.url = res.data.url
+    content.title = m.top.findNode("title").text
+    if p.hls = true
+        content.streamFormat = "hls"
+        ' The converted stream starts where playback starts; begin at its start, not its live edge.
+        content.PlayStart = 0
+        content.Live = false
+    else
+        content.streamFormat = streamFormat(p.file_id)
+        content.PlayStart = Int(res.tag.fromMs / 1000)
+    end if
+    m.video.content = content
+    m.video.control = "play"
+    m.tick.control = "start"
+    m.progressTimer.control = "start"
+    if p.session_id <> invalid and p.session_id <> "" then m.pingTimer.control = "start" else m.pingTimer.control = "stop"
+    if m.bif = invalid then loadThumbs(p.file_id)
+end sub
+
+' streamFormat: Roku's name for the file's container (direct play only).
+function streamFormat(fileId as dynamic) as string
+    if m.item <> invalid and m.item.files <> invalid
+        for each f in m.item.files
+            if f.id = fileId and f.container <> invalid
+                c = LCase(f.container)
+                if c.Instr("matroska") >= 0 or c.Instr("webm") >= 0 then return "mkv"
+                if c.Instr("mpegts") >= 0 then return "ts"
+                return "mp4"
+            end if
+        end for
+    end if
+    return "mp4"
+end function
+
+sub onVideoState()
+    s = m.video.state
+    if s = "playing"
+        m.spinner.visible = false
+        m.spinner.control = "stop"
+        m.errorLabel.visible = false
+    else if s = "buffering"
+        m.spinner.visible = true
+        m.spinner.control = "start"
+    else if s = "paused"
+        report("paused", positionMs())
+    else if s = "finished"
+        report("stopped", durationOf())
+        m.top.action = { go: "back" }
+    else if s = "error"
+        print "Arc: player error "; m.video.errorCode; " "; m.video.errorMsg; " ("; m.attempt; ")"
+        at = positionMs()
+        if m.attempt = "direct" and m.plan <> invalid and m.plan.method = "direct"
+            m.attempt = "remux"
+            load(at)
+        else if m.attempt <> "convert"
+            m.attempt = "convert"
+            load(at)
+        else
+            fail(tr("This Roku couldn't play this title.") + " " + m.video.errorMsg)
+        end if
+    end if
+end sub
+
+sub fail(text as string)
+    m.spinner.visible = false
+    m.spinner.control = "stop"
+    m.errorLabel.text = text + Chr(10) + tr("Press Back to close.")
+    m.errorLabel.visible = true
+end sub
+
+' --- position, progress and the session ---
+
+function positionMs() as double
+    p = m.plan
+    if p = invalid then return 0
+    offset = 0
+    if p.hls = true and p.offset_ms <> invalid then offset = p.offset_ms
+    return offset + m.video.position * 1000
+end function
+
+function durationOf() as double
+    if m.plan <> invalid and m.plan.duration_ms <> invalid and m.plan.duration_ms > 0 then return m.plan.duration_ms
+    return durationMs(m.item)
+end function
+
+sub report(state as string, at as double)
+    d = durationOf()
+    if m.item = invalid or d <= 0 then return
+    if at < 0 then at = 0
+    if at > d then at = d
+    callApi("PUT", "/items/" + escape(m.item.id) + "/progress", { position_ms: Int(at), duration_ms: Int(d), state: state }, "onReported")
+end sub
+
+sub onReported(event as object)
+    res = event.getData()
+    ' 403: an admin ended this playback from Arc's Dashboard.
+    if res.status = 403
+        m.video.control = "pause"
+        fail(valueOr(res.error, tr("Playback was stopped from Arc.")))
+    end if
+end sub
+
+sub onProgressTimer()
+    if m.video.state = "playing" then report("playing", positionMs())
+end sub
+
+sub onPingTimer()
+    p = m.plan
+    if p <> invalid and p.session_id <> invalid and p.session_id <> "" then callApi("POST", "/transcode/" + p.session_id + "/ping", invalid, "onIgnored")
+end sub
+
+sub endSession(p as dynamic)
+    if p <> invalid and p.session_id <> invalid and p.session_id <> "" then callApi("DELETE", "/transcode/" + p.session_id, invalid, "onIgnored")
+end sub
+
+sub onIgnored(event as object)
+end sub
+
+' --- controls ---
+
+sub onTick()
+    if not m.controls.visible then return
+    at = positionMs()
+    if m.scrub >= 0 then at = m.scrub
+    drawTimeline(at)
+end sub
+
+sub drawTimeline(at as double)
+    d = durationOf()
+    frac = 0.0
+    if d > 0 then frac = at / d
+    if frac < 0 then frac = 0
+    if frac > 1 then frac = 1
+    w = 1680 * frac
+    m.bar.width = w
+    m.head.translation = [120 + w - 3, 932]
+    m.positionLabel.text = formatClock(at)
+    m.remainingLabel.text = "-" + formatClock(d - at)
+    if m.scrub >= 0 and m.bif <> invalid
+        path = bifThumb(m.bif, at)
+        if path <> ""
+            m.thumb.uri = path
+            x = 120 + w - 165
+            if x < 60 then x = 60
+            if x > 1530 then x = 1530
+            m.thumbGroup.translation = [x, 720]
+            m.thumbGroup.visible = true
+        end if
+    else
+        m.thumbGroup.visible = false
+    end if
+end sub
+
+sub showControls()
+    m.controls.visible = true
+    drawTimeline(positionMs())
+    m.hideTimer.control = "stop"
+    m.hideTimer.control = "start"
+end sub
+
+sub onHideTimer()
+    if m.video.state = "playing" and m.scrub < 0 then m.controls.visible = false
+end sub
+
+' Left/Right move 10 seconds and Rewind/Fast Forward 30; the seek happens when the presses stop.
+sub nudge(byMs as integer)
+    if m.plan = invalid then return
+    if m.scrub < 0 then m.scrub = positionMs()
+    m.scrub = m.scrub + byMs
+    d = durationOf()
+    if m.scrub < 0 then m.scrub = 0
+    if d > 0 and m.scrub > d - 1000 then m.scrub = d - 1000
+    showControls()
+    drawTimeline(m.scrub)
+    m.seekTimer.control = "stop"
+    m.seekTimer.control = "start"
+end sub
+
+sub onSeekTimer()
+    target = m.scrub
+    m.scrub = -1
+    m.thumbGroup.visible = false
+    if target >= 0 then seekTo(target)
+end sub
+
+' A file plays from anywhere; a converted stream only has what's been made so far, and anything
+' else starts a new one there.
+sub seekTo(ms as double)
+    p = m.plan
+    if p = invalid then return
+    if p.hls <> true
+        m.video.seek = ms / 1000
+        return
+    end if
+    rel = ms - valueOr(p.offset_ms, 0)
+    available = m.video.duration * 1000
+    if rel >= 0 and available > 0 and rel <= available - 2000
+        m.video.seek = rel / 1000
+    else
+        load(ms)
+    end if
+end sub
+
+sub togglePause()
+    if m.video.state = "playing"
+        m.video.control = "pause"
+        m.stateLabel.text = tr("Paused")
+        showControls()
+    else if m.video.state = "paused"
+        m.video.control = "resume"
+        m.stateLabel.text = ""
+        showControls()
+    end if
+end sub
+
+function onKeyEvent(key as string, press as boolean) as boolean
+    if not press then return false
+    if key = "back"
+        if m.controls.visible and m.scrub >= 0
+            ' Back while seeking cancels the seek.
+            m.scrub = -1
+            m.seekTimer.control = "stop"
+            m.thumbGroup.visible = false
+            return true
+        end if
+        m.top.action = { go: "back" }
+        return true
+    end if
+    if key = "play" or key = "OK"
+        togglePause()
+        return true
+    end if
+    if key = "left"
+        nudge(-10000)
+        return true
+    end if
+    if key = "right"
+        nudge(10000)
+        return true
+    end if
+    if key = "rewind"
+        nudge(-30000)
+        return true
+    end if
+    if key = "fastforward"
+        nudge(30000)
+        return true
+    end if
+    if key = "up" or key = "down" or key = "options"
+        showControls()
+        return true
+    end if
+    return false
+end function
+
+' --- timeline thumbnails (Arc's BIF file) ---
+
+sub loadThumbs(fileId as dynamic)
+    if fileId = invalid then return
+    m.bifTarget = "tmp:/arc-" + fileId.ToStr() + ".bif"
+    task = CreateObject("roSGNode", "DownloadTask")
+    task.path = "/items/" + escape(m.item.id) + "/trickplay/" + fileId.ToStr() + "/bif"
+    task.target = m.bifTarget
+    task.observeField("ok", "onThumbs")
+    keepTask(task)
+    task.control = "RUN"
+end sub
+
+sub onThumbs(event as object)
+    if event.getData() = true then m.bif = bifIndex(m.bifTarget)
+end sub
+
+sub removeThumbs()
+    fs = CreateObject("roFileSystem")
+    for each name in fs.GetDirectoryListing("tmp:/")
+        if Left(name, 4) = "arc-" then fs.Delete("tmp:/" + name)
+    end for
+end sub

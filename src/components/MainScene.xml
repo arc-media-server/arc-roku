@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- The app's one scene: keeps the stack of screens, the server address and sign-in, and where
+     each screen's "action" leads. -->
+<component name="MainScene" extends="Scene">
+    <interface>
+        <field id="launchArgs" type="assocarray" onChange="onLaunchArgs" />
+        <field id="inputArgs" type="assocarray" onChange="onInputArgs" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/source/shared/settings.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/http.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/api.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/caps.bs" />
+    <children>
+        <Rectangle id="background" width="1920" height="1080" color="0x0B0F10FF" />
+        <Group id="screens" />
+        <BusySpinner id="spinner" translation="[912, 492]" visible="false" />
+    </children>
+</component>

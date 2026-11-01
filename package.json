@@ -1,0 +1,19 @@
+{
+  "name": "arc-roku",
+  "version": "0.1.0",
+  "description": "Arc Media Server app for Roku",
+  "scripts": {
+    "build": "bsc",
+    "check": "bsc --create-package false && node scripts/check-strings.mjs",
+    "test": "node scripts/test.mjs",
+    "sideload": "node scripts/sideload.mjs"
+  },
+  "license": "AGPL-3.0-only",
+  "devDependencies": {
+    "brighterscript": "^0.73.8",
+    "brs-node": "^2.6.2",
+    "brs-scenegraph": "^0.6.2",
+    "roku-deploy": "^3.18.4"
+  },
+  "private": true
+}
