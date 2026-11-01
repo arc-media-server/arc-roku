@@ -1,0 +1,78 @@
+sub init()
+    m.top.functionName = "work"
+end sub
+
+sub work()
+    req = m.top.request
+    res = apiCall(req)
+    res.tag = req.tag
+    if not res.ok
+        ' One line per failed call: the method, the path without its query, and the outcome.
+        ' Never the server address, query strings, bodies or the token.
+        path = req.path
+        q = Instr(1, path, "?")
+        if q > 0 then path = Left(path, q - 1)
+        ' Sign-in paths carry the link's secret poll id: keep only "/auth/link".
+        if Left(path, 6) = "/auth/" and path.Split("/").Count() > 3
+            parts = path.Split("/")
+            path = "/auth/" + parts[2] + "/…"
+        end if
+        method = "GET"
+        if req.method <> invalid then method = UCase(req.method)
+        print "Arc: "; method; " "; path; " failed: "; res.status; " "; res.error
+    end if
+    if res.status = 401 and m.global.token <> ""
+        ' The sign-in was revoked (signed out from Arc's Devices): the scene goes back to sign-in.
+        m.global.unauthorized = true
+    end if
+    m.top.response = res
+end sub
+
+' apiCall makes one request and waits for it, at most 20 seconds.
+function apiCall(req as object) as object
+    server = m.global.server
+    if req.server <> invalid then server = req.server
+    url = absoluteUrl(server, req.path)
+    t = CreateObject("roUrlTransfer")
+    port = CreateObject("roMessagePort")
+    t.SetMessagePort(port)
+    t.SetUrl(url)
+    t.RetainBodyOnError(true)
+    if Left(url, 8) = "https://"
+        t.SetCertificatesFile("common:/certs/ca-bundle.crt")
+        t.InitClientCertificates()
+    end if
+    t.AddHeader("Accept", "application/json")
+    token = m.global.token
+    if req.noAuth <> true and token <> invalid and token <> "" then t.AddHeader("Authorization", "Bearer " + token)
+    method = "GET"
+    if req.method <> invalid then method = UCase(req.method)
+    body = ""
+    if req.body <> invalid
+        body = FormatJson(req.body)
+        t.AddHeader("Content-Type", "application/json")
+    end if
+    if method = "GET"
+        started = t.AsyncGetToString()
+    else
+        if method <> "POST" then t.SetRequest(method)
+        started = t.AsyncPostFromString(body)
+    end if
+    if not started then return { ok: false, status: 0, error: tr("Couldn't reach Arc.") }
+    timeout = 20000
+    if req.timeoutMs <> invalid then timeout = req.timeoutMs
+    msg = wait(timeout, port)
+    if type(msg) <> "roUrlEvent"
+        t.AsyncCancel()
+        return { ok: false, status: 0, error: tr("Arc didn't answer in time.") }
+    end if
+    code = msg.GetResponseCode()
+    text = msg.GetString()
+    data = invalid
+    if text <> invalid and text <> "" then data = ParseJson(text)
+    if code >= 200 and code < 300 then return { ok: true, status: code, data: data }
+    errText = msg.GetFailureReason()
+    if data <> invalid and type(data) = "roAssociativeArray" and data.error <> invalid then errText = data.error
+    if code < 0 then errText = tr("Couldn't reach Arc.")
+    return { ok: false, status: code, data: data, error: errText }
+end function

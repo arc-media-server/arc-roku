@@ -1,0 +1,21 @@
+sub init()
+    m.ring = m.top.findNode("ring")
+    m.name = m.top.findNode("name")
+end sub
+
+sub onContent()
+    c = m.top.itemContent
+    if c = invalid then return
+    color = c.color
+    if color = invalid or color = "" then color = "teal"
+    m.top.findNode("avatar").uri = "pkg:/images/avatars/" + color + ".png"
+    m.top.findNode("letter").text = UCase(Left(c.title, 1))
+    m.name.text = c.title
+    if c.hasPin = true then m.top.findNode("lock").text = tr("PIN")
+end sub
+
+sub onFocus()
+    f = m.top.focusPercent
+    m.ring.opacity = f
+    if f > 0.5 then m.name.color = "0xF0F4F4FF" else m.name.color = "0x9AA7A7FF"
+end sub

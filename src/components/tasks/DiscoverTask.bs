@@ -1,0 +1,82 @@
+sub init()
+    m.top.functionName = "work"
+end sub
+
+sub work()
+    started = CreateObject("roTimespan")
+    found = []
+    seen = {}
+    for each prefix in networkPrefixes()
+        hosts = []
+        for i = 1 to 254
+            hosts.Push(prefix + i.ToStr())
+        end for
+        ' 32 at a time, each given 1.5 seconds: the whole network in about 12 seconds.
+        batch = 32
+        n = 0
+        while n < hosts.Count()
+            last = n + batch - 1
+            if last > hosts.Count() - 1 then last = hosts.Count() - 1
+            for each server in probe(hosts, n, last)
+                if not seen.DoesExist(server.id)
+                    seen[server.id] = true
+                    found.Push(server)
+                    m.top.found = found
+                end if
+            end for
+            n = last + 1
+        end while
+    end for
+    print "Arc: discovery found "; found.Count(); " server(s) in "; started.TotalMilliseconds(); " ms"
+    m.top.done = true
+end sub
+
+' networkPrefixes: "192.168.1." for each of this Roku's IPv4 addresses.
+function networkPrefixes() as object
+    out = []
+    addrs = CreateObject("roDeviceInfo").GetIPAddrs()
+    for each iface in addrs
+        ip = addrs[iface]
+        parts = ip.Split(".")
+        if parts.Count() = 4 then out.Push(parts[0] + "." + parts[1] + "." + parts[2] + ".")
+    end for
+    return out
+end function
+
+function probe(hosts as object, first as integer, last as integer) as object
+    port = CreateObject("roMessagePort")
+    pending = {}
+    for i = first to last
+        t = CreateObject("roUrlTransfer")
+        t.SetMessagePort(port)
+        t.SetUrl("http://" + hosts[i] + ":8099/api/v1/discover")
+        t.AddHeader("Accept", "application/json")
+        if t.AsyncGetToString() then pending[t.GetIdentity().ToStr()] = { transfer: t, host: hosts[i] }
+    end for
+    out = []
+    clock = CreateObject("roTimespan")
+    while pending.Count() > 0 and clock.TotalMilliseconds() < 1500
+        msg = wait(100, port)
+        if type(msg) = "roUrlEvent"
+            key = msg.GetSourceIdentity().ToStr()
+            p = pending[key]
+            if p <> invalid
+                pending.Delete(key)
+                if msg.GetResponseCode() = 200
+                    data = ParseJson(msg.GetString())
+                    if data <> invalid and data.product = "arc"
+                        name = data.name
+                        if name = invalid or name = "" then name = p.host
+                        id = data.id
+                        if id = invalid then id = p.host
+                        out.Push({ name: name, url: "http://" + p.host + ":8099", version: data.version, id: id })
+                    end if
+                end if
+            end if
+        end if
+    end while
+    for each key in pending
+        pending[key].transfer.AsyncCancel()
+    end for
+    return out
+end function

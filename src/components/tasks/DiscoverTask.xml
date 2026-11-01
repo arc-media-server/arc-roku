@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Looks for Arc on this Roku's home network: asks every address of its /24 for
+     GET /api/v1/discover on Arc's port, as the LG/Samsung app does. -->
+<component name="DiscoverTask" extends="Task">
+    <interface>
+        <!-- [{ name, url, version, id }] -->
+        <field id="found" type="array" />
+        <field id="done" type="boolean" alwaysNotify="true" />
+    </interface>
+</component>

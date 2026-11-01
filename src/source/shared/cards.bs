@@ -1,0 +1,76 @@
+' Turning Arc's titles into the ContentNodes rows and grids show, choosing artwork as the web's
+' PosterCard and EpisodeCard do.
+
+' cardFields: what a card carries besides its picture and title.
+function cardFields() as object
+    return { itemId: "", kind: "", parentId: "", line2: "", progress: 0.0, style: "poster", backdrop: "", logo: "", meta: "", overview: "", resumeMs: 0, played: false }
+end function
+
+' fillCard sets a ContentNode (with cardFields) for an item shown as "poster" or "thumb".
+sub fillCard(node as object, card as object, style as string)
+    it = card.item
+    img = it.images
+    if img = invalid then img = {}
+    ep = it.kind = "episode"
+    poster = img.primary
+    if ep and img.series_primary <> invalid then poster = img.series_primary
+    if card.season <> invalid and card.seasonPoster <> invalid then poster = card.seasonPoster
+    thumb = img.backdrop
+    if thumb = invalid then thumb = img.primary
+    if ep
+        thumb = img.primary
+        if thumb = invalid then thumb = img.series_backdrop
+    end if
+    backdrop = img.backdrop
+    if ep then backdrop = img.series_backdrop
+    if backdrop = invalid then backdrop = img.primary
+    logo = img.logo
+    if ep then logo = img.series_logo
+
+    node.itemId = it.id
+    node.kind = it.kind
+    if it.parent_id <> invalid then node.parentId = it.parent_id
+    node.style = style
+    if style = "thumb" then node.HDPosterUrl = imageUrl(thumb) else node.HDPosterUrl = imageUrl(poster)
+    node.backdrop = fullImage(imageUrl(backdrop))
+    node.logo = imageUrl(logo)
+    node.overview = valueOr(it.overview, "")
+    node.meta = metaLine(it)
+    node.resumeMs = resumeMs(it)
+    node.played = it.user_data <> invalid and it.user_data.played = true
+
+    title = it.title
+    subText = ""
+    if ep
+        if it.series_title <> invalid then title = it.series_title
+        subText = episodeCode(it)
+        if it.title <> invalid and it.title <> "" then subText = subText + " · " + it.title
+    else if card.season <> invalid
+        subText = tr("Season %1").Replace("%1", card.season.ToStr())
+        if card.episodes <> invalid and card.episodes > 1 then subText = subText + " · " + tr("%1 new episodes").Replace("%1", card.episodes.ToStr())
+    else if it.year <> invalid and it.year > 0
+        subText = it.year.ToStr()
+    end if
+    node.title = title
+    node.line2 = subText
+    d = durationMs(it)
+    r = node.resumeMs
+    if r > 0 and d > 0
+        p = r / d
+        if p < 0.02 then p = 0.02
+        if p > 1 then p = 1
+        node.progress = p
+    end if
+end sub
+
+' fullImage asks Arc for a backdrop's full-resolution picture, for full-screen backgrounds.
+function fullImage(url as string) as string
+    if url = "" then return ""
+    if url.Instr("?") >= 0 then return url + "&size=full"
+    return url + "?size=full"
+end function
+
+function valueOr(v as dynamic, fallback as dynamic) as dynamic
+    if v = invalid then return fallback
+    return v
+end function
