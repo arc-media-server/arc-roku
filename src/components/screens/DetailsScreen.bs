@@ -8,10 +8,19 @@ sub init()
     m.episodes = m.top.findNode("episodes")
     m.error = m.top.findNode("error")
     shareSignIn([m.backdrop, m.logo])
-    m.buttons.observeField("buttonSelected", "onButton")
+    m.buttons.observeField("rowItemSelected", "onButton")
+    m.page = m.top.findNode("page")
+    m.slide = m.top.findNode("slide")
+    m.slideTo = m.top.findNode("slideTo")
     m.episodes.observeField("rowItemSelected", "onEpisode")
+    m.episodes.observeField("rowItemFocused", "onRowFocus")
+    m.focusRow = ""
+    m.focusCol = 0
+    m.restoring = false
     m.item = invalid
     m.seasons = invalid
+    m.related = {}
+    m.landed = false
     m.actions = []
 end sub
 
@@ -19,8 +28,32 @@ sub onParams()
     load()
 end sub
 
+' Coming back (from the player or another page), the focus returns where it was.
 sub takeFocus(_ = invalid as dynamic)
+    if m.rowsFocused = true then focusRows() else focusButtons()
+end sub
+
+' The page slides up so the rows sit under the top of the screen, and back down for the buttons.
+sub focusButtons()
+    m.rowsFocused = false
+    m.buttons.opacity = 1
     m.buttons.setFocus(true)
+    slideTo(0)
+end sub
+
+' The buttons fade while the rows have the focus: they'd show their focused one otherwise.
+sub focusRows()
+    m.rowsFocused = true
+    m.buttons.opacity = 0
+    m.episodes.setFocus(true)
+    slideTo(-560)
+end sub
+
+sub slideTo(y as integer)
+    if m.page.translation[1] = y then return
+    m.slide.control = "stop"
+    m.slideTo.keyValue = [m.page.translation, [0, y]]
+    m.slide.control = "start"
 end sub
 
 sub leaving(_ = invalid as dynamic)
@@ -65,10 +98,38 @@ sub onItem(event as object)
     if ep and it.title <> invalid then meta = meta.Replace(episodeCode(it), episodeCode(it) + " · " + it.title)
     m.meta.text = meta
     m.overview.text = valueOr(it.overview, "")
+    m.related = {}
     if it.kind = "series"
-        callApi("GET", "/series/" + escape(it.id) + "/seasons", invalid, "onSeasons")
+        callApi("GET", "/series/" + escape(it.id) + "/seasons", invalid, "onSeasons", it.id)
+    else
+        m.seasons = []
+    end if
+    if it.kind <> "episode"
+        callApi("GET", "/items/" + escape(it.id) + "/similar", invalid, "onSimilar", it.id)
+        m.pendingCollections = 0
+        if it.collections <> invalid
+            for each c in it.collections
+                m.pendingCollections = m.pendingCollections + 1
+                callApi("GET", "/collections/" + escape(c.id), invalid, "onCollection", { id: it.id, collection: c.id })
+            end for
+        end if
     end if
     showButtons()
+    buildRows()
+end sub
+
+sub onSimilar(event as object)
+    res = event.getData()
+    if m.item = invalid or res.tag <> m.item.id then return
+    if res.ok and res.data <> invalid then m.related.similar = res.data
+    buildRows()
+end sub
+
+sub onCollection(event as object)
+    res = event.getData()
+    if m.item = invalid or res.tag.id <> m.item.id then return
+    if res.ok and res.data <> invalid then m.related["collection:" + res.tag.collection] = res.data
+    buildRows()
 end sub
 
 ' nextEpisode: the one part-way through, else the first not watched, specials last.
@@ -126,13 +187,27 @@ sub showButtons()
         labels.Push(tr("Go to show"))
         m.actions.Push({ kind: "open", id: it.parent_id })
     end if
-    focused = m.buttons.buttonFocused
-    m.buttons.buttons = labels
-    if focused <> invalid and focused >= 0 and focused < labels.Count() then m.buttons.focusButton = focused
+    focused = m.buttons.rowItemFocused
+    content = CreateObject("roSGNode", "ContentNode")
+    row = content.createChild("ContentNode")
+    for each label in labels
+        b = row.createChild("ContentNode")
+        b.title = label
+    end for
+    ' Wide enough for the longest label, as Roku's own buttons grow with theirs.
+    longest = 0
+    for each label in labels
+        if Len(label) > longest then longest = Len(label)
+    end for
+    w = 18 * longest + 60
+    if w < 240 then w = 240
+    m.buttons.rowItemSize = [[w, 72]]
+    m.buttons.content = content
+    if focused <> invalid and focused.Count() = 2 and focused[1] > 0 and focused[1] < labels.Count() then m.buttons.jumpToRowItem = [0, focused[1]]
 end sub
 
 sub onButton()
-    a = m.actions[m.buttons.buttonSelected]
+    a = m.actions[m.buttons.rowItemSelected[1]]
     if a = invalid then return
     if a.kind = "play"
         m.top.action = { go: "play", id: a.item.id, startMs: a.startMs, title: m.item.title, subtitle: episodeLine(a.item) }
@@ -156,32 +231,117 @@ end sub
 
 sub onSeasons(event as object)
     res = event.getData()
-    if not res.ok or res.data = invalid then return
-    m.seasons = res.data.seasons
-    if m.seasons = invalid then m.seasons = []
-    content = CreateObject("roSGNode", "ContentNode")
-    sizes = []
+    if m.item = invalid or res.tag <> m.item.id then return
+    m.seasons = []
+    if res.ok and res.data <> invalid and res.data.seasons <> invalid then m.seasons = res.data.seasons
+    m.landed = false
+    buildRows()
+    showButtons()
+end sub
+
+' buildRows lays out what's under the buttons, as the other apps' title pages: a show's seasons,
+' then the cast, the collections the title is in, More Like This and extras. Rows are rebuilt as
+' each part arrives, keeping the focus where it was.
+sub buildRows()
+    it = m.item
+    if it = invalid or m.seasons = invalid then return
+    specs = []
     for each s in m.seasons
         if s.episodes <> invalid and s.episodes.Count() > 0
-            row = content.createChild("ContentNode")
-            if s.name <> invalid and s.name <> "" then row.title = s.name else row.title = tr("Season %1").Replace("%1", s.season_number.ToStr())
-            for each e in s.episodes
-                node = row.createChild("ContentNode")
-                node.addFields(cardFields())
-                fillCard(node, { item: e }, "thumb")
+            title = tr("Season %1").Replace("%1", s.season_number.ToStr())
+            if s.name <> invalid and s.name <> "" then title = s.name
+            specs.Push({ kind: "season", title: title, style: "thumb", items: s.episodes })
+        end if
+    end for
+    if it.credits <> invalid
+        cast = []
+        for each c in it.credits
+            if c.role = "actor" then cast.Push({ item: { id: c.person_id.ToStr(), kind: "person", title: c.name, images: { primary: c.image } }, line2: valueOr(c.character, "") })
+        end for
+        if cast.Count() > 0 then specs.Push({ kind: "cast", title: tr("Cast"), style: "named", cards: cast })
+    end if
+    if it.collections <> invalid
+        for each c in it.collections
+            page = m.related["collection:" + c.id]
+            if page <> invalid and page.items <> invalid
+                others = []
+                for each x in page.items
+                    if x.id <> it.id then others.Push(x)
+                end for
+                if others.Count() > 0 then specs.Push({ kind: "title", title: c.title, style: "poster", items: others })
+            end if
+        end for
+    end if
+    if m.related.similar <> invalid and m.related.similar.Count() > 0 then specs.Push({ kind: "title", title: tr("More Like This"), style: "poster", items: m.related.similar })
+    if it.extras <> invalid and it.extras.Count() > 0
+        extras = []
+        img = valueOr(it.images, {})
+        for each e in it.extras
+            extras.Push({ item: { id: e.id, kind: "extra", title: e.title, path: e.stream_url, images: { primary: img.backdrop, backdrop: img.backdrop } }, line2: extraKind(e.kind) })
+        end for
+        specs.Push({ kind: "extra", title: tr("Extras"), style: "thumb", cards: extras })
+    end if
+
+    content = CreateObject("roSGNode", "ContentNode")
+    sizes = []
+    heights = []
+    for each spec in specs
+        row = content.createChild("ContentNode")
+        row.title = spec.title
+        row.addField("rowKind", "string", false)
+        row.rowKind = spec.kind
+        cards = spec.cards
+        if cards = invalid
+            cards = []
+            for each x in spec.items
+                cards.Push({ item: x })
+            end for
+        end if
+        for each card in cards
+            node = row.createChild("ContentNode")
+            node.addFields(cardFields())
+            fillCard(node, card, spec.style)
+            if spec.kind = "season"
+                e = card.item
                 node.title = valueOr(e.title, "")
                 line = "E" + valueOr(e.episode_number, 0).ToStr()
                 if e.runtime_min <> invalid then line = line + " · " + formatRuntime(e.runtime_min)
                 node.line2 = line
                 node.addField("subtitleLine", "string", false)
                 node.subtitleLine = episodeLine(e)
-            end for
+            end if
+        end for
+        if spec.style = "thumb"
             sizes.Push([400, 330])
+        else if spec.style = "named"
+            sizes.Push([220, 420])
+        else
+            sizes.Push([220, 330])
         end if
+        if spec.style = "named" then heights.Push(500) else heights.Push(420)
     end for
     m.episodes.rowItemSize = sizes
+    m.episodes.rowHeights = heights
+    m.restoring = true
     m.episodes.content = content
     m.episodes.visible = content.getChildCount() > 0
+    if m.landed = true
+        ' Rows arrive in turn, so the focus is kept by row title rather than position.
+        r = 0
+        for each rowNode in content.getChildren(-1, 0)
+            if rowNode.title = m.focusRow
+                col = m.focusCol
+                if col >= rowNode.getChildCount() then col = rowNode.getChildCount() - 1
+                if col < 0 then col = 0
+                m.episodes.jumpToRowItem = [r, col]
+            end if
+            r = r + 1
+        end for
+        m.restoring = false
+        return
+    end if
+    m.landed = true
+    m.restoring = false
     ' Land on the episode the page was opened for, else the one Play would start.
     target = nextEpisode()
     wanted = m.top.params.episodeId
@@ -195,31 +355,57 @@ sub onSeasons(event as object)
     if target <> invalid
         r = 0
         for each rowNode in content.getChildren(-1, 0)
-            for c = 0 to rowNode.getChildCount() - 1
-                if rowNode.getChild(c).itemId = target.id then m.episodes.jumpToRowItem = [r, c]
-            end for
+            if rowNode.rowKind = "season"
+                for c = 0 to rowNode.getChildCount() - 1
+                    if rowNode.getChild(c).itemId = target.id then m.episodes.jumpToRowItem = [r, c]
+                end for
+            end if
             r = r + 1
         end for
     end if
-    if wanted <> invalid and wanted <> "" and m.buttons.hasFocus() then m.episodes.setFocus(true)
-    showButtons()
+    if wanted <> invalid and wanted <> "" and m.buttons.isInFocusChain() then focusRows()
+end sub
+
+function extraKind(kind as dynamic) as string
+    names = { trailer: tr("Trailer"), featurette: tr("Featurette"), behindthescenes: tr("Behind the scenes"), deleted: tr("Deleted scene"), interview: tr("Interview"), scene: tr("Scene"), short: tr("Short") }
+    if kind <> invalid and names.DoesExist(kind) then return names[kind]
+    return tr("Extra")
+end function
+
+sub onRowFocus()
+    if m.restoring = true then return
+    f = m.episodes.rowItemFocused
+    if f = invalid or f.Count() < 2 or m.episodes.content = invalid then return
+    row = m.episodes.content.getChild(f[0])
+    if row = invalid then return
+    m.focusRow = row.title
+    m.focusCol = f[1]
 end sub
 
 sub onEpisode()
     f = m.episodes.rowItemSelected
     row = m.episodes.content.getChild(f[0])
     node = row.getChild(f[1])
-    m.top.action = { go: "play", id: node.itemId, startMs: node.resumeMs, title: m.item.title, subtitle: node.subtitleLine }
+    kind = row.rowKind
+    if kind = "season"
+        m.top.action = { go: "play", id: node.itemId, startMs: node.resumeMs, title: m.item.title, subtitle: node.subtitleLine }
+    else if kind = "cast"
+        m.top.action = { go: "grid", title: node.title, source: { kind: "person", id: node.itemId } }
+    else if kind = "extra"
+        m.top.action = { go: "playExtra", url: node.path, title: node.title, subtitle: m.item.title }
+    else
+        m.top.action = { go: "open", id: node.itemId }
+    end if
 end sub
 
 function onKeyEvent(key as string, press as boolean) as boolean
     if not press then return false
-    if key = "down" and m.buttons.hasFocus() and m.episodes.visible
-        m.episodes.setFocus(true)
+    if key = "down" and m.buttons.isInFocusChain() and m.episodes.visible
+        focusRows()
         return true
     end if
-    if key = "up" and m.episodes.hasFocus()
-        m.buttons.setFocus(true)
+    if key = "up" and m.episodes.isInFocusChain()
+        focusButtons()
         return true
     end if
     return false

@@ -72,13 +72,39 @@ sub init()
     m.ended = false
     m.skipMarker = invalid
     m.menuValues = []
+    m.isExtra = false
 end sub
 
 sub onParams()
     p = m.top.params
     m.top.findNode("title").text = valueOr(p.title, "")
     m.spinner.control = "start"
+    if p.extra <> invalid
+        ' A trailer or extra: Arc sends it as it is, with no choices, progress or Up Next.
+        m.isExtra = true
+        m.top.findNode("subtitle").text = valueOr(p.subtitle, "")
+        callApi("POST", "/cast", { url: p.extra.url }, "onExtraCast")
+        return
+    end if
     callApi("GET", "/me/prefs", invalid, "onPrefs")
+end sub
+
+sub onExtraCast(event as object)
+    res = event.getData()
+    if m.closed then return
+    if not res.ok or res.data = invalid or res.data.url = invalid
+        fail(tr("Arc couldn't start this title.") + " " + valueOr(res.error, ""))
+        return
+    end if
+    content = CreateObject("roSGNode", "ContentNode")
+    content.url = res.data.url
+    content.title = m.top.findNode("title").text
+    content.streamFormat = "mp4"
+    m.video.content = content
+    m.video.control = "play"
+    m.extraDuration = 0
+    m.tick.control = "start"
+    print "Arc: playing an extra"
 end sub
 
 ' The profile's preferences (subtitle language and look, audio language, auto play and skip) come
@@ -294,6 +320,10 @@ sub onVideoState()
         end if
     else if s = "error"
         print "Arc: player error "; m.video.errorCode; " "; m.video.errorMsg; " ("; m.attempt; ")"
+        if m.isExtra = true
+            fail(tr("This Roku couldn't play this title.") + " " + m.video.errorMsg)
+            return
+        end if
         at = positionMs()
         if m.attempt = "direct" and m.plan <> invalid and m.plan.method = "direct"
             m.attempt = "remux"
@@ -317,6 +347,7 @@ end sub
 ' --- position, progress and the session ---
 
 function positionMs() as double
+    if m.isExtra = true then return m.video.position * 1000
     p = m.plan
     if p = invalid then return 0
     offset = 0
@@ -325,6 +356,7 @@ function positionMs() as double
 end function
 
 function durationOf() as double
+    if m.isExtra = true then return m.video.duration * 1000
     if m.plan <> invalid and m.plan.duration_ms <> invalid and m.plan.duration_ms > 0 then return m.plan.duration_ms
     return durationMs(m.item)
 end function
@@ -417,7 +449,7 @@ end sub
 
 ' Left/Right move 10 seconds and Rewind/Fast Forward 30; the seek happens when the presses stop.
 sub nudge(byMs as integer)
-    if m.plan = invalid then return
+    if m.plan = invalid and m.isExtra <> true then return
     if m.scrub < 0 then m.scrub = positionMs()
     m.scrub = m.scrub + byMs
     d = durationOf()
@@ -439,6 +471,10 @@ end sub
 ' A file plays from anywhere; a converted stream only has what's been made so far, and anything
 ' else starts a new one there.
 sub seekTo(ms as double)
+    if m.isExtra = true
+        m.video.seek = ms / 1000
+        return
+    end if
     p = m.plan
     if p = invalid then return
     if p.hls <> true
@@ -507,6 +543,11 @@ function onKeyEvent(key as string, press as boolean) as boolean
     end if
     if key = "right"
         nudge(10000)
+        return true
+    end if
+    if key = "replay"
+        ' Instant Replay goes back 10 seconds, as on Roku's own players.
+        nudge(-10000)
         return true
     end if
     if key = "rewind"

@@ -42,7 +42,7 @@ screens against a test Arc, not to judge playback or the final look:
 ```sh
 npm run build
 npx brs-cli -y out/arc-roku.zip  # -y keeps the sign-in between runs; arrows, Enter = OK,
-                                 # Backspace = Back, * = options, Ctrl+S saves a snapshot (-s file)
+                                 # Delete or Esc = Back, Insert = *, Backspace = Instant Replay, Ctrl+S saves a snapshot (-s file)
 ```
 
 Known simulator differences: horizontal button groups stack vertically, system fonts fall back,

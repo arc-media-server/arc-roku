@@ -25,9 +25,12 @@ sub layout()
     w = m.top.width
     h = m.top.height
     if w <= 0 or h <= 0 then return
-    thumb = c <> invalid and c.style = "thumb"
+    ' "named" (people): a poster with the name and role under it.
+    named = c <> invalid and c.style = "named"
+    thumb = c <> invalid and (c.style = "thumb" or named)
     ph = h
     if thumb then ph = Int(w * 9 / 16)
+    if named then ph = h - 90
     for each n in [m.blank, m.picture]
         n.width = w
         n.height = ph
