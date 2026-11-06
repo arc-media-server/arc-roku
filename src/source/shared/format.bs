@@ -44,6 +44,14 @@ function resumeMs(item as object) as integer
     return ud.position_ms
 end function
 
+' minutesLeft: whole minutes still to watch (at least 1), or 0 when not part-way through.
+function minutesLeft(resume as integer, duration as integer) as integer
+    if resume <= 0 or duration <= 0 or resume >= duration then return 0
+    left = Int((duration - resume + 59999) / 60000)
+    if left < 1 then left = 1
+    return left
+end function
+
 function durationMs(item as object) as integer
     if item = invalid then return 0
     if item.runtime_min <> invalid and item.runtime_min > 0 then return item.runtime_min * 60000
@@ -82,4 +90,10 @@ function playLabel(item as object) as string
     if r > 0 then return tr("Resume from %1").Replace("%1", formatClock(r))
     if code <> "" then return tr("Play %1").Replace("%1", code)
     return tr("Play")
+end function
+
+' cardStripText: the minutes left on a wide card's resume strip ("12m"), or "" without them.
+function cardStripText(leftMin as integer) as string
+    if leftMin <= 0 then return ""
+    return tr("%1m").Replace("%1", leftMin.ToStr())
 end function

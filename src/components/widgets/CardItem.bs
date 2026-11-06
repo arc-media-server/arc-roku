@@ -4,6 +4,9 @@ sub init()
     m.picture = m.top.findNode("picture")
     m.track = m.top.findNode("track")
     m.bar = m.top.findNode("bar")
+    m.strip = m.top.findNode("strip")
+    m.play = m.top.findNode("play")
+    m.left = m.top.findNode("left")
     m.tick = m.top.findNode("tick")
     m.line1 = m.top.findNode("line1")
     m.line2 = m.top.findNode("line2")
@@ -50,7 +53,30 @@ sub layout()
     if c <> invalid then progress = c.progress
     m.track.visible = progress > 0
     m.bar.visible = progress > 0
-    if progress > 0
+    ' A 16:9 picture gets the resume strip: a shade along the bottom, a play mark, a short bar
+    ' and the minutes left. Posters keep a thin bar across the bottom.
+    strip = progress > 0 and thumb and not named
+    m.strip.visible = strip
+    m.play.visible = strip
+    m.left.visible = strip
+    if strip then m.track.color = "0xFFFFFF59" else m.track.color = "0x00000099"
+    if strip
+        m.strip.translation = [0, ph - 96]
+        m.strip.width = w
+        m.strip.height = 96
+        m.play.translation = [18, ph - 38]
+        m.track.translation = [52, ph - 29]
+        m.track.width = 120
+        m.track.height = 5
+        m.bar.translation = [52, ph - 29]
+        m.bar.width = 120 * progress
+        m.bar.height = 5
+        m.left.text = cardStripText(c.leftMin)
+        m.left.translation = [186, ph - 44]
+        m.left.width = w - 200
+        m.left.height = 34
+        m.left.vertAlign = "center"
+    else if progress > 0
         m.track.translation = [16, ph - 22]
         m.track.width = w - 32
         m.track.height = 8
