@@ -13,6 +13,7 @@
     <children>
         <Rectangle id="background" width="1920" height="1080" color="0x0B0F10FF" />
         <Group id="screens" />
+        <NavRail id="rail" visible="false" />
         <BusySpinner id="spinner" translation="[912, 492]" visible="false" />
     </children>
 </component>

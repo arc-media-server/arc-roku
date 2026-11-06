@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- The sidebar, as the Apple TV app's: the places' icons always down the left, the profile's
+     picture at the top and a soft disc behind the place that's showing. Opened (Left at a screen's
+     edge, or Back on a place's first screen), a dark panel comes in behind the icons, the names
+     fade in beside them and the page dims; Up and Down highlight, OK opens. Roku has no blur, so
+     the glass is a dark translucent panel. Set "places" ([{ id, label, icon }]), "current",
+     "profileName" and "profileColor"; "picked" is the place chosen (-1: the profile), "closed"
+     when Right leaves it. -->
+<component name="NavRail" extends="Group">
+    <interface>
+        <field id="places" type="array" onChange="onPlaces" />
+        <field id="current" type="integer" value="1" onChange="onCurrent" />
+        <field id="profileName" type="string" onChange="onProfile" />
+        <field id="profileColor" type="string" onChange="onProfile" />
+        <field id="open" type="boolean" value="false" onChange="onOpen" />
+        <field id="picked" type="integer" alwaysNotify="true" />
+        <field id="closed" type="boolean" alwaysNotify="true" />
+    </interface>
+    <children>
+        <Rectangle id="dim" width="1920" height="1080" color="0x000000FF" opacity="0" />
+        <Rectangle id="panel" width="400" height="1080" color="0x0E1112FF" opacity="0" />
+        <Poster id="pill" uri="pkg:/images/nav/pill.png" width="344" height="68" opacity="0" />
+        <Poster id="disc" uri="pkg:/images/nav/disc.png" width="68" height="68" blendColor="0xFFFFFF33" />
+        <Poster id="avatar" width="60" height="60" translation="[36, 70]" />
+        <Label id="initial" width="60" height="60" translation="[36, 70]" horizAlign="center" vertAlign="center" font="font:SmallBoldSystemFont" color="0xFFFFFFFF" />
+        <Label id="profileLabel" translation="[116, 82]" width="260" font="font:SmallBoldSystemFont" color="0xF5F5F7FF" opacity="0" />
+        <Group id="rows" />
+        <Animation id="anim" duration="0.2" easeFunction="outQuad">
+            <FloatFieldInterpolator id="dimFade" key="[0.0, 1.0]" keyValue="[0.0, 0.6]" fieldToInterp="dim.opacity" />
+            <FloatFieldInterpolator id="panelFade" key="[0.0, 1.0]" keyValue="[0.0, 0.92]" fieldToInterp="panel.opacity" />
+        </Animation>
+    </children>
+</component>

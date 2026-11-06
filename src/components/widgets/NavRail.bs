@@ -1,0 +1,133 @@
+' The sidebar (NavRail.xml). Row 0 is the profile; rows 1… are the places.
+
+sub init()
+    m.rows = m.top.findNode("rows")
+    m.pill = m.top.findNode("pill")
+    m.disc = m.top.findNode("disc")
+    m.dim = m.top.findNode("dim")
+    m.panel = m.top.findNode("panel")
+    m.avatar = m.top.findNode("avatar")
+    m.initial = m.top.findNode("initial")
+    m.profileLabel = m.top.findNode("profileLabel")
+    m.anim = m.top.findNode("anim")
+    m.icons = []
+    m.labels = []
+    m.focus = 0
+end sub
+
+' Where a place's row sits: 72 apart from 180 down.
+function rowY(i as integer) as integer
+    return 180 + i * 72
+end function
+
+sub onPlaces()
+    m.rows.removeChildrenIndex(m.rows.getChildCount(), 0)
+    m.icons = []
+    m.labels = []
+    places = m.top.places
+    for i = 0 to places.Count() - 1
+        icon = m.rows.createChild("Poster")
+        icon.uri = "pkg:/images/nav/" + places[i].icon + ".png"
+        icon.width = 36
+        icon.height = 36
+        icon.translation = [52, rowY(i) + 16]
+        label = m.rows.createChild("Label")
+        label.text = places[i].label
+        label.font = "font:SmallSystemFont"
+        label.width = 250
+        label.height = 68
+        label.vertAlign = "center"
+        label.translation = [116, rowY(i)]
+        label.opacity = 0
+        m.icons.Push(icon)
+        m.labels.Push(label)
+    end for
+    paint()
+end sub
+
+sub onCurrent()
+    paint()
+end sub
+
+sub onProfile()
+    color = m.top.profileColor
+    if color = invalid or color = "" then color = "teal"
+    m.avatar.uri = "pkg:/images/avatars/" + color + ".png"
+    name = m.top.profileName
+    initial = ""
+    if name <> invalid and Len(name) > 0 then initial = UCase(Left(name, 1))
+    m.initial.text = initial
+    m.profileLabel.text = name
+end sub
+
+sub onOpen()
+    if m.top.open
+        m.focus = m.top.current + 1
+        m.top.findNode("dimFade").reverse = false
+        m.top.findNode("panelFade").reverse = false
+        m.anim.control = "start"
+        m.top.setFocus(true)
+    else
+        m.top.findNode("dimFade").reverse = true
+        m.top.findNode("panelFade").reverse = true
+        m.anim.control = "start"
+    end if
+    paint()
+end sub
+
+' Draws the rail: shut, the icons with a disc behind the place showing; open, the names, and a
+' white pill behind the highlighted row with its icon and name in black.
+sub paint()
+    open = m.top.open
+    current = m.top.current
+    names = 0.0
+    if open then names = 1.0
+    m.profileLabel.opacity = names
+    for i = 0 to m.icons.Count() - 1
+        highlighted = open and m.focus = i + 1
+        m.labels[i].opacity = names
+        if highlighted
+            m.icons[i].blendColor = "0x000000FF"
+            m.labels[i].color = "0x000000FF"
+        else if i = current
+            m.icons[i].blendColor = "0xFFFFFFFF"
+            m.labels[i].color = "0xFFFFFFFF"
+        else
+            m.icons[i].blendColor = "0xFFFFFFA6"
+            m.labels[i].color = "0xC6CCCCFF"
+        end if
+    end for
+    m.disc.visible = not open and current >= 0 and current < m.icons.Count()
+    if m.disc.visible then m.disc.translation = [36, rowY(current)]
+    m.pill.opacity = 0
+    if open
+        m.pill.opacity = 1
+        if m.focus = 0
+            m.pill.translation = [24, 66]
+        else
+            m.pill.translation = [24, rowY(m.focus - 1)]
+        end if
+    end if
+end sub
+
+function onKeyEvent(key as string, press as boolean) as boolean
+    if not press or not m.top.open then return false
+    last = m.icons.Count()
+    if key = "up"
+        if m.focus > 0 then m.focus = m.focus - 1
+        paint()
+        return true
+    else if key = "down"
+        if m.focus < last then m.focus = m.focus + 1
+        paint()
+        return true
+    else if key = "OK"
+        m.top.picked = m.focus - 1
+        return true
+    else if key = "right"
+        m.top.closed = true
+        return true
+    end if
+    ' Back isn't handled here: in the open sidebar it leaves the app (MainScene).
+    return false
+end function

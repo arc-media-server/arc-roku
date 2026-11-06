@@ -257,6 +257,10 @@
   <translation>Highest first</translation>
 </message>
 <message>
+  <source>Home</source>
+  <translation>Home</translation>
+</message>
+<message>
   <source>Horror for Halloween</source>
   <translation>Horror for Halloween</translation>
 </message>
