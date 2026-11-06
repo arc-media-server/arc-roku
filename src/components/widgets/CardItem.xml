@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- A title on a row: its poster (or a 16:9 picture, or a person's picture, with two lines under it), how far through it
-     is, and a white edge when it has focus. Sized by its row. -->
+<!-- A title on a row: its poster (or a 16:9 picture, or a person's picture, with two lines centred under it), how far
+     through it is (a thin bar on posters; on 16:9 pictures a resume strip: play mark, bar and minutes left, as on the
+     Apple TV), and a white edge when it has focus. Sized by its row. -->
 <component name="CardItem" extends="Group">
     <interface>
         <field id="itemContent" type="node" onChange="onContent" />
@@ -9,14 +10,18 @@
         <field id="focusPercent" type="float" onChange="onFocus" />
         <field id="rowFocusPercent" type="float" />
     </interface>
+    <script type="text/brightscript" uri="pkg:/source/shared/format.bs" />
     <children>
         <Rectangle id="edge" color="0xFFFFFFFF" opacity="0" />
         <Rectangle id="blank" color="0x1C2526FF" />
         <Poster id="picture" loadDisplayMode="scaleToZoom" />
+        <Poster id="strip" uri="pkg:/images/strip.png" visible="false" />
+        <Poster id="play" uri="pkg:/images/play-mini.png" width="22" height="22" visible="false" />
+        <Label id="left" font="font:SmallestBoldSystemFont" color="0xFFFFFFFF" visible="false" />
         <Rectangle id="track" color="0x00000099" visible="false" />
         <Rectangle id="bar" color="0xF5F5F7FF" visible="false" />
         <Poster id="tick" uri="pkg:/images/watched.png" width="40" height="40" visible="false" />
-        <Label id="line1" font="font:SmallBoldSystemFont" color="0xF0F4F4FF" />
-        <Label id="line2" font="font:SmallestSystemFont" color="0x9AA7A7FF" />
+        <Label id="line1" font="font:SmallBoldSystemFont" color="0xF0F4F4FF" horizAlign="center" />
+        <Label id="line2" font="font:SmallestSystemFont" color="0x9AA7A7FF" horizAlign="center" />
     </children>
 </component>
