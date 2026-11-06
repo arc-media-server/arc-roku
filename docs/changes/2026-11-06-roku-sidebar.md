@@ -18,7 +18,7 @@ Arc's TV apps, and this brings its sidebar to Roku.
 
 ## Decisions
 
-- No blur on Roku: the open rail is a dark translucent panel (black at about 75%), the same
+- No blur on Roku: the open rail is a dark panel (92% opaque) over the page dimmed by 60%, the same
   fallback the LG app uses on older TVs.
 - The icons are white PNGs drawn once (48 px); the highlighted one is tinted black with
   `blendColor`, so there's one image per icon.
