@@ -11,7 +11,7 @@ sub init()
     m.episodes = m.top.findNode("episodes")
     m.error = m.top.findNode("error")
     shareSignIn([m.backdrop, m.logo])
-    m.buttons.observeField("rowItemSelected", "onButton")
+    m.buttons.observeField("picked", "onButton")
     m.page = m.top.findNode("page")
     m.slide = m.top.findNode("slide")
     m.slideTo = m.top.findNode("slideTo")
@@ -189,54 +189,49 @@ end function
 sub showButtons()
     it = m.item
     if it = invalid then return
-    labels = []
+    buttons = []
     m.actions = []
     playable = it.kind = "movie" or it.kind = "episode"
     target = invalid
     if playable then target = it
     if it.kind = "series" then target = nextEpisode()
     if target <> invalid
-        labels.Push(playLabel(target))
+        buttons.Push({ label: playLabel(target), icon: "play", wide: true })
         m.actions.Push({ kind: "play", item: target, startMs: resumeMs(target) })
         if resumeMs(target) > 0
-            labels.Push(tr("Play from the beginning"))
+            buttons.Push({ label: tr("Play from the beginning"), icon: "restart" })
             m.actions.Push({ kind: "play", item: target, startMs: 0 })
         end if
     end if
     watched = it.user_data <> invalid and it.user_data.played = true
     if it.kind = "series" then watched = it.unwatched_count <> invalid and it.unwatched_count = 0
-    if watched then labels.Push(tr("Mark as unwatched")) else labels.Push(tr("Mark as watched"))
+    if watched
+        buttons.Push({ label: tr("Mark as unwatched"), icon: "eye-slash" })
+    else
+        buttons.Push({ label: tr("Mark as watched"), icon: "eye" })
+    end if
     m.actions.Push({ kind: "watched", on: not watched })
     if it.kind <> "episode"
         listed = it.user_data <> invalid and it.user_data.watchlisted = true
-        if listed then labels.Push(tr("Remove from Watchlist")) else labels.Push(tr("Add to Watchlist"))
+        if listed
+            buttons.Push({ label: tr("Remove from Watchlist"), icon: "bookmark-slash" })
+        else
+            buttons.Push({ label: tr("Add to Watchlist"), icon: "bookmark" })
+        end if
         m.actions.Push({ kind: "watchlist", on: not listed })
     end if
     if it.kind = "episode" and it.parent_id <> invalid
-        labels.Push(tr("Go to show"))
+        buttons.Push({ label: tr("Go to show"), icon: "show" })
         m.actions.Push({ kind: "open", id: it.parent_id })
     end if
-    focused = m.buttons.rowItemFocused
-    content = CreateObject("roSGNode", "ContentNode")
-    row = content.createChild("ContentNode")
-    for each label in labels
-        b = row.createChild("ContentNode")
-        b.title = label
-    end for
-    ' Wide enough for the longest label, as Roku's own buttons grow with theirs.
-    longest = 0
-    for each label in labels
-        if Len(label) > longest then longest = Len(label)
-    end for
-    w = 18 * longest + 60
-    if w < 240 then w = 240
-    m.buttons.rowItemSize = [[w, 72]]
-    m.buttons.content = content
-    if focused <> invalid and focused.Count() = 2 and focused[1] > 0 and focused[1] < labels.Count() then m.buttons.jumpToRowItem = [0, focused[1]]
+    ' The focus stays on the same button when the page reloads (after Watched, say).
+    keep = m.buttons.focusIndex
+    m.buttons.buttons = buttons
+    if keep < buttons.Count() then m.buttons.focusIndex = keep
 end sub
 
 sub onButton()
-    a = m.actions[m.buttons.rowItemSelected[1]]
+    a = m.actions[m.buttons.picked]
     if a = invalid then return
     if a.kind = "play"
         m.top.action = { go: "play", id: a.item.id, startMs: a.startMs, title: m.item.title, subtitle: episodeLine(a.item) }

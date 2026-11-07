@@ -1,0 +1,83 @@
+sub init()
+    m.row = m.top.findNode("row")
+    m.caption = m.top.findNode("caption")
+    m.items = []
+    m.top.observeField("focusedChild", "paint")
+end sub
+
+sub build()
+    m.row.removeChildrenIndex(m.row.getChildCount(), 0)
+    m.items = []
+    x = 0
+    h = 72
+    for each b in m.top.buttons
+        g = m.row.createChild("Group")
+        g.translation = [x, 0]
+        back = g.createChild("Capsule")
+        back.height = h
+        icon = g.createChild("Poster")
+        icon.uri = "pkg:/images/buttons/" + b.icon + ".png"
+        icon.width = 36
+        icon.height = 36
+        label = invalid
+        if b.wide = true
+            label = g.createChild("Label")
+            label.font = "font:SmallBoldSystemFont"
+            label.text = b.label
+            tw = label.boundingRect().width
+            if tw <= 0 then tw = Len(b.label) * 17
+            w = Int(tw) + 36 + 12 + 64
+            icon.translation = [32, (h - 36) / 2]
+            label.translation = [32 + 36 + 12, 0]
+            label.height = h
+            label.vertAlign = "center"
+        else
+            w = h
+            icon.translation = [(h - 36) / 2, (h - 36) / 2]
+        end if
+        back.width = w
+        m.items.Push({ back: back, icon: icon, label: label, text: b.label })
+        x = x + w + 20
+    end for
+    if m.top.focusIndex >= m.items.Count() then m.top.focusIndex = 0
+    paint()
+end sub
+
+sub paint()
+    focused = m.top.isInFocusChain()
+    i = 0
+    for each it in m.items
+        on = focused and i = m.top.focusIndex
+        if on
+            it.back.color = "0xFFFFFFFF"
+            it.icon.blendColor = "0x000000FF"
+            if it.label <> invalid then it.label.color = "0x000000FF"
+        else
+            it.back.color = "0xFFFFFF2E"
+            it.icon.blendColor = "0xFFFFFFFF"
+            if it.label <> invalid then it.label.color = "0xF5F5F7FF"
+        end if
+        i = i + 1
+    end for
+    m.caption.text = ""
+    if focused and m.top.focusIndex < m.items.Count()
+        it = m.items[m.top.focusIndex]
+        if it.label = invalid then m.caption.text = it.text
+    end if
+end sub
+
+function onKeyEvent(key as string, press as boolean) as boolean
+    if not press or m.items.Count() = 0 then return false
+    if key = "right" and m.top.focusIndex < m.items.Count() - 1
+        m.top.focusIndex = m.top.focusIndex + 1
+        return true
+    else if key = "left" and m.top.focusIndex > 0
+        m.top.focusIndex = m.top.focusIndex - 1
+        return true
+    else if key = "OK"
+        m.top.picked = m.top.focusIndex
+        return true
+    end if
+    ' Left from the first button goes on to the scene, which opens the sidebar.
+    return false
+end function

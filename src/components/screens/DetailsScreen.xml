@@ -31,9 +31,7 @@
             <LayoutGroup id="line2" translation="[120, 546]" layoutDirection="horiz" itemSpacings="[12]" vertAlignment="center" />
             <Label id="starring" translation="[1220, 460]" width="580" wrap="true" maxLines="2" horizAlign="right" font="font:SmallestSystemFont" color="0xC6D0D0FF" />
             <Label id="director" translation="[1220, 532]" width="580" horizAlign="right" font="font:SmallestSystemFont" color="0xC6D0D0FF" />
-            <RowList id="buttons" translation="[120, 590]" itemComponentName="ActionButton" numRows="1" itemSize="[1800, 72]"
-                rowItemSize="[[340, 72]]" rowItemSpacing="[[20, 0]]" showRowLabel="[false]" drawFocusFeedback="false"
-                rowFocusAnimationStyle="floatingFocus" />
+            <ButtonBar id="buttons" translation="[120, 594]" />
             <RowList id="episodes" translation="[120, 740]" itemComponentName="CardItem" numRows="2" itemSize="[1800, 420]" vertFocusAnimationStyle="fixedFocus"
                 rowItemSize="[[400, 330]]" rowItemSpacing="[[28, 0]]" itemSpacing="[0, 40]" showRowLabel="[true]"
                 rowLabelOffset="[[0, 16]]" rowLabelColor="0xF0F4F4FF" rowLabelFont="font:MediumBoldSystemFont"

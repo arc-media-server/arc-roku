@@ -19,10 +19,15 @@ The fourth part of `docs/plans/apple-tv-look.md`: a title's page as on the Apple
   `shared/titlepage.bs` makes the lines (genres, facts, names joined "A, B, and C"), with tests.
   New widget: `OutlinedBadge`.
 
+- **The buttons** are the Apple TV's: Play (or Resume) as a white capsule with its words, then
+  round icon buttons: from the beginning, watched (eye), Watchlist (bookmark) and the show. The
+  focused one is white with black; while a round one has the focus, its name shows under the bar
+  (Roku has no hover hints, so the name says what an icon does). `widgets/ButtonBar` replaces the
+  one-row RowList of text buttons; the icons are white PNGs in `images/buttons`.
+
 ## Not yet
 
-- The buttons are still Arc's text buttons; the Apple TV's round icon buttons after Play, and
-  the About / Details / Crew / Playback cards at the foot of the page, are the next step.
+- The About / Details / Crew / Playback cards at the foot of the page are the next step.
 
 ## Logging
 
@@ -32,6 +37,7 @@ None: it's layout only.
 
 `npm run check` and `npm test` pass (14 new checks). In the community simulator against a test
 Arc: Heat's page shows "R Crime · Drama · Action", the overview, "1995 · 2h 50m SD AAC 1.0",
-Starring Al Pacino, Robert De Niro, and Val Kilmer and Director Michael Mann; below, Trailers &
+Starring Al Pacino, Robert De Niro, and Val Kilmer and Director Michael Mann; the Resume capsule
+and three round buttons, with "Play from the beginning" under the bar when that one is focused; below, Trailers &
 Extras, Related and the round cast with the ring on the focused person. `MaskGroup` needs Roku OS
 9 or later, which every supported Roku has; the round pictures still need checking on a TV.
