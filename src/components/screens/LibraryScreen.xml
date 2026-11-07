@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- A library, as on the Apple TV: pills at the top (Recommended, Browse, Collections; an Other
+     videos library has Browse, Collections and Folders) over the page they choose. Recommended is
+     Home's hero and rows for the library (HomeScreen with a library); Browse, Collections and
+     Folders are the grid (GridScreen, embedded). params: { library: { id, name, kind } }. -->
+<component name="LibraryScreen" extends="Group">
+    <interface>
+        <field id="params" type="assocarray" onChange="onParams" />
+        <field id="action" type="assocarray" alwaysNotify="true" />
+        <function name="takeFocus" />
+        <function name="leaving" />
+        <function name="returned" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/source/shared/http.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/format.bs" />
+    <children>
+        <Group id="pages" />
+        <PillBar id="pills" translation="[112, 44]" />
+    </children>
+</component>

@@ -109,12 +109,20 @@
   <translation>Automatic</translation>
 </message>
 <message>
+  <source>Because you watched %1</source>
+  <translation>Because you watched %1</translation>
+</message>
+<message>
   <source>Behind the scenes</source>
   <translation>Behind the scenes</translation>
 </message>
 <message>
   <source>Bottom</source>
   <translation>Bottom</translation>
+</message>
+<message>
+  <source>Browse</source>
+  <translation>Browse</translation>
 </message>
 <message>
   <source>Can't reach Arc</source>
@@ -171,6 +179,10 @@
 <message>
   <source>Couldn't load Home.</source>
   <translation>Couldn't load Home.</translation>
+</message>
+<message>
+  <source>Couldn't load Recommended.</source>
+  <translation>Couldn't load Recommended.</translation>
 </message>
 <message>
   <source>Couldn't load this title.</source>
@@ -329,6 +341,10 @@
   <translation>Mono</translation>
 </message>
 <message>
+  <source>More in %1</source>
+  <translation>More in %1</translation>
+</message>
+<message>
   <source>More Like This</source>
   <translation>More Like This</translation>
 </message>
@@ -363,6 +379,10 @@
 <message>
   <source>Nothing matches “%1”.</source>
   <translation>Nothing matches “%1”.</translation>
+</message>
+<message>
+  <source>Nothing to recommend yet. Recommendations appear here once this library has titles you can watch.</source>
+  <translation>Nothing to recommend yet. Recommendations appear here once this library has titles you can watch.</translation>
 </message>
 <message>
   <source>Nothing to show yet. Titles appear here once Arc has scanned your libraries.</source>
@@ -485,6 +505,26 @@
   <translation>Recently Added in %1</translation>
 </message>
 <message>
+  <source>Recently Released</source>
+  <translation>Recently Released</translation>
+</message>
+<message>
+  <source>Recently Watched</source>
+  <translation>Recently Watched</translation>
+</message>
+<message>
+  <source>Recently Watched Episodes</source>
+  <translation>Recently Watched Episodes</translation>
+</message>
+<message>
+  <source>Recommended</source>
+  <translation>Recommended</translation>
+</message>
+<message>
+  <source>Rediscover</source>
+  <translation>Rediscover</translation>
+</message>
+<message>
   <source>Release date</source>
   <translation>Release date</translation>
 </message>
@@ -605,6 +645,10 @@
   <translation>Sort by</translation>
 </message>
 <message>
+  <source>Start Watching</source>
+  <translation>Start Watching</translation>
+</message>
+<message>
   <source>Stereo</source>
   <translation>Stereo</translation>
 </message>
@@ -667,6 +711,42 @@
 <message>
   <source>Top</source>
   <translation>Top</translation>
+</message>
+<message>
+  <source>Top Movies by %1</source>
+  <translation>Top Movies by %1</translation>
+</message>
+<message>
+  <source>Top Movies in %1</source>
+  <translation>Top Movies in %1</translation>
+</message>
+<message>
+  <source>Top Movies with %1</source>
+  <translation>Top Movies with %1</translation>
+</message>
+<message>
+  <source>Top Rated Movies</source>
+  <translation>Top Rated Movies</translation>
+</message>
+<message>
+  <source>Top Rated Shows</source>
+  <translation>Top Rated Shows</translation>
+</message>
+<message>
+  <source>Top Shows by %1</source>
+  <translation>Top Shows by %1</translation>
+</message>
+<message>
+  <source>Top Shows in %1</source>
+  <translation>Top Shows in %1</translation>
+</message>
+<message>
+  <source>Top Shows with %1</source>
+  <translation>Top Shows with %1</translation>
+</message>
+<message>
+  <source>Top Unwatched</source>
+  <translation>Top Unwatched</translation>
 </message>
 <message>
   <source>Track %1</source>

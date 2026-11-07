@@ -1,0 +1,66 @@
+' A library's Recommended rows (GET /libraries/{id}/recommended), titled in the viewer's language
+' as the web's recommendedTitle and the Apple TV app's: shows libraries say Shows and Episodes
+' where films say Movies, and a person's row says "with" for actors and "by" for directors. A type
+' this app doesn't know yet keeps Arc's own English title.
+
+function recommendedTitle(row as object, libraryName as string, libraryKind as string) as string
+    shows = libraryKind = "shows"
+    name = valueString(row.name)
+    t = valueString(row.type)
+    if t = "continue" then return tr("Continue Watching")
+    if t = "recently_released" then return tr("Recently Released")
+    if t = "recently_added"
+        if name = "" then name = libraryName
+        return tr("Recently Added in %1").Replace("%1", name)
+    end if
+    if t = "start_watching" then return tr("Start Watching")
+    if t = "because_you_watched" then return tr("Because you watched %1").Replace("%1", name)
+    if t = "top_rated"
+        if shows then return tr("Top Rated Shows")
+        return tr("Top Rated Movies")
+    end if
+    if t = "recently_watched"
+        if shows then return tr("Recently Watched Episodes")
+        return tr("Recently Watched")
+    end if
+    if t = "rediscover" then return tr("Rediscover")
+    if t = "more_in_genre" then return tr("More in %1").Replace("%1", name)
+    if t = "top_in_genre"
+        if shows then return tr("Top Shows in %1").Replace("%1", name)
+        return tr("Top Movies in %1").Replace("%1", name)
+    end if
+    if t = "top_by_person"
+        if valueString(row.role) = "director"
+            if shows then return tr("Top Shows by %1").Replace("%1", name)
+            return tr("Top Movies by %1").Replace("%1", name)
+        end if
+        if shows then return tr("Top Shows with %1").Replace("%1", name)
+        return tr("Top Movies with %1").Replace("%1", name)
+    end if
+    if t = "top_unwatched" then return tr("Top Unwatched")
+    return valueString(row.title)
+end function
+
+' recommendedRows: Arc's answer as rows for Home's row list ({ title, style, cards }), leaving out
+' empty rows. A row's style is Arc's (poster or thumb); automatic is a poster, and a row of
+' episodes (Continue Watching in a shows library) is 16:9.
+function recommendedRows(data as dynamic, libraryName as string, libraryKind as string) as object
+    out = []
+    if data = invalid or data.rows = invalid then return out
+    for each row in data.rows
+        items = row.items
+        if items <> invalid and items.Count() > 0
+            style = valueString(row.style)
+            if style <> "thumb"
+                style = "poster"
+                if items[0].kind = "episode" then style = "thumb"
+            end if
+            cards = []
+            for each it in items
+                cards.Push({ item: it })
+            end for
+            out.Push({ title: recommendedTitle(row, libraryName, libraryKind), style: style, cards: cards })
+        end if
+    end for
+    return out
+end function

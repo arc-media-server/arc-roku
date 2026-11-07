@@ -29,6 +29,11 @@ sub onParams()
     m.libraryView = m.source.kind
     m.query = libraryQueryDefaults()
     m.titleLabel.text = valueOr(p.title, "")
+    ' Inside a library's page (LibraryScreen) the pills name the view and choose it, and Up from
+    ' the top row goes on to them, so the grid doesn't wrap round.
+    m.embedded = valueOr(p.embedded, false) = true
+    m.titleLabel.visible = not m.embedded
+    if m.embedded then m.grid.vertFocusAnimationStyle = "floatingFocus"
     if m.source.kind = "library"
         m.hint.text = tr("* for options, sort and filter")
         callApi("GET", "/libraries/" + valueString(m.source.id) + "/facets", invalid, "onFacets")
@@ -213,7 +218,7 @@ sub openMenu(section as string)
         if entries.Count() > 0 then m.options.title = card.title else m.options.title = tr("Sort and filter")
         if m.top.params.source.kind <> "library"
             if entries.Count() = 0 then return
-        else
+        else if not m.embedded
             entries.Push({ label: tr("Show"), detail: viewName(m.libraryView) })
             values.Push("view")
         end if
