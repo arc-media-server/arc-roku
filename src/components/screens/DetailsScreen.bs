@@ -2,7 +2,10 @@ sub init()
     m.backdrop = m.top.findNode("backdrop")
     m.logo = m.top.findNode("logo")
     m.titleLabel = m.top.findNode("title")
-    m.meta = m.top.findNode("meta")
+    m.line1 = m.top.findNode("line1")
+    m.line2 = m.top.findNode("line2")
+    m.starring = m.top.findNode("starring")
+    m.director = m.top.findNode("director")
     m.overview = m.top.findNode("overview")
     m.buttons = m.top.findNode("buttons")
     m.episodes = m.top.findNode("episodes")
@@ -94,9 +97,7 @@ sub onItem(event as object)
     m.logo.uri = imageUrl(logo)
     m.titleLabel.visible = logo = invalid
     if ep and it.series_title <> invalid then m.titleLabel.text = it.series_title else m.titleLabel.text = it.title
-    meta = metaLine(it)
-    if ep and it.title <> invalid then meta = meta.Replace(episodeCode(it), episodeCode(it) + " · " + it.title)
-    m.meta.text = meta
+    showHeroLines(it)
     m.overview.text = valueOr(it.overview, "")
     m.related = {}
     if it.kind = "series"
@@ -116,6 +117,34 @@ sub onItem(event as object)
     end if
     showButtons()
     buildRows()
+end sub
+
+' The rating box and genres; the year, length and quality badges; Starring and Director.
+sub showHeroLines(it as object)
+    m.line1.removeChildrenIndex(m.line1.getChildCount(), 0)
+    m.line2.removeChildrenIndex(m.line2.getChildCount(), 0)
+    if it.content_rating <> invalid and it.content_rating <> ""
+        m.line1.createChild("OutlinedBadge").text = it.content_rating
+    end if
+    addHeroText(m.line1, heroGenres(it), "font:SmallBoldSystemFont")
+    addHeroText(m.line2, heroFacts(it), "font:SmallSystemFont")
+    for each b in qualityBadges(qualityFile(it))
+        m.line2.createChild("OutlinedBadge").text = b
+    end for
+    stars = joinNames(creditNames(it, "actor", 3))
+    m.starring.text = ""
+    if stars <> "" then m.starring.text = tr("Starring %1").Replace("%1", stars)
+    directors = joinNames(creditNames(it, "director", 2))
+    m.director.text = ""
+    if directors <> "" then m.director.text = tr("Director %1").Replace("%1", directors)
+end sub
+
+sub addHeroText(group as object, text as string, font as string)
+    if text = "" then return
+    label = group.createChild("Label")
+    label.font = font
+    label.color = "0xE4EAEAFF"
+    label.text = text
 end sub
 
 sub onSimilar(event as object)
@@ -239,8 +268,8 @@ sub onSeasons(event as object)
     showButtons()
 end sub
 
-' buildRows lays out what's under the buttons, as the other apps' title pages: a show's seasons,
-' then the cast, the collections the title is in, More Like This and extras. Rows are rebuilt as
+' buildRows lays out what's under the buttons, as the Apple TV app's title page: a show's seasons,
+' then Trailers & Extras, Related, the cast and the collections the title is in. Rows are rebuilt as
 ' each part arrives, keeping the focus where it was.
 sub buildRows()
     it = m.item
@@ -253,6 +282,15 @@ sub buildRows()
             specs.Push({ kind: "season", title: title, style: "thumb", items: s.episodes })
         end if
     end for
+    if it.extras <> invalid and it.extras.Count() > 0
+        extras = []
+        img = valueOr(it.images, {})
+        for each e in it.extras
+            extras.Push({ item: { id: e.id, kind: "extra", title: e.title, path: e.stream_url, images: { primary: img.backdrop, backdrop: img.backdrop } }, line2: extraKind(e.kind) })
+        end for
+        specs.Push({ kind: "extra", title: tr("Trailers & Extras"), style: "thumb", cards: extras })
+    end if
+    if m.related.similar <> invalid and m.related.similar.Count() > 0 then specs.Push({ kind: "title", title: tr("Related"), style: "poster", items: m.related.similar })
     if it.credits <> invalid
         cast = []
         for each c in it.credits
@@ -271,15 +309,6 @@ sub buildRows()
                 if others.Count() > 0 then specs.Push({ kind: "title", title: c.title, style: "poster", items: others })
             end if
         end for
-    end if
-    if m.related.similar <> invalid and m.related.similar.Count() > 0 then specs.Push({ kind: "title", title: tr("More Like This"), style: "poster", items: m.related.similar })
-    if it.extras <> invalid and it.extras.Count() > 0
-        extras = []
-        img = valueOr(it.images, {})
-        for each e in it.extras
-            extras.Push({ item: { id: e.id, kind: "extra", title: e.title, path: e.stream_url, images: { primary: img.backdrop, backdrop: img.backdrop } }, line2: extraKind(e.kind) })
-        end for
-        specs.Push({ kind: "extra", title: tr("Extras"), style: "thumb", cards: extras })
     end if
 
     content = CreateObject("roSGNode", "ContentNode")
@@ -314,11 +343,11 @@ sub buildRows()
         if spec.style = "thumb"
             sizes.Push([400, 330])
         else if spec.style = "named"
-            sizes.Push([220, 420])
+            sizes.Push([220, 330])
         else
             sizes.Push([220, 330])
         end if
-        if spec.style = "named" then heights.Push(500) else heights.Push(420)
+        heights.Push(420)
     end for
     m.episodes.rowItemSize = sizes
     m.episodes.rowHeights = heights
