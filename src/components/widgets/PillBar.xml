@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- A library's pills (Recommended, Browse, Collections or Folders), as the Apple TV app's: a row
+     of capsules in one dark rounded group at the top of the page. The chosen pill is white with
+     black text; while the bar has the focus, the focused pill is white and the chosen one light
+     grey. Left and Right move along it, OK chooses ("picked"); Down leaves it ("leave"). Set
+     "labels" and "selected". -->
+<component name="PillBar" extends="Group">
+    <interface>
+        <field id="labels" type="array" onChange="build" />
+        <field id="selected" type="integer" value="0" onChange="paint" />
+        <field id="picked" type="integer" alwaysNotify="true" />
+        <field id="leave" type="boolean" alwaysNotify="true" />
+    </interface>
+    <children>
+        <Capsule id="back" height="84" color="0x1E2224E6" />
+        <Group id="pills" translation="[8, 8]" />
+    </children>
+</component>

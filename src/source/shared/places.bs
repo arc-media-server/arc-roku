@@ -17,7 +17,7 @@ function navPlaces(libraries as object, prefs as dynamic) as object
         if i = watchlistAt then places.Push(watchlist)
         lib = libs[i]
         places.Push({ id: "library:" + lib.id.ToStr(), label: lib.name, icon: libraryIcon(lib.kind),
-            go: { go: "grid", title: lib.name, source: { kind: "library", id: lib.id, libraryKind: lib.kind } } })
+            go: { go: "library", library: { id: lib.id, name: lib.name, kind: lib.kind } } })
     end for
     if watchlistAt >= libs.Count() then places.Push(watchlist)
     places.Push({ id: "playlists", label: tr("Playlists"), icon: "playlists", go: { go: "grid", title: tr("Playlists"), source: { kind: "playlists" } } })
