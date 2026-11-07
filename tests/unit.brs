@@ -12,6 +12,8 @@ sub Main()
     testBrowse()
     testPlaces()
     testRecommended()
+    testQuality()
+    testTitlePage()
     if m.failures = 0 then print "ALL PASSED" else print "FAILURES: "; m.failures
 end sub
 
@@ -280,4 +282,31 @@ sub testRecommended()
     eq(rows[1].title, "Because you watched Heat", "recommended: because you watched")
     eq(rows[1].cards.Count(), 2, "recommended: every title is a card")
     eq(recommendedRows(invalid, "TV", "shows").Count(), 0, "recommended: no answer")
+end sub
+
+' The same files as the Apple TV app's QualityTests.
+sub testQuality()
+    f = { streams: [{ kind: "video", codec: "hevc", width: 3840, height: 1600, color_transfer: "smpte2084", dolby_vision: true }, { kind: "audio", codec: "eac3", profile: "Dolby Digital Plus + Dolby Atmos", channels: 6, is_default: true }] }
+    eq(qualityBadges(f).Join("|"), "4K|DV HDR10|DD+ 5.1|Atmos", "quality: 4K Dolby Vision with Atmos")
+    f = { streams: [{ kind: "video", codec: "h264", width: 1920, height: 1080 }, { kind: "audio", codec: "aac", channels: 2 }, { kind: "audio", codec: "dts", profile: "DTS-HD MA + DTS:X", channels: 8, is_default: true }] }
+    eq(qualityBadges(f).Join("|"), "HD|DTS-HD MA 7.1|DTS:X", "quality: the default audio track")
+    eq(qualityBadges({ streams: [{ kind: "video", codec: "mpeg2video", width: 720, height: 576 }] }).Join("|"), "SD", "quality: SD")
+    eq(qualityBadges({ streams: [{ kind: "video", codec: "hevc", width: 3840, height: 2160, color_transfer: "arib-std-b67" }] }).Join("|"), "4K|HLG", "quality: HLG")
+    eq(qualityBadges({ streams: [] }).Count(), 0, "quality: no streams")
+    eq(qualityBadges(invalid).Count(), 0, "quality: no file")
+    item = { files: [{ id: 1, missing: true }, { id: 2 }] }
+    eq(qualityFile(item).id, 2, "quality: the first file on disk")
+end sub
+
+sub testTitlePage()
+    movie = { kind: "movie", year: 2014, runtime_min: 169, genres: ["Adventure", "Drama", "Science Fiction", "Mystery"], credits: [
+        { role: "actor", name: "Matthew McConaughey" }, { role: "director", name: "Christopher Nolan" },
+        { role: "actor", name: "Anne Hathaway" }, { role: "actor", name: "Michael Caine" }, { role: "actor", name: "Jessica Chastain" }] }
+    eq(heroGenres(movie), "Adventure · Drama · Science Fiction", "title page: three genres")
+    eq(heroFacts(movie), "2014 · 2h 49m", "title page: year and length")
+    eq(heroFacts({ kind: "episode", season_number: 1, episode_number: 8, title: "Ariel", runtime_min: 46 }), "S1 E8 · Ariel · 46m", "title page: an episode's facts")
+    eq(joinNames(creditNames(movie, "actor", 3)), "Matthew McConaughey, Anne Hathaway, and Michael Caine", "title page: three actors")
+    eq(joinNames(creditNames(movie, "director", 3)), "Christopher Nolan", "title page: one director")
+    eq(joinNames(["A", "B"]), "A and B", "title page: two names")
+    eq(joinNames([]), "", "title page: no names")
 end sub

@@ -1,0 +1,105 @@
+' What a title's file is, as short badges for its page (4K, DV HDR10, DD+ 5.1, Atmos), as the
+' Apple TV app's Quality.badges and the web's sourceFormats/audioFormat: labels for the source,
+' not for what this TV will output. Read from items/{id}'s files and their streams.
+
+' qualityFile: the file a title's page describes, the first one on disk.
+function qualityFile(item as dynamic) as dynamic
+    if item = invalid or item.files = invalid or item.files.Count() = 0 then return invalid
+    for each f in item.files
+        if f.missing <> true then return f
+    end for
+    return item.files[0]
+end function
+
+function qualityBadges(file as dynamic) as object
+    out = []
+    if file = invalid or file.streams = invalid then return out
+    video = invalid
+    audio = invalid
+    for each s in file.streams
+        if s.kind = "video" and video = invalid then video = s
+        if s.kind = "audio"
+            if audio = invalid then audio = s
+            if s.is_default = true and audio.is_default <> true then audio = s
+        end if
+    end for
+    if video <> invalid
+        r = qualityResolution(video)
+        if r <> "" then out.Push(r)
+        h = qualityHdr(video)
+        if h <> "" then out.Push(h)
+    end if
+    if audio <> invalid
+        parts = []
+        c = qualityAudioCodec(audio)
+        if c <> "" then parts.Push(c)
+        ch = qualityChannels(audio.channels)
+        if ch <> "" then parts.Push(ch)
+        if parts.Count() > 0 then out.Push(parts.Join(" "))
+        o = qualityObjectAudio(audio)
+        if o <> "" then out.Push(o)
+    end if
+    return out
+end function
+
+' 4K, HD or SD by the picture's size (a scope film's 3840x1600 is still 4K).
+function qualityResolution(video as object) as string
+    w = video.width
+    h = video.height
+    if w = invalid or h = invalid or w <= 0 or h <= 0 then return ""
+    if w >= 3200 or h >= 1700 then return "4K"
+    if w >= 1200 or h >= 700 then return "HD"
+    return "SD"
+end function
+
+' Dolby Vision with its HDR10 base reads "DV HDR10".
+function qualityHdr(video as object) as string
+    pq = valueString(video.color_transfer) = "smpte2084"
+    plus = video.hdr10_plus = true
+    if video.dolby_vision = true
+        if not pq then return "DV"
+        if plus then return "DV HDR10+"
+        return "DV HDR10"
+    end if
+    if plus then return "HDR10+"
+    if pq then return "HDR10"
+    if valueString(video.color_transfer) = "arib-std-b67" then return "HLG"
+    return ""
+end function
+
+function qualityAudioCodec(audio as object) as string
+    p = LCase(valueString(audio.profile))
+    c = valueString(audio.codec)
+    if c = "eac3" then return "DD+"
+    if c = "ac3" then return "DD"
+    if c = "truehd" then return "TrueHD"
+    if c = "dts"
+        if Left(p, 9) = "dts-hd ma" then return "DTS-HD MA"
+        if Left(p, 10) = "dts-hd hra" then return "DTS-HD HRA"
+        return "DTS"
+    end if
+    if c = "aac" then return "AAC"
+    if c = "flac" then return "FLAC"
+    if c = "opus" then return "Opus"
+    if c = "mp3" then return "MP3"
+    if c = "" then return ""
+    if Left(c, 3) = "pcm" then return "PCM"
+    return UCase(c)
+end function
+
+function qualityChannels(n as dynamic) as string
+    if n = invalid or n = 0 then return ""
+    if n = 1 then return "1.0"
+    if n = 2 then return "2.0"
+    if n = 6 then return "5.1"
+    if n = 8 then return "7.1"
+    return n.ToStr() + "ch"
+end function
+
+' Atmos or DTS:X, from the track's profile as ffprobe names it.
+function qualityObjectAudio(audio as object) as string
+    p = LCase(valueString(audio.profile))
+    if p.Instr("atmos") >= 0 then return "Atmos"
+    if p.Instr("dts:x") >= 0 then return "DTS:X"
+    return ""
+end function

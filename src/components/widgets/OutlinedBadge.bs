@@ -1,0 +1,25 @@
+sub init()
+    m.label = m.top.findNode("label")
+    m.edges = [m.top.findNode("top"), m.top.findNode("bottom"), m.top.findNode("left"), m.top.findNode("right")]
+end sub
+
+sub layout()
+    m.label.text = m.top.text
+    w = m.label.boundingRect().width
+    if w <= 0 then w = Len(m.top.text) * 14
+    w = Int(w) + 20
+    h = 40
+    t = 2
+    m.label.width = w
+    m.label.height = h
+    m.edges[0].width = w
+    m.edges[0].height = t
+    m.edges[1].translation = [0, h - t]
+    m.edges[1].width = w
+    m.edges[1].height = t
+    m.edges[2].width = t
+    m.edges[2].height = h
+    m.edges[3].translation = [w - t, 0]
+    m.edges[3].width = t
+    m.edges[3].height = h
+end sub
