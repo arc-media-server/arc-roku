@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- A title page's buttons, as the Apple TV app's: Play (or Resume) as a wide capsule with its
+     words, then round icon buttons (from the beginning, watched, Watchlist, the show). The focused
+     button is white with black, the others dark glass; while a round one has the focus its name
+     shows under the bar. Set "buttons" ([{ label, icon, wide }]); "picked" is the one chosen. -->
+<component name="ButtonBar" extends="Group">
+    <interface>
+        <field id="buttons" type="array" onChange="build" />
+        <field id="focusIndex" type="integer" value="0" onChange="paint" />
+        <field id="picked" type="integer" alwaysNotify="true" />
+    </interface>
+    <children>
+        <Group id="row" />
+        <Label id="caption" translation="[0, 88]" width="900" font="font:SmallestSystemFont" color="0xC6D0D0FF" />
+    </children>
+</component>
