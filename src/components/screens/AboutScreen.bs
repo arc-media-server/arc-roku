@@ -1,0 +1,89 @@
+' About: versions and connection, read from roAppInfo, GET /health and GET /auth/status, and the
+' licences in the side panel. TheTVDB and TMDB ask to be credited where their details show.
+
+sub init()
+    m.rows = m.top.findNode("rows")
+    m.rows.observeField("itemSelected", "onRow")
+    m.options = m.top.findNode("options")
+    m.options.observeField("closed", "onClosed")
+    m.options.observeField("picked", "onClosed")
+    m.top.findNode("heading").text = tr("About")
+    m.top.findNode("appName").text = tr("Arc for Roku")
+    m.version = CreateObject("roAppInfo").GetVersion()
+    m.top.findNode("version").text = tr("Version %1").Replace("%1", m.version)
+    m.top.findNode("credit").text = tr("Titles, artwork and episode details come from TMDB and TheTVDB. This product uses the TMDB API but is not endorsed or certified by TMDB.")
+    m.health = invalid
+    m.local = invalid
+    m.rowKeys = []
+    draw()
+    callApi("GET", "/health", invalid, "onHealth")
+    callApi("GET", "/auth/status", invalid, "onStatus")
+end sub
+
+sub takeFocus(_ = invalid as dynamic)
+    if m.options.visible then m.options.show = true else m.rows.setFocus(true)
+end sub
+
+sub leaving(_ = invalid as dynamic)
+end sub
+
+sub returned(_ = invalid as dynamic)
+end sub
+
+sub onHealth(event as object)
+    res = event.getData()
+    if res.ok and res.data <> invalid then m.health = res.data
+    draw()
+end sub
+
+sub onStatus(event as object)
+    res = event.getData()
+    if res.ok and res.data <> invalid and res.data.local <> invalid then m.local = res.data.local
+    draw()
+end sub
+
+sub draw()
+    rows = []
+    rows.Push(["", tr("Version"), m.version])
+    rows.Push(["", tr("Server"), m.global.serverName])
+    if m.health <> invalid
+        if m.health.version <> invalid then rows.Push(["", tr("Arc Version"), m.health.version])
+        if m.health.api_version <> invalid then rows.Push(["", tr("API"), "v" + m.health.api_version.ToStr()])
+    end if
+    rows.Push(["", tr("Address"), m.global.server])
+    if m.local <> invalid
+        if m.local then rows.Push(["", tr("Connection"), tr("Local network")]) else rows.Push(["", tr("Connection"), tr("Remote")])
+    end if
+    rows.Push(["licences", tr("Open Source Licences"), ""])
+    content = CreateObject("roSGNode", "ContentNode")
+    m.rowKeys = []
+    for each r in rows
+        node = content.createChild("ContentNode")
+        if r[2] <> "" then node.title = r[1] + ":   " + r[2] else node.title = r[1]
+        m.rowKeys.Push(r[0])
+    end for
+    focused = m.rows.itemFocused
+    m.rows.content = content
+    if focused > 0 then m.rows.jumpToItem = focused
+end sub
+
+sub onRow()
+    if m.rowKeys[m.rows.itemSelected] <> "licences" then return
+    m.options.title = tr("Open Source Licences")
+    m.options.entries = [
+        { label: "Arc for Roku", detail: "AGPL-3.0" },
+        { label: "BrighterScript", detail: tr("MIT (build tool)") },
+    ]
+    m.options.selected = -1
+    m.options.visible = true
+    m.options.show = true
+end sub
+
+sub onClosed()
+    m.options.visible = false
+    m.rows.setFocus(true)
+end sub
+
+function onKeyEvent(key as string, press as boolean) as boolean
+    return false
+end function

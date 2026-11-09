@@ -113,7 +113,11 @@ sub onPage(event as object)
     m.total = page.total
     if not browsePaged(m.source) or page.cards.Count() = 0 then m.total = m.loaded
     if m.source.kind = "person" and res.data <> invalid and res.data.person <> invalid then m.titleLabel.text = res.data.person.name
-    if m.source.kind = "collection" and res.data <> invalid and res.data.collection <> invalid then m.titleLabel.text = res.data.collection.title
+    if m.source.kind = "collection" and res.data <> invalid and res.data.collection <> invalid
+        m.titleLabel.text = res.data.collection.title
+        ' A collection's page reads as a library's, with its overview under the name (Apple TV).
+        m.overview = valueOr(res.data.collection.overview, "")
+    end if
     if m.source.kind = "playlist" and res.data <> invalid and res.data.playlist <> invalid then m.titleLabel.text = res.data.playlist.title
     if first
         m.grid.content = m.content
@@ -138,6 +142,10 @@ sub showSummary()
         m.summary.text = tr("Collections")
     else if m.source.kind = "folders"
         m.summary.text = tr("Folders")
+    else if m.source.kind = "collection" and m.overview <> invalid and m.overview <> ""
+        m.summary.text = m.overview
+        ' Two lines of overview need the room of one more line above the posters.
+        m.grid.translation = [120, 280]
     else if m.total > 0
         m.summary.text = countLine(m.total)
     else
@@ -175,7 +183,7 @@ sub onSelected()
     else if c.kind = "playlist"
         m.top.action = { go: "grid", title: c.title, source: { kind: "playlist", id: c.itemId } }
     else if c.kind = "person"
-        m.top.action = { go: "grid", title: c.title, source: { kind: "person", id: c.itemId } }
+        m.top.action = { go: "person", title: c.title, id: c.itemId }
     else if c.kind = "folder"
         m.top.action = { go: "grid", title: c.title, source: { kind: "folders", id: libId, libraryKind: m.source.libraryKind, path: c.path } }
     else

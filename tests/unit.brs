@@ -15,6 +15,7 @@ sub Main()
     testQuality()
     testTitlePage()
     testPlayerOsd()
+    testPerson()
     if m.failures = 0 then print "ALL PASSED" else print "FAILURES: "; m.failures
 end sub
 
@@ -331,4 +332,27 @@ sub testPlayerOsd()
     eq(osdMeta(ep, 24 * 60000), "S2 · E4 · 24m · 24 Oct 2026", "osd: the Info card's line")
     eq(osdMeta({ kind: "movie", year: 1995 }, 170 * 60000), "2h 50m · 1995", "osd: a film's line")
     eq(osdDay("nonsense"), "", "osd: not a date")
+end sub
+
+sub testPerson()
+    heat = { id: "h", kind: "movie", title: "Heat", year: 1995, release_date: "1995-12-15" }
+    joker = { id: "j", kind: "movie", title: "Joker", year: 2019, release_date: "2019-10-04" }
+    show = { id: "s", kind: "series", title: "Show", year: 2010 }
+    film = { id: "f", kind: "movie", title: "Directed", year: 2001 }
+    page = { person: { name: "Al", known_for: "Acting" }, credits: [
+        { item: heat, character: "Lt. Vincent Hanna", roles: ["actor"] },
+        { item: joker, character: "Someone", roles: ["actor"] },
+        { item: show, character: "Guest", roles: [] },
+        { item: film, roles: ["director"] },
+        { item: heat, roles: ["actor"] }] }
+    rows = personRows(page)
+    eq(rows.Count(), 3, "person: movies, shows, behind the camera")
+    eq(rows[0].credits[0].item.title, "Joker", "person: newest first")
+    eq(rows[0].credits.Count(), 2, "person: a title once per row")
+    eq(rows[2].credits[0].item.title, "Directed", "person: behind the camera")
+    eq(personSummary(page), "Acting · 4 titles in your libraries", "person: the summary")
+    eq(personSummary({ person: {}, credits: [{ item: heat }] }), "1 title in your libraries", "person: one title")
+    eq(personPart(page.credits[0]), "Heat (1995) · as Lt. Vincent Hanna", "person: their part")
+    eq(personPart(page.credits[3]), "Directed (2001) · Director", "person: a part behind the camera")
+    eq(personRows(invalid).Count(), 0, "person: no page")
 end sub
