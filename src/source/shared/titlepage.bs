@@ -1,0 +1,49 @@
+' The words on a title's page, as the Apple TV app's: the genres beside the rating box, the
+' year and length beside the quality badges, and "Starring" and "Director" at the bottom right.
+
+' heroGenres: up to three genres, joined by " · ".
+function heroGenres(item as object) as string
+    out = []
+    if item.genres <> invalid
+        for each g in item.genres
+            if out.Count() < 3 then out.Push(g)
+        end for
+    end if
+    return out.Join(" · ")
+end function
+
+' heroFacts: the year (or an episode's code and name) and length, joined by " · ".
+function heroFacts(item as object) as string
+    parts = []
+    code = episodeCode(item)
+    if code <> ""
+        if item.title <> invalid and item.title <> "" then parts.Push(code + " · " + item.title) else parts.Push(code)
+    else if item.year <> invalid and item.year > 0
+        parts.Push(item.year.ToStr())
+    end if
+    if item.runtime_min <> invalid and item.runtime_min > 0 then parts.Push(formatRuntime(item.runtime_min))
+    return parts.Join(" · ")
+end function
+
+' creditNames: the names of up to `most` people credited in `role` (actor, director), in order.
+function creditNames(item as object, role as string, most as integer) as object
+    out = []
+    if item.credits = invalid then return out
+    for each c in item.credits
+        if c.role = role and c.name <> invalid and out.Count() < most then out.Push(c.name)
+    end for
+    return out
+end function
+
+' joinNames: "A", "A and B", "A, B, and C", as the Apple TV app lists people.
+function joinNames(names as object) as string
+    n = names.Count()
+    if n = 0 then return ""
+    if n = 1 then return names[0]
+    if n = 2 then return tr("%1 and %2").Replace("%1", names[0]).Replace("%2", names[1])
+    head = []
+    for i = 0 to n - 2
+        head.Push(names[i])
+    end for
+    return tr("%1, and %2").Replace("%1", head.Join(", ")).Replace("%2", names[n - 1])
+end function

@@ -10,13 +10,18 @@ sub init()
     m.tick = m.top.findNode("tick")
     m.line1 = m.top.findNode("line1")
     m.line2 = m.top.findNode("line2")
+    m.ring = m.top.findNode("ring")
+    m.round = m.top.findNode("round")
+    m.roundBlank = m.top.findNode("roundBlank")
+    m.face = m.top.findNode("face")
     m.picture.setHttpAgent(m.top.getScene().getHttpAgent())
+    m.face.setHttpAgent(m.top.getScene().getHttpAgent())
 end sub
 
 sub onContent()
     c = m.top.itemContent
     if c = invalid then return
-    m.picture.uri = c.HDPosterUrl
+    if c.style = "named" then m.face.uri = c.HDPosterUrl else m.picture.uri = c.HDPosterUrl
     m.line1.text = c.title
     m.line2.text = c.line2
     layout()
@@ -33,7 +38,26 @@ sub layout()
     thumb = c <> invalid and (c.style = "thumb" or named)
     ph = h
     if thumb then ph = Int(w * 9 / 16)
-    if named then ph = h - 90
+    if named then ph = w
+    ' A person: a round picture as wide as the card, the name and role under it.
+    m.round.visible = named
+    m.ring.visible = named
+    m.blank.visible = not named
+    m.picture.visible = not named
+    if named
+        m.round.maskSize = [w, w]
+        for each n in [m.roundBlank, m.face]
+            n.width = w
+            n.height = w
+        end for
+        m.face.loadWidth = w
+        m.face.loadHeight = w
+        ' ring.png is a 272 px ring around a 240 px circle.
+        r = w * 272 / 240
+        m.ring.width = r
+        m.ring.height = r
+        m.ring.translation = [(w - r) / 2, (w - r) / 2]
+    end if
     for each n in [m.blank, m.picture]
         n.width = w
         n.height = ph
@@ -89,5 +113,11 @@ sub layout()
 end sub
 
 sub onFocus()
+    c = m.top.itemContent
+    if c <> invalid and c.style = "named"
+        m.ring.opacity = m.top.focusPercent
+        m.edge.opacity = 0
+        return
+    end if
     m.edge.opacity = m.top.focusPercent
 end sub
