@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- A filled capsule of any width (two round caps and a rectangle between), for pills and the
+     pill bar's background: Roku's Rectangle has no rounded corners. -->
+<component name="Capsule" extends="Group">
+    <interface>
+        <field id="width" type="float" onChange="layout" />
+        <field id="height" type="float" value="68" onChange="layout" />
+        <field id="color" type="color" value="0xFFFFFFFF" onChange="layout" />
+    </interface>
+    <children>
+        <Poster id="left" uri="pkg:/images/cap-l.png" />
+        <Rectangle id="middle" />
+        <Poster id="right" uri="pkg:/images/cap-r.png" />
+    </children>
+</component>

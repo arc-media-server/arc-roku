@@ -11,6 +11,7 @@ sub Main()
     testTracks()
     testBrowse()
     testPlaces()
+    testRecommended()
     if m.failures = 0 then print "ALL PASSED" else print "FAILURES: "; m.failures
 end sub
 
@@ -253,11 +254,30 @@ sub testPlaces()
     eq(ids.Join(","), "search,home,library:2,watchlist,library:1,library:3,playlists,settings", "navPlaces: profile's order, the Watchlist after one library")
     eq(p[2].icon, "tv", "navPlaces: a TV library's icon")
     eq(p[5].icon, "videos", "navPlaces: a videos library's icon")
-    eq(p[4].go.source.libraryKind, "movies", "navPlaces: a library opens its grid")
+    eq(p[4].go.go + " " + p[4].go.library.kind, "library movies", "navPlaces: a library opens its page")
     p = navPlaces(libs, invalid)
     eq(p[2].id, "watchlist", "navPlaces: the Watchlist first by default")
     p = navPlaces(libs, { watchlist_position: 99 })
     eq(p[p.Count() - 3].id, "watchlist", "navPlaces: the Watchlist last when asked")
     eq(placeIndex(p, "home"), 1, "placeIndex finds Home")
     eq(placeIndex(p, "nowhere"), -1, "placeIndex: unknown places")
+end sub
+
+sub testRecommended()
+    eq(recommendedTitle({ type: "recently_added" }, "Movies", "movies"), "Recently Added in Movies", "recommended: recently added names the library")
+    eq(recommendedTitle({ type: "top_rated" }, "TV", "shows"), "Top Rated Shows", "recommended: shows say Shows")
+    eq(recommendedTitle({ type: "top_by_person", name: "Ridley Scott", role: "director" }, "Movies", "movies"), "Top Movies by Ridley Scott", "recommended: directors are by")
+    eq(recommendedTitle({ type: "top_by_person", name: "Al Pacino", role: "actor" }, "Movies", "movies"), "Top Movies with Al Pacino", "recommended: actors are with")
+    eq(recommendedTitle({ type: "something_new", title: "Arc's Title" }, "Movies", "movies"), "Arc's Title", "recommended: a new type keeps Arc's title")
+    data = { rows: [
+        { type: "continue", items: [{ id: "e1", kind: "episode" }] },
+        { type: "rediscover", items: [] },
+        { type: "because_you_watched", name: "Heat", items: [{ id: "m1", kind: "movie" }, { id: "m2", kind: "movie" }] }
+    ] }
+    rows = recommendedRows(data, "TV", "shows")
+    eq(rows.Count(), 2, "recommended: empty rows are left out")
+    eq(rows[0].style, "thumb", "recommended: a row of episodes is 16:9")
+    eq(rows[1].title, "Because you watched Heat", "recommended: because you watched")
+    eq(rows[1].cards.Count(), 2, "recommended: every title is a card")
+    eq(recommendedRows(invalid, "TV", "shows").Count(), 0, "recommended: no answer")
 end sub

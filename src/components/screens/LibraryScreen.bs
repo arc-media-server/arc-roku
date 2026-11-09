@@ -1,0 +1,81 @@
+sub init()
+    m.pages = m.top.findNode("pages")
+    m.pills = m.top.findNode("pills")
+    m.pills.observeField("picked", "onPicked")
+    m.pills.observeField("leave", "intoPage")
+    m.page = invalid
+end sub
+
+sub onParams()
+    lib = m.top.params.library
+    m.library = lib
+    if lib.kind = "videos"
+        m.views = ["library", "collections", "folders"]
+        m.pills.labels = [tr("Browse"), tr("Collections"), tr("Folders")]
+    else
+        m.views = ["recommended", "library", "collections"]
+        m.pills.labels = [tr("Recommended"), tr("Browse"), tr("Collections")]
+    end if
+    show(0)
+end sub
+
+' show puts up the page a pill chooses, in place of the one showing.
+sub show(i as integer)
+    m.pills.selected = i
+    if m.page <> invalid
+        m.page.unobserveField("action")
+        m.page.callFunc("leaving", invalid)
+        m.pages.removeChild(m.page)
+    end if
+    v = m.views[i]
+    lib = m.library
+    if v = "recommended"
+        m.page = CreateObject("roSGNode", "HomeScreen")
+        m.page.params = { library: lib }
+    else
+        m.page = CreateObject("roSGNode", "GridScreen")
+        m.page.params = { title: lib.name, embedded: true, source: { kind: v, id: lib.id, libraryKind: lib.kind } }
+    end if
+    m.page.observeField("action", "onPageAction")
+    m.pages.appendChild(m.page)
+end sub
+
+sub onPageAction(event as object)
+    a = event.getData()
+    ' The library's places are the sidebar's business; Home's "places" isn't sent from here.
+    if a <> invalid and a.go = "places" then return
+    m.top.action = a
+end sub
+
+sub onPicked()
+    i = m.pills.picked
+    if i <> m.pills.selected then show(i)
+    intoPage()
+end sub
+
+sub intoPage()
+    if m.page <> invalid then m.page.callFunc("takeFocus", invalid)
+end sub
+
+' The page takes the focus as the library opens, as Home's first row does.
+sub takeFocus(_ = invalid as dynamic)
+    intoPage()
+end sub
+
+sub leaving(_ = invalid as dynamic)
+    if m.page <> invalid then m.page.callFunc("leaving", invalid)
+end sub
+
+sub returned(_ = invalid as dynamic)
+    if m.page <> invalid then m.page.callFunc("returned", invalid)
+end sub
+
+function onKeyEvent(key as string, press as boolean) as boolean
+    if not press then return false
+    ' Up past the page's top goes to the pills.
+    if key = "up" and not m.pills.isInFocusChain()
+        m.pills.setFocus(true)
+        return true
+    end if
+    return false
+end function

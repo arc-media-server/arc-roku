@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!-- Home, as the Apple TV app's and Arc's other TV apps': the focused title's artwork fills the
-     screen with its logo, details and overview, and the profile's rows sit below. -->
+     screen with its logo, details and overview, and the profile's rows sit below. With params
+     { library: { id, name, kind } } it's that library's Recommended page instead (inside
+     LibraryScreen, under its pills): the same hero, without the overview, over Arc's
+     recommended rows. -->
 <component name="HomeScreen" extends="Group">
     <interface>
-        <field id="params" type="assocarray" />
+        <field id="params" type="assocarray" onChange="onParams" alwaysNotify="true" />
         <field id="action" type="assocarray" alwaysNotify="true" />
         <function name="takeFocus" />
         <function name="leaving" />
@@ -18,6 +21,7 @@
     <script type="text/brightscript" uri="pkg:/source/shared/browse.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/cardmenu.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/places.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/recommended.bs" />
     <children>
         <Poster id="backdrop" width="1920" height="1080" loadDisplayMode="scaleToZoom" loadWidth="1920" loadHeight="1080" />
         <Poster uri="pkg:/images/shade.png" width="1920" height="1080" />

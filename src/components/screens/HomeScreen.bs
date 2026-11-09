@@ -27,6 +27,22 @@ sub init()
     m.heights = []
     m.prefs = invalid
     m.libraries = invalid
+    m.library = invalid
+end sub
+
+' Home loads once its params are set (MainScene sets them as it shows the screen).
+sub onParams()
+    p = m.top.params
+    if p <> invalid then m.library = p.library
+    if m.library <> invalid
+        ' Under the library's pills: the hero sits lower and has no overview.
+        m.top.findNode("hint").visible = false
+        m.logo.translation = [120, 165]
+        m.logo.height = 150
+        m.logo.loadHeight = 150
+        m.heroTitle.translation = [120, 210]
+        m.heroOverview.visible = false
+    end if
     load()
 end sub
 
@@ -44,6 +60,11 @@ sub returned(_ = invalid as dynamic)
 end sub
 
 sub load()
+    if m.library <> invalid
+        m.generation = CreateObject("roDateTime").AsSeconds().ToStr() + Rnd(100000).ToStr()
+        callApi("GET", "/libraries/" + valueString(m.library.id) + "/recommended", invalid, "onRecommended", m.generation)
+        return
+    end if
     m.prefs = invalid
     m.libraries = invalid
     m.generation = CreateObject("roDateTime").AsSeconds().ToStr() + Rnd(100000).ToStr()
@@ -85,6 +106,32 @@ sub resolve()
     m.newSizes = []
     m.newHeights = []
     if m.specs.Count() = 0 then showEmpty(tr("Nothing here yet. Add a library in Arc's settings on the web."))
+end sub
+
+' A library's Recommended rows arrive at once; they're placed as Home's are.
+sub onRecommended(event as object)
+    res = event.getData()
+    if res.tag <> m.generation then return
+    if not res.ok
+        showEmpty(tr("Couldn't load Recommended.") + " " + res.error)
+        return
+    end if
+    rows = recommendedRows(res.data, valueString(m.library.name), valueString(m.library.kind))
+    m.specs = []
+    m.results = []
+    for each r in rows
+        m.specs.Push({ title: r.title, style: r.style })
+        m.results.Push(r.cards)
+    end for
+    m.placed = 0
+    m.newContent = CreateObject("roSGNode", "ContentNode")
+    m.newSizes = []
+    m.newHeights = []
+    if rows.Count() = 0
+        showEmpty(tr("Nothing to recommend yet. Recommendations appear here once this library has titles you can watch."))
+        return
+    end if
+    placeRows()
 end sub
 
 sub onRow(event as object)
