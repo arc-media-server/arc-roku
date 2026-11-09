@@ -1,0 +1,106 @@
+' The player's controls in the Apple TV app's arrangement (arc-apple PlayerOSD): the pure parts,
+' so the unit tests cover them without a Roku.
+
+' osdSegments: the timeline's pieces, one per chapter (the whole title when there are none), as
+' [{ start, finish }] in ms.
+function osdSegments(chapters as dynamic, totalMs as double) as object
+    if totalMs <= 0 then return [{ start: 0, finish: 1 }]
+    starts = [0]
+    if chapters <> invalid
+        for each c in chapters
+            s = c.start_ms
+            if s <> invalid and s > 0 and s < totalMs then starts.Push(s)
+        end for
+    end if
+    starts.Sort()
+    out = []
+    for i = 0 to starts.Count() - 1
+        finish = totalMs
+        if i + 1 < starts.Count() then finish = starts[i + 1]
+        if finish > starts[i] then out.Push({ start: starts[i], finish: finish })
+    end for
+    return out
+end function
+
+' osdWidths: each piece's width in pixels across `total`, with `gap` between pieces (at least 2
+' each, so a short chapter still shows).
+function osdWidths(pieces as object, total as double, gap as double) as object
+    usable = total - gap * (pieces.Count() - 1)
+    length = pieces[pieces.Count() - 1].finish
+    out = []
+    for each p in pieces
+        w = usable * (p.finish - p.start) / length
+        if w < 2 then w = 2
+        out.Push(w)
+    end for
+    return out
+end function
+
+' osdMarkerX: where the marker sits for a position: along its piece, after the gaps before it.
+function osdMarkerX(pieces as object, widths as object, gap as double, at as double) as double
+    x = 0.0
+    last = pieces.Count() - 1
+    for i = 0 to last
+        p = pieces[i]
+        if at < p.finish or i = last
+            done = (at - p.start) / (p.finish - p.start)
+            if done < 0 then done = 0
+            if done > 1 then done = 1
+            return x + widths[i] * done
+        end if
+        x = x + widths[i] + gap
+    end for
+    return x
+end function
+
+' osdTabs: the tab row's tabs, by what the title has.
+function osdTabs(hasChapters as boolean, hasCast as boolean, hasEpisodes as boolean) as object
+    out = ["info"]
+    if hasChapters then out.Push("chapters")
+    if hasCast then out.Push("cast")
+    if hasEpisodes then out.Push("episodes")
+    return out
+end function
+
+' osdEpisodeLine: "S2, E4 • Day of Atonement" above the show's name (a film has none).
+function osdEpisodeLine(item as dynamic) as string
+    if item = invalid or item.kind <> "episode" then return ""
+    if item.season_number = invalid or item.episode_number = invalid then return valueOrEmpty(item.title)
+    line = "S" + item.season_number.ToStr() + ", E" + item.episode_number.ToStr()
+    if item.title <> invalid and item.title <> "" then line = line + " • " + item.title
+    return line
+end function
+
+' osdMeta: the Info card's line, "S2 · E4 · 24m · 24 Oct 2026" (a film: its length and date or year).
+function osdMeta(item as dynamic, totalMs as double) as string
+    if item = invalid then return ""
+    parts = []
+    if item.kind = "episode" and item.season_number <> invalid and item.episode_number <> invalid
+        parts.Push("S" + item.season_number.ToStr() + " · E" + item.episode_number.ToStr())
+    end if
+    minutes = Int(totalMs / 60000)
+    if minutes > 0 then parts.Push(formatRuntime(minutes))
+    day = osdDay(valueOrEmpty(item.release_date))
+    if day <> ""
+        parts.Push(day)
+    else if item.year <> invalid
+        parts.Push(item.year.ToStr())
+    end if
+    return parts.Join(" · ")
+end function
+
+' osdDay: "24 Oct 2026" from Arc's yyyy-mm-dd ("" when it isn't one).
+function osdDay(iso as string) as string
+    if Len(iso) < 10 then return ""
+    y = Val(Left(iso, 4))
+    mo = Val(Mid(iso, 6, 2))
+    d = Val(Mid(iso, 9, 2))
+    if y = 0 or mo < 1 or mo > 12 or d < 1 then return ""
+    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    return d.ToStr() + " " + months[mo - 1] + " " + y.ToStr()
+end function
+
+function valueOrEmpty(v as dynamic) as string
+    if v = invalid then return ""
+    return v
+end function

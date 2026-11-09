@@ -14,6 +14,7 @@ sub Main()
     testRecommended()
     testQuality()
     testTitlePage()
+    testPlayerOsd()
     if m.failures = 0 then print "ALL PASSED" else print "FAILURES: "; m.failures
 end sub
 
@@ -309,4 +310,25 @@ sub testTitlePage()
     eq(joinNames(creditNames(movie, "director", 3)), "Christopher Nolan", "title page: one director")
     eq(joinNames(["A", "B"]), "A and B", "title page: two names")
     eq(joinNames([]), "", "title page: no names")
+end sub
+
+sub testPlayerOsd()
+    pieces = osdSegments([{ start_ms: 0 }, { start_ms: 4000 }, { start_ms: 8000 }], 12000)
+    eq(pieces.Count(), 3, "osd: a piece per chapter")
+    eq(pieces[1].start, 4000, "osd: the second piece starts at its chapter")
+    eq(pieces[2].finish, 12000, "osd: the last piece ends at the end")
+    eq(osdSegments(invalid, 60000).Count(), 1, "osd: no chapters, one piece")
+    eq(osdSegments([{ start_ms: 70000 }], 60000).Count(), 1, "osd: a chapter past the end is left out")
+    widths = osdWidths(pieces, 1216, 8)
+    eq(Int(widths[0]), 400, "osd: widths share what's left after the gaps")
+    eq(Int(osdMarkerX(pieces, widths, 8, 6000)), 608, "osd: the marker halfway through the second piece")
+    eq(Int(osdMarkerX(pieces, widths, 8, 0)), 0, "osd: the marker at the start")
+    eq(Int(osdMarkerX(pieces, widths, 8, 12000)), 1216, "osd: the marker at the end")
+    eq(osdTabs(true, false, true).Join("|"), "info|chapters|episodes", "osd: tabs by what there is")
+    ep = { kind: "episode", season_number: 2, episode_number: 4, title: "Day of Atonement", release_date: "2026-10-24" }
+    eq(osdEpisodeLine(ep), "S2, E4 • Day of Atonement", "osd: the episode line")
+    eq(osdEpisodeLine({ kind: "movie", title: "Heat" }), "", "osd: a film has no episode line")
+    eq(osdMeta(ep, 24 * 60000), "S2 · E4 · 24m · 24 Oct 2026", "osd: the Info card's line")
+    eq(osdMeta({ kind: "movie", year: 1995 }, 170 * 60000), "2h 50m · 1995", "osd: a film's line")
+    eq(osdDay("nonsense"), "", "osd: not a date")
 end sub
