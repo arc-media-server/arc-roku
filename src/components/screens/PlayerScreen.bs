@@ -13,8 +13,14 @@ sub init()
     m.spinner = m.top.findNode("spinner")
     m.spinner.poster.uri = "pkg:/images/spinner.png"
     m.controls = m.top.findNode("controls")
-    m.bar = m.top.findNode("bar")
     m.head = m.top.findNode("head")
+    m.main = m.top.findNode("main")
+    m.segments = m.top.findNode("segments")
+    m.elapsed = m.top.findNode("elapsed")
+    m.playState = m.top.findNode("playState")
+    m.buttonsGroup = m.top.findNode("buttons")
+    m.tabsGroup = m.top.findNode("tabs")
+    m.card = m.top.findNode("card")
     m.positionLabel = m.top.findNode("position")
     m.remainingLabel = m.top.findNode("remaining")
     m.stateLabel = m.top.findNode("state")
@@ -73,6 +79,22 @@ sub init()
     m.skipMarker = invalid
     m.menuValues = []
     m.isExtra = false
+    ' Where the remote is in the controls: "picture" (Left/Right skip, OK pauses), "buttons" (the
+    ' round buttons), "tabs" (the tab row) or "card" (the tiles in the open card).
+    m.zone = "picture"
+    m.buttonIndex = 2
+    m.tabIndex = 0
+    m.tileIndex = 0
+    m.tabNames = ["info"]
+    m.cast = []
+    m.seasonEpisodes = []
+    m.timelineKey = ""
+    m.menuFromButton = false
+    m.menuParent = invalid
+    m.cardTop = false
+    m.tabNodes = invalid
+    m.tiles = invalid
+    buildButtons()
 end sub
 
 sub onParams()
@@ -168,16 +190,18 @@ sub onItem(event as object)
     title = it.title
     sub2 = ""
     if it.kind = "episode"
+        ' The show's name large, "S2, E4 • the episode's name" above it.
         if it.series_title <> invalid then title = it.series_title
-        sub2 = episodeCode(it) + " · " + valueOr(it.title, "")
+        sub2 = osdEpisodeLine(it)
     end if
-    ' The page that started playback knows the show and episode numbers in the viewer's order.
+    ' The page that started playback knows the show's name, and the episode's numbers in the
+    ' viewer's chosen ordering (which can differ from the file's).
     if m.top.params.title <> invalid and m.top.params.title <> "" then title = m.top.params.title
     if it.kind = "episode" and m.top.params.subtitle <> invalid and m.top.params.subtitle <> "" then sub2 = m.top.params.subtitle
-    if it.kind <> "episode" and it.year <> invalid then sub2 = it.year.ToStr()
     m.top.findNode("title").text = title
     m.top.findNode("subtitle").text = sub2
     load(valueOr(m.top.params.startMs, 0), {})
+    loadCastAndEpisodes(it)
     if it.kind = "episode" and pref("auto_play", true) <> false
         callApi("GET", "/items/" + escape(it.id) + "/next", invalid, "onNext")
     end if
@@ -238,6 +262,8 @@ sub onPlan(event as object)
     old = m.plan
     m.plan = p
     m.pendingFrom = res.tag.fromMs
+    ' The Chapters tab follows what this file has.
+    m.tabNodes = invalid
     if old = invalid
         audioLang = invalid
         if p.audio_tracks <> invalid
@@ -251,7 +277,6 @@ sub onPlan(event as object)
     else
         loadCues()
     end if
-    m.hint.text = tr("* Audio, subtitles and more")
     print "Arc: playback "; p.method; " (attempt "; m.attempt; ")"
     callApi("POST", "/cast", { url: p.url }, "onCast", res.tag)
 end sub
@@ -407,33 +432,85 @@ end sub
 
 sub drawTimeline(at as double)
     d = durationOf()
-    frac = 0.0
-    if d > 0 then frac = at / d
-    if frac < 0 then frac = 0
-    if frac > 1 then frac = 1
-    w = 1680 * frac
-    m.bar.width = w
-    m.head.translation = [120 + w - 3, 932]
+    buildTimeline(d)
+    if at < 0 then at = 0
+    if d > 0 and at > d then at = d
+    ' Each piece fills as far as the position has got through it.
+    i = 0
+    for each piece in m.pieces
+        done = 0.0
+        if piece.finish > piece.start then done = (at - piece.start) / (piece.finish - piece.start)
+        if done < 0 then done = 0
+        if done > 1 then done = 1
+        m.pieceFills[i].width = m.pieceWidths[i] * done
+        i = i + 1
+    end for
+    x = osdMarkerX(m.pieces, m.pieceWidths, m.pieceGap, at)
+    m.head.translation = [120 + x - 3, 875]
     m.positionLabel.text = formatClock(at)
-    m.chapterLabel.text = ""
-    if m.plan <> invalid and m.plan.chapters <> invalid and m.plan.chapters.Count() > 1
-        c = chapterAt(m.plan.chapters, at)
-        if c >= 0 then m.chapterLabel.text = valueOr(m.plan.chapters[c].title, "")
+    r = m.positionLabel.boundingRect()
+    m.playState.translation = [r.width + 10, 9]
+    if m.video.state = "playing" and m.scrub < 0
+        m.playState.uri = "pkg:/images/pause-mini.png"
+    else
+        m.playState.uri = "pkg:/images/play-mini.png"
     end if
+    ex = 120 + x - (r.width + 32) / 2
+    if ex < 120 then ex = 120
+    if ex > 1400 - r.width - 40 then ex = 1400 - r.width - 40
+    m.elapsed.translation = [ex, 914]
     m.remainingLabel.text = "-" + formatClock(d - at)
     if m.scrub >= 0 and m.bif <> invalid
         path = bifThumb(m.bif, at)
         if path <> ""
             m.thumb.uri = path
-            x = 120 + w - 165
-            if x < 60 then x = 60
-            if x > 1530 then x = 1530
-            m.thumbGroup.translation = [x, 720]
+            m.chapterLabel.text = ""
+            if m.plan <> invalid and m.plan.chapters <> invalid and m.plan.chapters.Count() > 1
+                c = chapterAt(m.plan.chapters, at)
+                if c >= 0 then m.chapterLabel.text = valueOr(m.plan.chapters[c].title, "")
+            end if
+            tx = 120 + x - 165
+            if tx < 60 then tx = 60
+            if tx > 1530 then tx = 1530
+            m.thumbGroup.translation = [tx, 620]
             m.thumbGroup.visible = true
         end if
     else
         m.thumbGroup.visible = false
     end if
+end sub
+
+' buildTimeline: the timeline's pieces (one per chapter, with gaps between), made again only when
+' the length or the chapters change.
+sub buildTimeline(d as double)
+    chapters = invalid
+    if m.plan <> invalid then chapters = m.plan.chapters
+    key = d.ToStr() + ":" + FormatJson(chapters)
+    if key = m.timelineKey then return
+    m.timelineKey = key
+    m.pieces = osdSegments(chapters, d)
+    m.pieceGap = 0
+    if m.pieces.Count() > 1 then m.pieceGap = 8
+    m.pieceWidths = osdWidths(m.pieces, 1680, m.pieceGap)
+    m.pieceFills = []
+    m.segments.removeChildrenIndex(m.segments.getChildCount(), 0)
+    x = 0.0
+    i = 0
+    for each piece in m.pieces
+        back = m.segments.createChild("Rectangle")
+        back.translation = [x, 0]
+        back.width = m.pieceWidths[i]
+        back.height = 12
+        back.color = "0xFFFFFF59"
+        fill = m.segments.createChild("Rectangle")
+        fill.translation = [x, 0]
+        fill.width = 0
+        fill.height = 12
+        fill.color = "0xFFFFFFFF"
+        m.pieceFills.Push(fill)
+        x = x + m.pieceWidths[i] + m.pieceGap
+        i = i + 1
+    end for
 end sub
 
 sub showControls()
@@ -444,7 +521,8 @@ sub showControls()
 end sub
 
 sub onHideTimer()
-    if m.video.state = "playing" and m.scrub < 0 then m.controls.visible = false
+    ' The controls stay while the buttons, tabs or a card have the remote, or a menu is open.
+    if m.video.state = "playing" and m.scrub < 0 and m.zone = "picture" and not m.options.visible then m.controls.visible = false
 end sub
 
 ' Left/Right move 10 seconds and Rewind/Fast Forward 30; the seek happens when the presses stop.
@@ -518,6 +596,13 @@ function onKeyEvent(key as string, press as boolean) as boolean
         openMenu("")
         return true
     end if
+    if key = "play"
+        togglePause()
+        return true
+    end if
+    if m.zone = "buttons" then return buttonsKey(key)
+    if m.zone = "tabs" then return tabsKey(key)
+    if m.zone = "card" then return cardKey(key)
     if key = "OK" and m.skip.visible
         skipNow()
         return true
@@ -533,7 +618,7 @@ function onKeyEvent(key as string, press as boolean) as boolean
         m.top.action = { go: "back" }
         return true
     end if
-    if key = "play" or key = "OK"
+    if key = "OK"
         togglePause()
         return true
     end if
@@ -558,12 +643,466 @@ function onKeyEvent(key as string, press as boolean) as boolean
         nudge(30000)
         return true
     end if
-    if key = "up" or key = "down"
-        showControls()
+    ' Up goes to the round buttons (Subtitles first), Down to the tab row and the Info card, as
+    ' on the Apple TV.
+    if key = "up" and not m.isExtra
+        setZone("buttons")
+        return true
+    end if
+    if key = "down" and not m.isExtra
+        m.tabIndex = 0
+        setZone("tabs")
         return true
     end if
     return false
 end function
+
+' --- the controls' zones: the round buttons, the tab row and its cards ---
+
+sub setZone(zone as string)
+    m.zone = zone
+    showControls()
+    tabOpen = zone = "tabs" or zone = "card"
+    ' A card takes the place of the title and timeline; the tabs move up above it.
+    m.main.visible = not tabOpen
+    m.card.visible = tabOpen
+    if tabOpen
+        m.tabsGroup.translation = [120, 624]
+        buildCard()
+    else
+        m.tabsGroup.translation = [120, 976]
+    end if
+    paintButtons()
+    paintTabs()
+    paintTiles()
+    m.shownCue = "~"
+end sub
+
+sub buildButtons()
+    m.buttons = []
+    icons = ["playback", "audio", "subtitles"]
+    for i = 0 to 2
+        g = m.buttonsGroup.createChild("Group")
+        g.translation = [i * 84, 0]
+        disc = g.createChild("Poster")
+        disc.uri = "pkg:/images/circle-mask.png"
+        disc.width = 72
+        disc.height = 72
+        icon = g.createChild("Poster")
+        icon.uri = "pkg:/images/buttons/" + icons[i] + ".png"
+        icon.translation = [16, 16]
+        icon.width = 40
+        icon.height = 40
+        m.buttons.Push({ disc: disc, icon: icon, name: icons[i] })
+    end for
+    paintButtons()
+end sub
+
+' The focused button is white with a black icon; the others a dark disc with a white icon.
+sub paintButtons()
+    for i = 0 to m.buttons.Count() - 1
+        b = m.buttons[i]
+        if m.zone = "buttons" and i = m.buttonIndex
+            b.disc.blendColor = "0xFFFFFFFF"
+            b.disc.opacity = 1
+            b.icon.blendColor = "0x000000FF"
+        else
+            b.disc.blendColor = "0x2A2E30FF"
+            b.disc.opacity = 0.75
+            b.icon.blendColor = "0xFFFFFFFF"
+        end if
+    end for
+end sub
+
+function buttonsKey(key as string) as boolean
+    if key = "left" and m.buttonIndex > 0
+        m.buttonIndex = m.buttonIndex - 1
+        paintButtons()
+        showControls()
+    else if key = "right" and m.buttonIndex < m.buttons.Count() - 1
+        m.buttonIndex = m.buttonIndex + 1
+        paintButtons()
+        showControls()
+    else if key = "OK"
+        name = m.buttons[m.buttonIndex].name
+        m.menuFromButton = true
+        if name = "audio"
+            openMenu("audio")
+        else if name = "subtitles"
+            openMenu("subtitles")
+        else
+            openMenu("playback")
+        end if
+    else if key = "down" or key = "back"
+        setZone("picture")
+    end if
+    return true
+end function
+
+' --- tabs ---
+
+function tabTitle(name as string) as string
+    if name = "chapters" then return tr("Chapters")
+    if name = "cast" then return tr("Cast")
+    if name = "episodes" then return tr("Episodes")
+    return tr("Info")
+end function
+
+sub refreshTabs()
+    hasChapters = m.plan <> invalid and m.plan.chapters <> invalid and m.plan.chapters.Count() > 1
+    m.tabNames = osdTabs(hasChapters, m.cast.Count() > 0, m.seasonEpisodes.Count() > 1)
+    if m.tabIndex >= m.tabNames.Count() then m.tabIndex = 0
+    m.tabsGroup.removeChildrenIndex(m.tabsGroup.getChildCount(), 0)
+    m.tabNodes = []
+    x = 0
+    for each name in m.tabNames
+        g = m.tabsGroup.createChild("Group")
+        g.translation = [x, 0]
+        pill = g.createChild("Capsule")
+        label = g.createChild("Label")
+        label.font = "font:SmallBoldSystemFont"
+        label.text = tabTitle(name)
+        r = label.boundingRect()
+        w = r.width + 56
+        pill.height = 60
+        pill.width = w
+        label.translation = [28, 0]
+        label.height = 60
+        label.vertAlign = "center"
+        m.tabNodes.Push({ pill: pill, label: label })
+        x = x + w + 16
+    end for
+end sub
+
+' The chosen tab is a soft capsule, the focused one white with black text; the rest plain words.
+sub paintTabs()
+    if m.tabNodes = invalid then refreshTabs()
+    for i = 0 to m.tabNodes.Count() - 1
+        t = m.tabNodes[i]
+        chosen = (m.zone = "tabs" or m.zone = "card") and i = m.tabIndex
+        if m.zone = "tabs" and i = m.tabIndex
+            t.pill.color = "0xFFFFFFFF"
+            t.pill.visible = true
+            t.label.color = "0x000000FF"
+        else if chosen
+            t.pill.color = "0x3A3E40CC"
+            t.pill.visible = true
+            t.label.color = "0xFFFFFFFF"
+        else
+            t.pill.color = "0x2A2E30B3"
+            t.pill.visible = true
+            t.label.color = "0xE6E9E9FF"
+        end if
+    end for
+end sub
+
+function tabsKey(key as string) as boolean
+    if key = "left" and m.tabIndex > 0
+        m.tabIndex = m.tabIndex - 1
+        m.tileIndex = 0
+        setZone("tabs")
+    else if key = "right" and m.tabIndex < m.tabNames.Count() - 1
+        m.tabIndex = m.tabIndex + 1
+        m.tileIndex = 0
+        setZone("tabs")
+    else if key = "down" and m.tiles <> invalid and m.tiles.Count() > 0
+        setZone("card")
+    else if key = "up" or key = "back"
+        setZone("picture")
+    end if
+    return true
+end function
+
+' --- cards ---
+
+sub buildCard()
+    m.card.removeChildrenIndex(m.card.getChildCount(), 0)
+    m.tiles = []
+    m.tileRow = invalid
+    name = m.tabNames[m.tabIndex]
+    if name = "info"
+        buildInfoCard()
+    else if name = "chapters"
+        buildChapterTiles()
+    else if name = "cast"
+        buildCastTiles()
+    else if name = "episodes"
+        buildEpisodeTiles()
+    end if
+end sub
+
+sub buildInfoCard()
+    it = m.item
+    if it = invalid then return
+    back = m.card.createChild("Rectangle")
+    back.width = 1680
+    back.height = 300
+    back.color = "0x1E2224D9"
+    pic = m.card.createChild("Poster")
+    pic.translation = [30, 30]
+    pic.width = 427
+    pic.height = 240
+    pic.loadDisplayMode = "scaleToZoom"
+    art = invalid
+    if it.images <> invalid
+        art = it.images.primary
+        if it.kind <> "episode" and it.images.backdrop <> invalid then art = it.images.backdrop
+    end if
+    if art <> invalid then setPoster(pic, art)
+    title = m.card.createChild("Label")
+    title.translation = [490, 30]
+    title.width = 1150
+    title.font = "font:MediumBoldSystemFont"
+    title.color = "0xF5F5F7FF"
+    title.text = valueOr(it.title, "")
+    overview = m.card.createChild("Label")
+    overview.translation = [490, 84]
+    overview.width = 1150
+    overview.height = 120
+    overview.wrap = true
+    overview.maxLines = 3
+    overview.font = "font:SmallSystemFont"
+    overview.color = "0xD8DCDCFF"
+    overview.text = valueOr(it.overview, "")
+    line = m.card.createChild("LayoutGroup")
+    line.translation = [490, 228]
+    line.layoutDirection = "horiz"
+    line.itemSpacings = [16]
+    line.vertAlignment = "center"
+    meta = line.createChild("Label")
+    meta.font = "font:SmallestBoldSystemFont"
+    meta.color = "0xF5F5F7FF"
+    ' The stream's length, or the listed runtime until the stream knows it.
+    length = durationOf()
+    if length <= 0 and it.runtime_min <> invalid then length = it.runtime_min * 60000
+    meta.text = osdMeta(it, length)
+    for each b in qualityBadges(qualityFile(it))
+        line.createChild("OutlinedBadge").text = b
+    end for
+end sub
+
+' A row of tiles across the card; the focused one is lifted with a white edge.
+function newTile(width as integer, height as integer) as object
+    if m.tileRow = invalid
+        m.tileRow = m.card.createChild("Group")
+        m.tileRow.translation = [0, 20]
+    end if
+    x = 0
+    if m.tiles.Count() > 0
+        last = m.tiles[m.tiles.Count() - 1]
+        x = last.group.translation[0] + last.width + 24
+    end if
+    g = m.tileRow.createChild("Group")
+    g.translation = [x, 0]
+    edge = g.createChild("Rectangle")
+    edge.translation = [-5, -5]
+    edge.width = width + 10
+    edge.height = height + 10
+    edge.color = "0xFFFFFFFF"
+    edge.visible = false
+    face = g.createChild("Rectangle")
+    face.width = width
+    face.height = height
+    face.color = "0x1E2224D9"
+    tile = { group: g, edge: edge, width: width }
+    m.tiles.Push(tile)
+    return tile
+end function
+
+sub buildChapterTiles()
+    if m.plan = invalid or m.plan.chapters = invalid then return
+    current = chapterAt(m.plan.chapters, positionMs())
+    i = 0
+    for each c in m.plan.chapters
+        t = newTile(220, 220)
+        name = valueOr(c.title, "")
+        if name = "" then name = tr("Chapter %1").Replace("%1", (i + 1).ToStr())
+        title = t.group.createChild("Label")
+        title.translation = [20, 120]
+        title.width = 180
+        title.wrap = true
+        title.maxLines = 2
+        title.font = "font:SmallestBoldSystemFont"
+        title.color = "0xF5F5F7FF"
+        title.text = name
+        at = t.group.createChild("Label")
+        at.translation = [20, 180]
+        at.font = "font:SmallestSystemFont"
+        at.color = "0xD8DCDCFF"
+        at.text = formatClock(c.start_ms)
+        if i = current
+            mark = t.group.createChild("Poster")
+            mark.uri = "pkg:/images/play-mini.png"
+            mark.width = 22
+            mark.height = 22
+            mark.translation = [20 + at.boundingRect().width + 12, 186]
+        end if
+        t.value = c.start_ms
+        i = i + 1
+    end for
+end sub
+
+sub buildCastTiles()
+    for each person in m.cast
+        t = newTile(200, 250)
+        photo = t.group.createChild("Poster")
+        photo.translation = [40, 20]
+        photo.width = 120
+        photo.height = 120
+        photo.loadDisplayMode = "scaleToZoom"
+        if person.image <> invalid then setPoster(photo, person.image)
+        ' The photo in a circle (Roku OS 11 and later; square before).
+        photo.maskUri = "pkg:/images/circle-mask.png"
+        name = t.group.createChild("Label")
+        name.translation = [10, 152]
+        name.width = 180
+        name.horizAlign = "center"
+        name.font = "font:SmallestBoldSystemFont"
+        name.color = "0xF5F5F7FF"
+        name.text = person.name
+        role = t.group.createChild("Label")
+        role.translation = [10, 190]
+        role.width = 180
+        role.horizAlign = "center"
+        role.font = "font:SmallestSystemFont"
+        role.color = "0xD8DCDCFF"
+        role.text = valueOr(person.character, "")
+    end for
+end sub
+
+sub buildEpisodeTiles()
+    current = 0
+    i = 0
+    for each ep in m.seasonEpisodes
+        t = newTile(384, 216)
+        pic = t.group.createChild("Poster")
+        pic.width = 384
+        pic.height = 216
+        pic.loadDisplayMode = "scaleToZoom"
+        if ep.images <> invalid and ep.images.primary <> invalid then setPoster(pic, ep.images.primary)
+        code = t.group.createChild("Label")
+        code.translation = [16, 172]
+        code.font = "font:SmallestBoldSystemFont"
+        code.color = "0xFFFFFFFF"
+        code.text = "S" + valueOr(ep.season_number, 0).ToStr() + " · E" + valueOr(ep.episode_number, 0).ToStr()
+        name = t.group.createChild("Label")
+        name.translation = [0, 228]
+        name.width = 384
+        name.font = "font:SmallestBoldSystemFont"
+        name.color = "0xF5F5F7FF"
+        name.text = valueOr(ep.title, "")
+        t.value = ep
+        if m.item <> invalid and ep.id = m.item.id then current = i
+        i = i + 1
+    end for
+    ' The card opens on the episode playing.
+    if m.zone <> "card" then m.tileIndex = current
+end sub
+
+sub paintTiles()
+    if m.tiles = invalid then return
+    if m.tileIndex >= m.tiles.Count() then m.tileIndex = m.tiles.Count() - 1
+    if m.tileIndex < 0 then m.tileIndex = 0
+    for i = 0 to m.tiles.Count() - 1
+        t = m.tiles[i]
+        focused = m.zone = "card" and i = m.tileIndex
+        t.edge.visible = focused
+        if focused then t.group.scale = [1.05, 1.05] else t.group.scale = [1, 1]
+    end for
+    ' Keep the focused tile in view.
+    if m.tileRow <> invalid and m.tiles.Count() > 0
+        x = m.tiles[m.tileIndex].group.translation[0]
+        shift = 0
+        if x + m.tiles[m.tileIndex].width > 1680 then shift = 1680 - x - m.tiles[m.tileIndex].width
+        m.tileRow.translation = [shift, 20]
+    end if
+end sub
+
+function cardKey(key as string) as boolean
+    if key = "left" and m.tileIndex > 0
+        m.tileIndex = m.tileIndex - 1
+        paintTiles()
+        showControls()
+    else if key = "right" and m.tileIndex < m.tiles.Count() - 1
+        m.tileIndex = m.tileIndex + 1
+        paintTiles()
+        showControls()
+    else if key = "OK"
+        t = m.tiles[m.tileIndex]
+        name = m.tabNames[m.tabIndex]
+        if name = "chapters"
+            setZone("picture")
+            seekTo(t.value)
+        else if name = "episodes"
+            playEpisode(t.value)
+        end if
+    else if key = "up" or key = "back"
+        setZone("tabs")
+    end if
+    return true
+end function
+
+' playEpisode: another episode from the Episodes card (the one playing just carries on).
+sub playEpisode(ep as object)
+    if m.item <> invalid and ep.id = m.item.id
+        setZone("picture")
+        return
+    end if
+    startAt = 0
+    if ep.user_data <> invalid and ep.user_data.played <> true and ep.user_data.position_ms <> invalid then startAt = ep.user_data.position_ms
+    title = m.top.findNode("title").text
+    print "Arc: playing another episode from the player"
+    m.top.action = { go: "play", replace: true, id: ep.id, startMs: startAt, title: title, subtitle: osdEpisodeLine(ep) }
+end sub
+
+' The Cast and Episodes cards: the title's cast (an episode's own, else its show's) and the
+' episodes of its season.
+sub loadCastAndEpisodes(it as object)
+    m.cast = actorsOf(it)
+    if m.cast.Count() = 0 and it.kind = "episode" and it.parent_id <> invalid
+        callApi("GET", "/items/" + escape(it.parent_id), invalid, "onShowCredits")
+    end if
+    if it.kind = "episode" and it.parent_id <> invalid
+        callApi("GET", "/series/" + escape(it.parent_id) + "/seasons", invalid, "onSeasons")
+    end if
+    m.tabNodes = invalid
+end sub
+
+function actorsOf(it as dynamic) as object
+    out = []
+    if it = invalid or it.credits = invalid then return out
+    for each c in it.credits
+        if c.role = "actor" or c.role = invalid or c.role = "" then out.Push(c)
+    end for
+    return out
+end function
+
+sub onShowCredits(event as object)
+    res = event.getData()
+    if not res.ok or res.data = invalid then return
+    m.cast = actorsOf(res.data)
+    m.tabNodes = invalid
+end sub
+
+sub onSeasons(event as object)
+    res = event.getData()
+    if not res.ok or res.data = invalid or res.data.seasons = invalid or m.item = invalid then return
+    for each season in res.data.seasons
+        if season.episodes <> invalid
+            for each ep in season.episodes
+                if ep.id = m.item.id
+                    list = []
+                    for each e in season.episodes
+                        if e.available <> false then list.Push(e)
+                    end for
+                    m.seasonEpisodes = list
+                    m.tabNodes = invalid
+                    return
+                end if
+            end for
+        end if
+    end for
+end sub
 
 ' --- timeline thumbnails (Arc's BIF file) ---
 
@@ -656,7 +1195,8 @@ end sub
 sub drawSubtitles(at as double)
     text = ""
     if m.subtitle <> invalid and m.cues.Count() > 0 then text = cueText(m.cues, at)
-    if text = m.shownCue and m.subsLift = m.controls.visible then return
+    if text = m.shownCue and m.subsLift = m.controls.visible and m.cardTop = (m.zone = "tabs" or m.zone = "card") then return
+    m.cardTop = m.zone = "tabs" or m.zone = "card"
     m.shownCue = text
     m.subsLift = m.controls.visible
     lines = []
@@ -667,9 +1207,9 @@ sub drawSubtitles(at as double)
     end while
     lineHeight = Int(m.subSize * 1.35)
     bottom = 990
-    if m.controls.visible then bottom = 800
+    if m.controls.visible then bottom = 720
     top = bottom - lineHeight * lines.Count()
-    if m.subsTop = true then top = 80
+    if m.subsTop = true or (m.controls.visible and m.cardTop) then top = 80
     for i = 0 to m.subLines.Count() - 1
         row = m.subLines[i]
         if i < lines.Count() and lines[i].Trim() <> ""
@@ -715,6 +1255,8 @@ sub drawSkip(at as double)
     end if
     m.skipMarker = mk
     m.skipText.text = skipLabel(mk.kind, m.next <> invalid)
+    ' Above the title row and its round buttons while the controls show.
+    if m.controls.visible then m.skip.translation = [1460, 640] else m.skip.translation = [1460, 860]
     m.skip.visible = true
 end sub
 
@@ -794,7 +1336,20 @@ sub openMenu(section as string)
     entries = []
     selected = -1
     m.menuValues = []
-    if section = ""
+    if section = "playback"
+        ' The Playback button: Quality, Version and Chapters (Audio and Subtitles have buttons of their own).
+        m.options.title = tr("Playback")
+        entries.Push({ label: tr("Quality"), detail: qualityLabel(m.quality, p) })
+        m.menuValues.Push("quality")
+        if p.versions <> invalid and p.versions.Count() > 1
+            entries.Push({ label: tr("Version"), detail: "" })
+            m.menuValues.Push("version")
+        end if
+        if p.chapters <> invalid and p.chapters.Count() > 1
+            entries.Push({ label: tr("Chapters"), detail: "" })
+            m.menuValues.Push("chapters")
+        end if
+    else if section = ""
         m.options.title = tr("Options")
         audio = audioTrack(p)
         if p.audio_tracks <> invalid and p.audio_tracks.Count() > 0
@@ -892,7 +1447,8 @@ sub onOptionPicked()
     if i < 0 or i >= m.menuValues.Count() then return
     v = m.menuValues[i]
     section = m.menu
-    if section = ""
+    if section = "" or section = "playback"
+        m.menuParent = section
         openMenu(v)
         return
     end if
@@ -911,9 +1467,18 @@ sub onOptionPicked()
 end sub
 
 sub onOptionsClosed()
-    ' Back from a section goes to the list of sections; from the list, back to the video.
-    if m.menu <> ""
-        openMenu("")
+    ' Back from a section goes to the list it came from (the * list or the Playback button's);
+    ' from a round button's own menu, back to its button.
+    if m.menu = "audio" or m.menu = "subtitles"
+        if m.menuFromButton
+            closeMenu()
+            return
+        end if
+    end if
+    if m.menu <> "" and m.menu <> "playback" and m.menuParent <> invalid
+        parent = m.menuParent
+        m.menuParent = invalid
+        openMenu(parent)
     else
         closeMenu()
     end if
@@ -923,6 +1488,11 @@ sub closeMenu()
     m.menu = ""
     m.options.visible = false
     m.top.setFocus(true)
+    if m.menuFromButton
+        ' Back to the button the menu came from, with the controls showing.
+        m.menuFromButton = false
+        setZone("buttons")
+    end if
 end sub
 
 sub chooseAudio(index as integer)
@@ -948,4 +1518,10 @@ sub chooseQuality(q as integer)
     if limit = m.maxKbps then return
     m.maxKbps = limit
     load(positionMs(), {})
+end sub
+
+' setPoster: an Arc picture on a Poster made here, with the sign-in shared.
+sub setPoster(p as object, path as dynamic)
+    shareSignIn([p])
+    p.uri = imageUrl(path)
 end sub

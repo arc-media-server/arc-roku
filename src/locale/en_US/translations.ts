@@ -5,10 +5,6 @@
 <context>
 <name>default</name>
 <message>
-  <source>* Audio, subtitles and more</source>
-  <translation>* Audio, subtitles and more</translation>
-</message>
-<message>
   <source>* for options, sort and filter</source>
   <translation>* for options, sort and filter</translation>
 </message>
@@ -293,6 +289,10 @@
   <translation>In the language I last chose</translation>
 </message>
 <message>
+  <source>Info</source>
+  <translation>Info</translation>
+</message>
+<message>
   <source>Interview</source>
   <translation>Interview</translation>
 </message>
@@ -467,6 +467,10 @@
 <message>
   <source>Play Next</source>
   <translation>Play Next</translation>
+</message>
+<message>
+  <source>Playback</source>
+  <translation>Playback</translation>
 </message>
 <message>
   <source>Playback and subtitle choices follow your profile, on every device. Choosing a track in the player updates them too.</source>
