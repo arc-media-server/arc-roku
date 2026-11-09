@@ -169,10 +169,14 @@ sub onAction(event as object)
         push("PlayerScreen", { extra: { url: a.url }, title: a.title, subtitle: a.subtitle })
     else if go = "grid"
         push("GridScreen", { title: a.title, source: a.source })
+    else if go = "person"
+        push("PersonScreen", { id: a.id, title: a.title })
     else if go = "search"
         push("SearchScreen", {})
     else if go = "settings"
         push("SettingsScreen", {})
+    else if go = "about"
+        push("AboutScreen", {})
     else if go = "home"
         replaceAll("HomeScreen", {})
     else if go = "places"

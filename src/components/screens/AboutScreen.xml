@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- About, in Settings' layout: Arc's picture, this app's version and the TMDB/TheTVDB credit on
+     the left; on the right this app's version, the server's name, Arc version, API, address and
+     connection, and the open source licences. -->
+<component name="AboutScreen" extends="Group">
+    <interface>
+        <field id="params" type="assocarray" />
+        <field id="action" type="assocarray" alwaysNotify="true" />
+        <function name="takeFocus" />
+        <function name="leaving" />
+        <function name="returned" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/source/shared/http.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/api.bs" />
+    <children>
+        <Rectangle width="1920" height="1080" color="0x0B1214FF" />
+        <Label id="heading" translation="[120, 70]" width="1000" font="font:LargeBoldSystemFont" color="0xF0F4F4FF" />
+        <Poster translation="[200, 230]" width="400" height="300" uri="pkg:/images/icon_fhd.png" loadDisplayMode="scaleToFit" />
+        <Label id="appName" translation="[120, 560]" width="560" horizAlign="center" font="font:MediumBoldSystemFont" color="0xF0F4F4FF" />
+        <Label id="version" translation="[120, 616]" width="560" horizAlign="center" font="font:SmallSystemFont" color="0x9AA7A7FF" />
+        <Label id="credit" translation="[120, 700]" width="560" wrap="true" horizAlign="center" font="font:SmallestSystemFont" color="0x9AA7A7FF" />
+        <LabelList id="rows" translation="[820, 180]" itemSize="[980, 64]" numRows="12" vertFocusAnimationStyle="floatingFocus"
+            color="0xC6D0D0FF" focusedColor="0x0B1214FF" focusBitmapBlendColor="0xF5F5F7FF" />
+        <OptionsPanel id="options" visible="false" />
+    </children>
+</component>

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- Settings, as the LG/Samsung app's: the profile's playback and subtitle choices (saved to the
-     profile, so every app follows them), then this Roku's profile, server and sign-in. -->
+<!-- Settings, laid out as the Apple TV's (and tvOS's own Settings): the profile on the left, the
+     list on the right. The profile's playback and subtitle choices (saved to the profile, so every
+     app follows them), this Roku's profile, server and sign-in, then About. -->
 <component name="SettingsScreen" extends="Group">
     <interface>
         <field id="params" type="assocarray" />
@@ -15,10 +16,14 @@
     <children>
         <Rectangle width="1920" height="1080" color="0x0B1214FF" />
         <Label id="heading" translation="[120, 70]" width="1000" font="font:LargeBoldSystemFont" color="0xF0F4F4FF" />
-        <LabelList id="rows" translation="[120, 180]" itemSize="[1100, 64]" numRows="12" vertFocusAnimationStyle="floatingFocus"
+        <!-- Who's watching, where tvOS's Settings shows its icon. -->
+        <Poster id="avatar" translation="[270, 260]" width="260" height="260" />
+        <Label id="letter" translation="[270, 260]" width="260" height="260" horizAlign="center" vertAlign="center" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" />
+        <Label id="profileName" translation="[120, 550]" width="560" horizAlign="center" font="font:MediumBoldSystemFont" color="0xF0F4F4FF" />
+        <Label id="serverLine" translation="[120, 610]" width="560" horizAlign="center" font="font:SmallSystemFont" color="0x9AA7A7FF" />
+        <Label id="note" translation="[120, 700]" width="560" wrap="true" horizAlign="center" font="font:SmallestSystemFont" color="0x9AA7A7FF" />
+        <LabelList id="rows" translation="[820, 180]" itemSize="[980, 64]" numRows="12" vertFocusAnimationStyle="floatingFocus"
             color="0xC6D0D0FF" focusedColor="0x0B1214FF" focusBitmapBlendColor="0xF5F5F7FF" />
-        <Label id="note" translation="[1300, 180]" width="500" wrap="true" font="font:SmallSystemFont" color="0x9AA7A7FF" />
-        <Label id="about" translation="[1300, 800]" width="500" wrap="true" font="font:SmallestSystemFont" color="0x9AA7A7FF" />
         <OptionsPanel id="options" visible="false" />
     </children>
 </component>

@@ -108,7 +108,7 @@ sub onSelected()
     else if c.kind = "collection"
         m.top.action = { go: "grid", title: c.title, source: { kind: "collection", id: c.itemId } }
     else if c.kind = "person"
-        m.top.action = { go: "grid", title: c.title, source: { kind: "person", id: c.itemId } }
+        m.top.action = { go: "person", title: c.title, id: c.itemId }
     else
         m.top.action = { go: "open", id: c.itemId }
     end if

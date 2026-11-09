@@ -33,6 +33,10 @@
   <translation>%1 titles</translation>
 </message>
 <message>
+  <source>%1 titles in your libraries</source>
+  <translation>%1 titles in your libraries</translation>
+</message>
+<message>
   <source>%1, and %2</source>
   <translation>%1, and %2</translation>
 </message>
@@ -61,8 +65,16 @@
   <translation>1 title</translation>
 </message>
 <message>
+  <source>1 title in your libraries</source>
+  <translation>1 title in your libraries</translation>
+</message>
+<message>
   <source>A to Z</source>
   <translation>A to Z</translation>
+</message>
+<message>
+  <source>About</source>
+  <translation>About</translation>
 </message>
 <message>
   <source>Actor</source>
@@ -71,6 +83,10 @@
 <message>
   <source>Add to Watchlist</source>
   <translation>Add to Watchlist</translation>
+</message>
+<message>
+  <source>Address</source>
+  <translation>Address</translation>
 </message>
 <message>
   <source>All</source>
@@ -85,6 +101,10 @@
   <translation>Any</translation>
 </message>
 <message>
+  <source>API</source>
+  <translation>API</translation>
+</message>
+<message>
   <source>Arc couldn't start this title.</source>
   <translation>Arc couldn't start this title.</translation>
 </message>
@@ -93,12 +113,20 @@
   <translation>Arc didn't answer in time.</translation>
 </message>
 <message>
-  <source>Arc for Roku %1</source>
-  <translation>Arc for Roku %1</translation>
+  <source>Arc for Roku</source>
+  <translation>Arc for Roku</translation>
+</message>
+<message>
+  <source>Arc Version</source>
+  <translation>Arc Version</translation>
 </message>
 <message>
   <source>Arc's address</source>
   <translation>Arc's address</translation>
+</message>
+<message>
+  <source>as %1</source>
+  <translation>as %1</translation>
 </message>
 <message>
   <source>Audio</source>
@@ -115,6 +143,10 @@
 <message>
   <source>Because you watched %1</source>
   <translation>Because you watched %1</translation>
+</message>
+<message>
+  <source>Behind the Camera</source>
+  <translation>Behind the Camera</translation>
 </message>
 <message>
   <source>Behind the scenes</source>
@@ -169,6 +201,10 @@
   <translation>Connecting…</translation>
 </message>
 <message>
+  <source>Connection</source>
+  <translation>Connection</translation>
+</message>
+<message>
   <source>Continue Watching</source>
   <translation>Continue Watching</translation>
 </message>
@@ -187,6 +223,10 @@
 <message>
   <source>Couldn't load Recommended.</source>
   <translation>Couldn't load Recommended.</translation>
+</message>
+<message>
+  <source>Couldn't load this page.</source>
+  <translation>Couldn't load this page.</translation>
 </message>
 <message>
   <source>Couldn't load this title.</source>
@@ -317,6 +357,10 @@
   <translation>Length</translation>
 </message>
 <message>
+  <source>Local network</source>
+  <translation>Local network</translation>
+</message>
+<message>
   <source>Longest first</source>
   <translation>Longest first</translation>
 </message>
@@ -345,6 +389,10 @@
   <translation>Medium</translation>
 </message>
 <message>
+  <source>MIT (build tool)</source>
+  <translation>MIT (build tool)</translation>
+</message>
+<message>
   <source>Mono</source>
   <translation>Mono</translation>
 </message>
@@ -355,6 +403,10 @@
 <message>
   <source>Most recent first</source>
   <translation>Most recent first</translation>
+</message>
+<message>
+  <source>Movies</source>
+  <translation>Movies</translation>
 </message>
 <message>
   <source>New code</source>
@@ -379,6 +431,10 @@
 <message>
   <source>Nothing here.</source>
   <translation>Nothing here.</translation>
+</message>
+<message>
+  <source>Nothing in your libraries has them in it.</source>
+  <translation>Nothing in your libraries has them in it.</translation>
 </message>
 <message>
   <source>Nothing matches “%1”.</source>
@@ -419,6 +475,10 @@
 <message>
   <source>Only when I choose them</source>
   <translation>Only when I choose them</translation>
+</message>
+<message>
+  <source>Open Source Licences</source>
+  <translation>Open Source Licences</translation>
 </message>
 <message>
   <source>Options</source>
@@ -539,6 +599,10 @@
 <message>
   <source>Release date</source>
   <translation>Release date</translation>
+</message>
+<message>
+  <source>Remote</source>
+  <translation>Remote</translation>
 </message>
 <message>
   <source>Remove from Watchlist</source>
@@ -781,6 +845,10 @@
   <translation>Try again</translation>
 </message>
 <message>
+  <source>TV Shows</source>
+  <translation>TV Shows</translation>
+</message>
+<message>
   <source>Unwatched</source>
   <translation>Unwatched</translation>
 </message>
@@ -799,6 +867,10 @@
 <message>
   <source>Version</source>
   <translation>Version</translation>
+</message>
+<message>
+  <source>Version %1</source>
+  <translation>Version %1</translation>
 </message>
 <message>
   <source>Waiting for the code to be approved…</source>
