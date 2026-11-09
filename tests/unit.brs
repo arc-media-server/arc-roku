@@ -10,6 +10,7 @@ sub Main()
     testBif()
     testTracks()
     testBrowse()
+    testPlaces()
     if m.failures = 0 then print "ALL PASSED" else print "FAILURES: "; m.failures
 end sub
 
@@ -234,4 +235,23 @@ sub testBrowse()
     eq(rows[0].cards.Count(), 2, "searchRows joins films and shows")
     eq(rows[1].cards[0].item.id, "9", "searchRows person id as text")
     eq(rows[1].cards[0].line2, "Director", "searchRows person role")
+end sub
+
+sub testPlaces()
+    libs = [{ id: 1, name: "Movies", kind: "movies" }, { id: 2, name: "TV", kind: "shows" }, { id: 3, name: "Home Videos", kind: "videos" }]
+    p = navPlaces(libs, { library_order: [2, 1], watchlist_position: 1 })
+    ids = []
+    for each place in p
+        ids.Push(place.id)
+    end for
+    eq(ids.Join(","), "search,home,library:2,watchlist,library:1,library:3,playlists,settings", "navPlaces: profile's order, the Watchlist after one library")
+    eq(p[2].icon, "tv", "navPlaces: a TV library's icon")
+    eq(p[5].icon, "videos", "navPlaces: a videos library's icon")
+    eq(p[4].go.source.libraryKind, "movies", "navPlaces: a library opens its grid")
+    p = navPlaces(libs, invalid)
+    eq(p[2].id, "watchlist", "navPlaces: the Watchlist first by default")
+    p = navPlaces(libs, { watchlist_position: 99 })
+    eq(p[p.Count() - 3].id, "watchlist", "navPlaces: the Watchlist last when asked")
+    eq(placeIndex(p, "home"), 1, "placeIndex finds Home")
+    eq(placeIndex(p, "nowhere"), -1, "placeIndex: unknown places")
 end sub

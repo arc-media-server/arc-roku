@@ -9,6 +9,10 @@ sub init()
     m.global.addFields({ server: "", token: "", serverName: "", profile: {}, caps: {}, unauthorized: false })
     m.global.observeField("unauthorized", "onUnauthorized")
     m.screens = m.top.findNode("screens")
+    m.rail = m.top.findNode("rail")
+    m.rail.observeField("picked", "onRailPicked")
+    m.rail.observeField("closed", "closeRail")
+    m.places = []
     m.spinner = m.top.findNode("spinner")
     m.spinner.poster.uri = "pkg:/images/spinner.png"
     m.stack = []
@@ -92,6 +96,7 @@ function push(name as string, params as object) as object
     m.screens.appendChild(screen)
     m.stack.Push(screen)
     screen.callFunc("takeFocus", invalid)
+    updateRail()
     return screen
 end function
 
@@ -107,6 +112,7 @@ sub pop()
         top.callFunc("returned", invalid)
         top.callFunc("takeFocus", invalid)
     end if
+    updateRail()
 end sub
 
 sub replaceAll(name as string, params as object)
@@ -167,6 +173,12 @@ sub onAction(event as object)
         push("SearchScreen", {})
     else if go = "settings"
         push("SettingsScreen", {})
+    else if go = "home"
+        replaceAll("HomeScreen", {})
+    else if go = "places"
+        m.places = a.places
+        m.rail.places = a.places
+        updateRail()
     else if go = "back"
         pop()
     end if
@@ -177,12 +189,83 @@ end sub
 
 function onKeyEvent(key as string, press as boolean) as boolean
     if not press then return false
-    if key = "back" and m.stack.Count() > 1
-        pop()
+    if key = "back"
+        ' Back in the open sidebar leaves the app, as on the Apple TV.
+        if m.rail.open then return false
+        if m.stack.Count() > 1
+            pop()
+            return true
+        end if
+        ' Back on a place's first screen opens the sidebar.
+        if railUsable()
+            openRail()
+            return true
+        end if
+        return false
+    end if
+    ' Left at a screen's edge (nothing on the screen took it) opens the sidebar.
+    if key = "left" and railUsable() and not m.rail.open
+        openRail()
         return true
     end if
     return false
 end function
+
+' --- the sidebar (NavRail) ---
+
+' Screens that show the sidebar: every one but the player and the sign-in steps.
+function railUsable() as boolean
+    if m.places.Count() = 0 or m.stack.Count() = 0 then return false
+    top = m.stack.Peek().subtype()
+    for each hidden in ["PlayerScreen", "ServerScreen", "SignInScreen", "ProfilesScreen", "ProblemScreen"]
+        if top = hidden then return false
+    end for
+    return true
+end function
+
+sub updateRail()
+    usable = railUsable()
+    m.rail.visible = usable
+    if not usable and m.rail.open then m.rail.open = false
+    profile = m.global.profile
+    if profile <> invalid and profile.name <> invalid
+        m.rail.profileName = profile.name
+        m.rail.profileColor = profile.color
+    end if
+end sub
+
+sub openRail()
+    m.rail.open = true
+end sub
+
+sub closeRail()
+    m.rail.open = false
+    if m.stack.Count() > 0 then m.stack.Peek().callFunc("takeFocus", invalid)
+end sub
+
+' A place opens as the first screen (Back there opens the sidebar again); the profile switches.
+sub onRailPicked()
+    i = m.rail.picked
+    m.rail.open = false
+    if i < 0
+        callApi("DELETE", "/auth/profile", invalid, "onIgnored")
+        m.places = []
+        replaceAll("ProfilesScreen", {})
+        return
+    end if
+    if i >= m.places.Count() then return
+    m.rail.current = i
+    go = m.places[i].go
+    if go.go = "home"
+        replaceAll("HomeScreen", {})
+    else if go.go = "search"
+        replaceAll("SearchScreen", {})
+    else if go.go = "settings"
+        replaceAll("SettingsScreen", {})
+    else if go.go = "grid"
+        replaceAll("GridScreen", { title: go.title, source: go.source })
+    end if
+end sub
 
 ' --- deep links (Roku's search and Continue Watching launch the app with a contentId) ---
 

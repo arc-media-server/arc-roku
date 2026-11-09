@@ -1,8 +1,8 @@
 ' Home's rows load together: each row asks Arc for its titles, and rows are placed in the
 ' profile's order as soon as every row above them has answered. Rows with nothing in them are
 ' left out, as on the web. The * button opens the focused card's menu (cardmenu.bs).
-' Left from the first card opens the list of places: Search, the libraries (with the Watchlist
-' where the profile put it) and Playlists, as the other apps' side rail.
+' Left from the first card opens the sidebar (MainScene's NavRail), whose places Home works out
+' (places.bs) once it has the libraries and the profile's preferences.
 
 sub init()
     m.rows = m.top.findNode("rows")
@@ -14,13 +14,9 @@ sub init()
     shareSignIn([m.backdrop, m.logo])
     m.empty = m.top.findNode("empty")
     m.top.findNode("hint").text = tr("Left for libraries and search · * for options")
-    m.nav = m.top.findNode("nav")
-    m.nav.observeField("picked", "onNavPicked")
-    m.nav.observeField("closed", "onNavClosed")
     m.cardPanel = m.top.findNode("cardPanel")
     m.cardPanel.observeField("picked", "onCardPicked")
     m.cardPanel.observeField("closed", "closeCardPanel")
-    m.navPlaces = []
     m.heroDelay = m.top.findNode("heroDelay")
     m.heroDelay.observeField("fire", "showHero")
     m.rows.observeField("rowItemFocused", "onFocusMoved")
@@ -35,7 +31,6 @@ sub init()
 end sub
 
 sub takeFocus(_ = invalid as dynamic)
-    m.nav.visible = false
     m.cardPanel.visible = false
     m.rows.setFocus(true)
 end sub
@@ -78,6 +73,7 @@ end sub
 
 sub resolve()
     if m.prefs = invalid or m.libraries = invalid then return
+    m.top.action = { go: "places", places: navPlaces(m.libraries, m.prefs) }
     m.specs = resolveHomeRows(m.prefs, m.libraries, CreateObject("roDateTime"))
     m.results = []
     for i = 0 to m.specs.Count() - 1
@@ -193,7 +189,7 @@ end sub
 
 function onKeyEvent(key as string, press as boolean) as boolean
     if not press then return false
-    if m.nav.visible or m.cardPanel.visible then return true
+    if m.cardPanel.visible then return true
     if key = "play"
         c = focusedCard()
         if c <> invalid and (c.kind = "movie" or c.kind = "episode")
@@ -203,56 +199,10 @@ function onKeyEvent(key as string, press as boolean) as boolean
     else if key = "options"
         showMenu()
         return true
-    else if key = "left"
-        openNav()
-        return true
     end if
+    ' Left past the first card goes on to the scene, which opens the sidebar.
     return false
 end function
-
-' --- the list of places (Left) ---
-
-sub openNav()
-    if m.libraries = invalid then return
-    places = [{ label: tr("Search"), go: { go: "search" } }]
-    libs = orderLibraries(m.libraries, m.prefs)
-    watchlistAt = 0
-    if m.prefs <> invalid and m.prefs.watchlist_position <> invalid then watchlistAt = m.prefs.watchlist_position
-    if watchlistAt < 0 then watchlistAt = 0
-    if watchlistAt > libs.Count() then watchlistAt = libs.Count()
-    watchlist = { label: tr("Watchlist"), go: { go: "grid", title: tr("Watchlist"), source: { kind: "watchlist" } } }
-    for i = 0 to libs.Count() - 1
-        if i = watchlistAt then places.Push(watchlist)
-        lib = libs[i]
-        places.Push({ label: lib.name, go: { go: "grid", title: lib.name, source: { kind: "library", id: lib.id, libraryKind: lib.kind } } })
-    end for
-    if watchlistAt >= libs.Count() then places.Push(watchlist)
-    places.Push({ label: tr("Playlists"), go: { go: "grid", title: tr("Playlists"), source: { kind: "playlists" } } })
-    places.Push({ label: tr("Settings"), go: { go: "settings" } })
-    entries = []
-    for each p in places
-        entries.Push({ label: p.label, detail: "" })
-    end for
-    m.navPlaces = places
-    m.nav.title = m.global.serverName
-    m.nav.entries = entries
-    m.nav.selected = -1
-    m.nav.visible = true
-    m.nav.show = true
-end sub
-
-sub onNavPicked()
-    i = m.nav.picked
-    if i < 0 or i >= m.navPlaces.Count() then return
-    m.nav.visible = false
-    m.rows.setFocus(true)
-    m.top.action = m.navPlaces[i].go
-end sub
-
-sub onNavClosed()
-    m.nav.visible = false
-    m.rows.setFocus(true)
-end sub
 
 ' --- the * menu on a card (cardmenu.bs) ---
 
