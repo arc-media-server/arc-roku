@@ -55,6 +55,12 @@ sub testFormat()
     eq(metaLine(movie), "1999 · 15 · 2h 16m · Action · Science Fiction", "metaLine")
     movie.user_data.played = true
     eq(resumeMs(movie), 0, "a watched title doesn't resume")
+    eq(minutesLeft(754000, 8160000), 124, "minutesLeft rounds up")
+    eq(minutesLeft(8150000, 8160000), 1, "minutesLeft is at least a minute")
+    eq(minutesLeft(0, 8160000), 0, "minutesLeft for a title not started")
+    eq(minutesLeft(9000000, 8160000), 0, "minutesLeft past the end")
+    eq(cardStripText(12), "12m", "cardStripText")
+    eq(cardStripText(0), "", "cardStripText without a time")
 end sub
 
 sub testCaps()
