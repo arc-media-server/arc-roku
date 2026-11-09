@@ -13,6 +13,10 @@
   <translation>* for options, sort and filter</translation>
 </message>
 <message>
+  <source>%1 and %2</source>
+  <translation>%1 and %2</translation>
+</message>
+<message>
   <source>%1 channels</source>
   <translation>%1 channels</translation>
 </message>
@@ -31,6 +35,10 @@
 <message>
   <source>%1 titles</source>
   <translation>%1 titles</translation>
+</message>
+<message>
+  <source>%1, and %2</source>
+  <translation>%1, and %2</translation>
 </message>
 <message>
   <source>%1's PIN</source>
@@ -217,6 +225,10 @@
   <translation>Director</translation>
 </message>
 <message>
+  <source>Director %1</source>
+  <translation>Director %1</translation>
+</message>
+<message>
   <source>Enter an address</source>
   <translation>Enter an address</translation>
 </message>
@@ -227,10 +239,6 @@
 <message>
   <source>Extra</source>
   <translation>Extra</translation>
-</message>
-<message>
-  <source>Extras</source>
-  <translation>Extras</translation>
 </message>
 <message>
   <source>Featurette</source>
@@ -343,10 +351,6 @@
 <message>
   <source>More in %1</source>
   <translation>More in %1</translation>
-</message>
-<message>
-  <source>More Like This</source>
-  <translation>More Like This</translation>
 </message>
 <message>
   <source>Most recent first</source>
@@ -525,6 +529,10 @@
   <translation>Rediscover</translation>
 </message>
 <message>
+  <source>Related</source>
+  <translation>Related</translation>
+</message>
+<message>
   <source>Release date</source>
   <translation>Release date</translation>
 </message>
@@ -645,6 +653,10 @@
   <translation>Sort by</translation>
 </message>
 <message>
+  <source>Starring %1</source>
+  <translation>Starring %1</translation>
+</message>
+<message>
   <source>Start Watching</source>
   <translation>Start Watching</translation>
 </message>
@@ -755,6 +767,10 @@
 <message>
   <source>Trailer</source>
   <translation>Trailer</translation>
+</message>
+<message>
+  <source>Trailers &amp; Extras</source>
+  <translation>Trailers &amp; Extras</translation>
 </message>
 <message>
   <source>Try again</source>

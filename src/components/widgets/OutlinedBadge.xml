@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- A content rating (PG-13) or a file's quality (4K, DV HDR10) in an outlined box, as the
+     Apple TV app's title pages show them. Sized by its text. -->
+<component name="OutlinedBadge" extends="Group">
+    <interface>
+        <field id="text" type="string" onChange="layout" />
+    </interface>
+    <children>
+        <Label id="label" font="font:SmallestBoldSystemFont" color="0xF5F5F7FF" horizAlign="center" vertAlign="center" />
+        <Rectangle id="top" color="0xF5F5F7D9" />
+        <Rectangle id="bottom" color="0xF5F5F7D9" />
+        <Rectangle id="left" color="0xF5F5F7D9" />
+        <Rectangle id="right" color="0xF5F5F7D9" />
+    </children>
+</component>
