@@ -1,0 +1,117 @@
+' Someone's page (GET /people/{id}): the rows come from shared/person.bs. Moving along the rows
+' changes the backdrop and the "their part" line to the focused title; OK opens the title's page.
+
+sub init()
+    m.rows = m.top.findNode("rows")
+    m.backdrop = m.top.findNode("backdrop")
+    m.photo = m.top.findNode("photo")
+    shareSignIn([m.backdrop, m.photo])
+    m.spinner = m.top.findNode("spinner")
+    m.spinner.poster.uri = "pkg:/images/spinner.png"
+    m.rows.observeField("rowItemFocused", "onFocusMoved")
+    m.rows.observeField("rowItemSelected", "onSelected")
+    m.page = invalid
+    m.sections = []
+end sub
+
+sub onParams()
+    p = m.top.params
+    m.top.findNode("name").text = valueOr(p.title, "")
+    m.spinner.control = "start"
+    callApi("GET", "/people/" + CreateObject("roUrlTransfer").Escape(valueString(p.id)), invalid, "onPage")
+end sub
+
+sub takeFocus(_ = invalid as dynamic)
+    m.rows.setFocus(true)
+end sub
+
+sub leaving(_ = invalid as dynamic)
+end sub
+
+sub returned(_ = invalid as dynamic)
+    m.rows.setFocus(true)
+end sub
+
+sub onPage(event as object)
+    res = event.getData()
+    m.spinner.control = "stop"
+    m.spinner.visible = false
+    empty = m.top.findNode("empty")
+    if not res.ok or res.data = invalid
+        empty.text = tr("Couldn't load this page.") + " " + valueOr(res.error, "")
+        empty.visible = true
+        return
+    end if
+    m.page = res.data
+    person = m.page.person
+    if person <> invalid
+        if person.name <> invalid then m.top.findNode("name").text = person.name
+        if person.image <> invalid and person.image <> ""
+            m.photo.uri = imageUrl(person.image)
+        else
+            initials = m.top.findNode("initials")
+            initials.text = personInitials(valueOr(person.name, ""))
+            initials.visible = true
+        end if
+    end if
+    m.top.findNode("summary").text = personSummary(m.page)
+    m.sections = personRows(m.page)
+    if m.sections.Count() = 0
+        empty.text = tr("Nothing in your libraries has them in it.")
+        empty.visible = true
+        return
+    end if
+    content = CreateObject("roSGNode", "ContentNode")
+    for each section in m.sections
+        row = content.createChild("ContentNode")
+        row.title = section.title
+        for each c in section.credits
+            node = row.createChild("ContentNode")
+            node.addFields(cardFields())
+            fillCard(node, { item: c.item }, "poster")
+        end for
+    end for
+    m.rows.content = content
+    m.rows.setFocus(true)
+    showFocused(0, 0)
+end sub
+
+function personInitials(name as string) as string
+    out = ""
+    for each word in name.Split(" ")
+        if word <> "" and Len(out) < 2 then out = out + UCase(Left(word, 1))
+    end for
+    return out
+end function
+
+sub onFocusMoved()
+    f = m.rows.rowItemFocused
+    if f = invalid or f.Count() < 2 then return
+    showFocused(f[0], f[1])
+end sub
+
+' The focused title's backdrop behind the page, and their part in it beside their name.
+sub showFocused(row as integer, col as integer)
+    if row < 0 or row >= m.sections.Count() then return
+    credits = m.sections[row].credits
+    if col < 0 or col >= credits.Count() then return
+    c = credits[col]
+    m.top.findNode("part").text = personPart(c)
+    img = c.item.images
+    if img <> invalid
+        art = img.backdrop
+        if art = invalid then art = img.primary
+        if art <> invalid then m.backdrop.uri = imageUrl(art)
+    end if
+end sub
+
+sub onSelected()
+    f = m.rows.rowItemSelected
+    if f = invalid or f.Count() < 2 then return
+    c = m.sections[f[0]].credits[f[1]]
+    m.top.action = { go: "open", id: c.item.id }
+end sub
+
+function onKeyEvent(key as string, press as boolean) as boolean
+    return false
+end function
