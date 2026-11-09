@@ -14,6 +14,8 @@
     <script type="text/brightscript" uri="pkg:/source/shared/format.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/bif.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/tracks.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/quality.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/playerosd.bs" />
     <children>
         <Rectangle width="1920" height="1080" color="0x000000FF" />
         <Video id="video" width="1920" height="1080" enableUI="false" />
@@ -21,22 +23,34 @@
              (the profile's size, colour, background and position) on every Roku. -->
         <Group id="subs" />
         <BusySpinner id="spinner" translation="[912, 492]" />
+        <!-- The controls, in the Apple TV app's arrangement: the show's name large at the bottom left
+             with "S2, E4 • name" above it, three round buttons at the right (Playback, Audio,
+             Subtitles), the timeline split at the chapters with the time played under its marker
+             and the time left at the end, and a tab row under it (Info, Chapters, Cast, Episodes)
+             whose card slides up while the title and timeline step aside. -->
         <Group id="controls" visible="false">
-            <Poster uri="pkg:/images/shade.png" width="1920" height="1080" rotation="0" opacity="0.8" />
-            <Label id="title" translation="[120, 80]" width="1400" font="font:LargeBoldSystemFont" color="0xF0F4F4FF" />
-            <Label id="subtitle" translation="[120, 150]" width="1400" font="font:SmallSystemFont" color="0xC6D0D0FF" />
+            <Poster uri="pkg:/images/shade.png" width="1920" height="1080" rotation="0" opacity="0.85" />
+            <Group id="main">
+                <Label id="subtitle" translation="[120, 742]" width="1300" font="font:SmallSystemFont" color="0xE6E9E9FF" />
+                <Label id="title" translation="[120, 778]" width="1360" font="font:LargeBoldSystemFont" color="0xF5F5F7FF" />
+                <Group id="buttons" translation="[1560, 786]" />
+                <Group id="segments" translation="[120, 884]" />
+                <Rectangle id="head" translation="[120, 875]" width="6" height="30" color="0xFFFFFFFF" />
+                <Group id="elapsed" translation="[120, 914]">
+                    <Label id="position" font="font:SmallBoldSystemFont" color="0xF5F5F7FF" />
+                    <Poster id="playState" translation="[0, 9]" width="22" height="22" uri="pkg:/images/play-mini.png" />
+                </Group>
+                <Label id="remaining" translation="[1400, 914]" width="400" horizAlign="right" font="font:SmallBoldSystemFont" color="0xF5F5F7FF" />
+            </Group>
             <Group id="thumbGroup" visible="false">
                 <Rectangle id="thumbEdge" width="330" height="190" color="0xFFFFFFFF" />
                 <Poster id="thumb" translation="[5, 5]" width="320" height="180" />
+                <Label id="chapter" translation="[0, 196]" width="330" font="font:SmallestBoldSystemFont" color="0xF5F5F7FF" />
             </Group>
-            <Rectangle id="track" translation="[120, 940]" width="1680" height="8" color="0xFFFFFF55" />
-            <Rectangle id="bar" translation="[120, 940]" width="0" height="8" color="0xF5F5F7FF" />
-            <Rectangle id="head" translation="[120, 932]" width="6" height="24" color="0xFFFFFFFF" />
-            <Label id="position" translation="[120, 970]" width="400" font="font:SmallSystemFont" color="0xF0F4F4FF" />
-            <Label id="remaining" translation="[1400, 970]" width="400" horizAlign="right" font="font:SmallSystemFont" color="0xF0F4F4FF" />
-            <Label id="state" translation="[0, 880]" width="1920" horizAlign="center" font="font:SmallBoldSystemFont" color="0xF0F4F4FF" />
-            <Label id="hint" translation="[1100, 80]" width="700" horizAlign="right" font="font:SmallestSystemFont" color="0xC6D0D0FF" />
-            <Label id="chapter" translation="[120, 880]" width="900" font="font:SmallestSystemFont" color="0xC6D0D0FF" />
+            <Group id="tabs" translation="[120, 976]" />
+            <Group id="card" translation="[120, 700]" visible="false" />
+            <Label id="state" visible="false" />
+            <Label id="hint" visible="false" />
         </Group>
         <Group id="skip" visible="false" translation="[1460, 840]">
             <Rectangle width="340" height="72" color="0xF0F4F4FF" />
