@@ -3,7 +3,7 @@
 
 ' cardFields: what a card carries besides its picture and title.
 function cardFields() as object
-    return { itemId: "", kind: "", parentId: "", line2: "", progress: 0.0, style: "poster", backdrop: "", logo: "", meta: "", overview: "", resumeMs: 0, played: false, path: "", watchlisted: false }
+    return { itemId: "", kind: "", parentId: "", line2: "", progress: 0.0, style: "poster", backdrop: "", logo: "", meta: "", overview: "", resumeMs: 0, played: false, path: "", watchlisted: false, leftMin: 0 }
 end function
 
 ' fillCard sets a ContentNode (with cardFields) for an item shown as "poster" or "thumb".
@@ -63,6 +63,7 @@ sub fillCard(node as object, card as object, style as string)
         if p < 0.02 then p = 0.02
         if p > 1 then p = 1
         node.progress = p
+        node.leftMin = minutesLeft(r, d)
     end if
 end sub
 
