@@ -1,0 +1,36 @@
+# Checks, tests and packages the Roku app as a sideload zip. To save Actions minutes it runs only
+# when asked: from the Actions tab (Run workflow, on any branch), or for a push whose commit
+# message contains [build]. The zip is attached to the run (Summary > Artifacts); install it from
+# the Roku's developer page (http://<roku-ip>, Development Application Installer).
+name: Build
+
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  build:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[build]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Check (compile and string catalog)
+        run: npm run check
+      - name: Unit tests
+        run: npm test
+      - name: Stamp the build number
+        # The Roku shows major.minor.build; the run number tells builds apart.
+        run: sed -i "s/^build_version=.*/build_version=${{ github.run_number }}/" src/manifest
+      - name: Package
+        run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arc-roku-${{ github.run_number }}
+          path: out/arc-roku.zip
+          retention-days: 30
