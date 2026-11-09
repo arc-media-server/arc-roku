@@ -414,7 +414,7 @@ sub onEpisode()
     if kind = "season"
         m.top.action = { go: "play", id: node.itemId, startMs: node.resumeMs, title: m.item.title, subtitle: node.subtitleLine }
     else if kind = "cast"
-        m.top.action = { go: "grid", title: node.title, source: { kind: "person", id: node.itemId } }
+        m.top.action = { go: "person", title: node.title, id: node.itemId }
     else if kind = "extra"
         m.top.action = { go: "playExtra", url: node.path, title: node.title, subtitle: m.item.title }
     else

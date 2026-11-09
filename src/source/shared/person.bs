@@ -1,0 +1,100 @@
+' A person's page, as the Apple TV app's PersonView: what they're in across the libraries in rows
+' (Movies, TV Shows, Behind the Camera), newest first, with a summary and their part in the
+' focused title. Read from GET /people/{id} ({ person, credits: [{ item, character, roles }] }).
+
+function personDate(item as object) as string
+    if item.release_date <> invalid and item.release_date <> "" then return item.release_date
+    if item.year <> invalid then return item.year.ToStr()
+    return ""
+end function
+
+function personActing(credit as object) as boolean
+    if credit.roles = invalid or credit.roles.Count() = 0 then return true
+    for each r in credit.roles
+        if r = "actor" then return true
+    end for
+    return false
+end function
+
+' personRows: [{ id, title, credits }] in the Apple TV's order, each newest first, without repeats.
+function personRows(page as dynamic) as object
+    out = []
+    if page = invalid or page.credits = invalid then return out
+    newest = []
+    for each c in page.credits
+        if c.item <> invalid then newest.Push(c)
+    end for
+    ' Newest first: a simple insertion sort on the date string (yyyy-mm-dd or yyyy).
+    for i = 1 to newest.Count() - 1
+        j = i
+        while j > 0 and personDate(newest[j - 1].item) < personDate(newest[j].item)
+            t = newest[j - 1]
+            newest[j - 1] = newest[j]
+            newest[j] = t
+            j = j - 1
+        end while
+    end for
+    groups = [["movies", tr("Movies")], ["shows", tr("TV Shows")], ["crew", tr("Behind the Camera")]]
+    for each g in groups
+        seen = {}
+        list = []
+        for each c in newest
+            acting = personActing(c)
+            keep = false
+            if g[0] = "movies" then keep = acting and c.item.kind = "movie"
+            if g[0] = "shows" then keep = acting and c.item.kind <> "movie"
+            if g[0] = "crew" then keep = not acting
+            if keep and not seen.DoesExist(c.item.id)
+                seen[c.item.id] = true
+                list.Push(c)
+            end if
+        end for
+        if list.Count() > 0 then out.Push({ id: g[0], title: g[1], credits: list })
+    end for
+    return out
+end function
+
+' personSummary: "Acting · 14 titles in your libraries".
+function personSummary(page as dynamic) as string
+    if page = invalid then return ""
+    parts = []
+    if page.person <> invalid and page.person.known_for <> invalid and page.person.known_for <> "" then parts.Push(page.person.known_for)
+    seen = {}
+    if page.credits <> invalid
+        for each c in page.credits
+            if c.item <> invalid then seen[c.item.id] = true
+        end for
+    end if
+    n = seen.Count()
+    if n = 1
+        parts.Push(tr("1 title in your libraries"))
+    else
+        parts.Push(tr("%1 titles in your libraries").Replace("%1", n.ToStr()))
+    end if
+    return parts.Join(" · ")
+end function
+
+' personPart: "Heat (1995) · as Lt. Vincent Hanna", or "· Director" for a part behind the camera.
+function personPart(credit as dynamic) as string
+    if credit = invalid or credit.item = invalid then return ""
+    line = credit.item.title
+    if credit.item.year <> invalid then line = line + " (" + credit.item.year.ToStr() + ")"
+    if credit.character <> invalid and credit.character <> ""
+        line = line + " · " + tr("as %1").Replace("%1", credit.character)
+    else if credit.roles <> invalid
+        for each r in credit.roles
+            if r <> "actor"
+                line = line + " · " + personRoleName(r)
+                exit for
+            end if
+        end for
+    end if
+    return line
+end function
+
+function personRoleName(role as string) as string
+    if role = "director" then return tr("Director")
+    if role = "writer" then return tr("Writer")
+    if role = "producer" then return tr("Producer")
+    return UCase(Left(role, 1)) + Mid(role, 2)
+end function

@@ -21,7 +21,7 @@
     <children>
         <Rectangle width="1920" height="1080" color="0x0B1214FF" />
         <Label id="title" translation="[120, 70]" width="1300" font="font:LargeBoldSystemFont" color="0xF0F4F4FF" />
-        <Label id="summary" translation="[120, 150]" width="1300" font="font:SmallSystemFont" color="0x9AA7A7FF" />
+        <Label id="summary" translation="[120, 150]" width="1300" wrap="true" maxLines="2" font="font:SmallSystemFont" color="0x9AA7A7FF" />
         <Label id="hint" translation="[1300, 80]" width="500" horizAlign="right" font="font:SmallestSystemFont" color="0x9AA7A7FF" />
         <MarkupGrid id="grid" translation="[120, 230]" itemComponentName="CardItem" drawFocusFeedback="false"
             vertFocusAnimationStyle="fixedFocusWrap" />

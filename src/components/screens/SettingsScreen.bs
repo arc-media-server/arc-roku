@@ -9,8 +9,17 @@ sub init()
     m.options.observeField("closed", "onClosed")
     m.top.findNode("heading").text = tr("Settings")
     m.top.findNode("note").text = tr("Playback and subtitle choices follow your profile, on every device. Choosing a track in the player updates them too.")
-    info = CreateObject("roAppInfo")
-    m.top.findNode("about").text = tr("Arc for Roku %1").Replace("%1", info.GetVersion()) + Chr(10) + tr("Titles, artwork and episode details come from TMDB and TheTVDB. This product uses the TMDB API but is not endorsed or certified by TMDB.")
+    profile = m.global.profile
+    color = "teal"
+    name = ""
+    if profile <> invalid
+        if profile.color <> invalid and profile.color <> "" then color = profile.color
+        if profile.name <> invalid then name = profile.name
+    end if
+    m.top.findNode("avatar").uri = "pkg:/images/avatars/" + color + ".png"
+    m.top.findNode("letter").text = UCase(Left(name, 1))
+    m.top.findNode("profileName").text = name
+    m.top.findNode("serverLine").text = m.global.serverName
     m.prefs = invalid
     m.rowKeys = []
     callApi("GET", "/me/prefs", invalid, "onPrefs")
@@ -98,6 +107,7 @@ sub draw()
     rows.Push(["profiles", tr("Switch Profile"), name])
     rows.Push(["server", tr("Server"), m.global.serverName])
     rows.Push(["signOut", tr("Sign Out of This Roku"), ""])
+    rows.Push(["about", tr("About"), CreateObject("roAppInfo").GetVersion()])
     content = CreateObject("roSGNode", "ContentNode")
     m.rowKeys = []
     for each r in rows
@@ -127,6 +137,8 @@ sub onRow()
         m.top.action = { go: "otherServer" }
     else if key = "signOut"
         m.top.action = { go: "signOut" }
+    else if key = "about"
+        m.top.action = { go: "about" }
     else
         m.picking = key
         list = choices(key)
