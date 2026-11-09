@@ -264,6 +264,8 @@ sub onRailPicked()
         replaceAll("SettingsScreen", {})
     else if go.go = "grid"
         replaceAll("GridScreen", { title: go.title, source: go.source })
+    else if go.go = "library"
+        replaceAll("LibraryScreen", { library: go.library })
     end if
 end sub
 

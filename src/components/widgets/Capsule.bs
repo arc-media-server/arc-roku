@@ -1,0 +1,25 @@
+sub init()
+    m.left = m.top.findNode("left")
+    m.middle = m.top.findNode("middle")
+    m.right = m.top.findNode("right")
+    layout()
+end sub
+
+sub layout()
+    h = m.top.height
+    r = h / 2
+    w = m.top.width
+    if w < h then w = h
+    c = m.top.color
+    m.left.width = r
+    m.left.height = h
+    m.left.blendColor = c
+    m.middle.translation = [r, 0]
+    m.middle.width = w - h
+    m.middle.height = h
+    m.middle.color = c
+    m.right.translation = [w - r, 0]
+    m.right.width = r
+    m.right.height = h
+    m.right.blendColor = c
+end sub
