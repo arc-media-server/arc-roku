@@ -30,6 +30,11 @@ npm test          # unit tests of the shared code in brs-node, no device needed
 npm run build     # out/arc-roku.zip, ready to sideload
 ```
 
+GitHub can build the zip too, without a computer: Actions > Build > Run workflow (any branch), or
+push a commit whose message contains `[build]`. It runs the same check and tests, stamps the run
+number as the build version, and attaches `arc-roku-<run>` to the run (Summary > Artifacts). It
+never runs otherwise, to save Actions minutes.
+
 All text the app shows goes through `tr()`; `node scripts/check-strings.mjs --write` regenerates
 `src/locale/en_US/translations.ts` after adding strings.
 
