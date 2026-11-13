@@ -19,3 +19,4 @@ Roku.
 - Before a PR run `npm run check` and `npm test`, and walk changed screens in the simulator
   (README); list the real results and what still needs a device.
 - Never commit `.env`, developer passwords or signing keys.
+- No agent session links in commits or PRs (no `Claude-Session:` or other chat URLs; owner, 13 November): the Co-Authored-By trailer is the only attribution. Earlier links are removed once, before the repository goes public (arc-media-server `docs/ALPHA-CHECKLIST.md`).
