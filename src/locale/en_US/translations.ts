@@ -425,6 +425,10 @@
   <translation>None</translation>
 </message>
 <message>
+  <source>Not in This Order</source>
+  <translation>Not in This Order</translation>
+</message>
+<message>
   <source>Nothing here yet. Add a library in Arc's settings on the web.</source>
   <translation>Nothing here yet. Add a library in Arc's settings on the web.</translation>
 </message>
