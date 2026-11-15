@@ -16,6 +16,7 @@ sub Main()
     testTitlePage()
     testPlayerOsd()
     testPerson()
+    testCardMenu()
     if m.failures = 0 then print "ALL PASSED" else print "FAILURES: "; m.failures
 end sub
 
@@ -112,6 +113,8 @@ sub testHome()
     eq(rows[5].path, "/collections/abc", "collection row")
     split = resolveHomeRows({ split_up_next: true }, [], invalid)
     eq(split[0].path + " " + split[1].id, "/home/continue next-up", "split Up Next")
+    check(split[0].continueRow = true and split[1].continueRow = true, "Continue Watching and Up Next can be removed from")
+    check(rows[0].continueRow = true and rows[1].continueRow <> true and rows[2].continueRow <> true, "only the Continue Watching row can be removed from")
     dt = CreateObject("roDateTime")
     dt.FromISO8601String("2026-10-15T12:00:00Z")
     eq(seasonalPick(dt).title, "Horror for Halloween", "seasonal row in October")
@@ -284,6 +287,7 @@ sub testRecommended()
     eq(rows[1].title, "Because you watched Heat", "recommended: because you watched")
     eq(rows[1].cards.Count(), 2, "recommended: every title is a card")
     eq(recommendedRows(invalid, "TV", "shows").Count(), 0, "recommended: no answer")
+    check(rows[0].continueRow = true and rows[1].continueRow = false, "recommended: only Continue Watching can be removed from")
 end sub
 
 ' The same files as the Apple TV app's QualityTests.
@@ -356,3 +360,22 @@ sub testPerson()
     eq(personPart(page.credits[3]), "Directed (2001) · Director", "person: a part behind the camera")
     eq(personRows(invalid).Count(), 0, "person: no page")
 end sub
+
+sub testCardMenu()
+    ep = { kind: "episode", itemId: "e", parentId: "s", resumeMs: 60000, played: false, watchlisted: false, inContinue: true }
+    eq(menuActs(cardMenu(ep)), "play,restart,watched,uncontinue,show", "card menu: an episode in Continue Watching")
+    movie = { kind: "movie", itemId: "m", parentId: "", resumeMs: 0, played: false, watchlisted: false, inContinue: true }
+    eq(menuActs(cardMenu(movie)), "play,watched,list,uncontinue,open", "card menu: a film in Up Next or Continue Watching")
+    eq(cardMenu(movie)[3].label, "Remove from Continue Watching", "card menu: the remove entry's name")
+    movie.inContinue = false
+    eq(menuActs(cardMenu(movie)), "play,watched,list,open", "card menu: elsewhere there's no remove entry")
+    eq(cardMenu({ kind: "collection" }).Count(), 0, "card menu: not on a collection")
+end sub
+
+function menuActs(entries as object) as string
+    acts = []
+    for each e in entries
+        acts.Push(e.act)
+    end for
+    return acts.Join(",")
+end function
