@@ -217,7 +217,21 @@ end sub
 sub testBrowse()
     q = libraryQueryDefaults()
     lib = { kind: "library", id: 2, libraryKind: "shows" }
-    eq(browsePath(lib, q, 0, 60), "/items?kind=series&library_id=2&limit=60&sort=title", "browsePath library first page")
+    eq(browsePath(lib, q, 0, 60), "/items?kind=series&letters=1&library_id=2&limit=60&sort=title", "browsePath library first page asks where letters start")
+    eq(browsePath(lib, q, 60, 60), "/items?kind=series&library_id=2&limit=60&offset=60&sort=title", "browsePath later pages don't")
+    q.letter = "s"
+    eq(browsePath(lib, q, 0, 60), "/items?jump=S&kind=series&letters=1&library_id=2&limit=60&sort=title", "browsePath jumps to a letter")
+    eq(browsePath(lib, q, 412, 60), "/items?kind=series&library_id=2&limit=60&offset=412&sort=title", "browsePath carries on after a jump without it")
+    eq(querySummary(q), "Title · A to Z · From S", "querySummary names the letter")
+    q.reverse = true
+    eq(browsePath(lib, q, 0, 60), "/items?jump=S&kind=series&letters=1&library_id=2&limit=60&reverse=1&sort=title", "browsePath jumps in Z to A too")
+    q = libraryQueryDefaults()
+    eq(q.letter, "", "a library starts at the beginning")
+    jumped = browseCards(lib, { total: 900, offset: 412, items: [{ id: "s1", kind: "series" }], letters: [{ letter: "#", count: 3 }, { letter: "a", count: 40 }, { letter: "b", count: 0 }, { letter: "s", count: 52 }] })
+    eq(jumped.offset, 412, "browseCards keeps where a jumped page starts")
+    eq(letterChoices(jumped.letters).Join(","), "a,s", "letterChoices: A to Z with titles only")
+    eq(letterChoices(invalid).Count(), 0, "letterChoices: none asked for")
+    eq(browseCards(lib, { total: 5, items: [] }).offset, 0, "browseCards: an ordinary page starts at 0")
     q.sort = "added"
     q.reverse = true
     q.unwatched = true

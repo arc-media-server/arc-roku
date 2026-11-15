@@ -76,6 +76,8 @@ sub reload()
     end if
     m.content = CreateObject("roSGNode", "ContentNode")
     m.loaded = 0
+    ' Where the loaded titles start in the whole list: 0, or a letter's place after a jump.
+    m.base = 0
     m.total = -1
     m.loading = false
     m.empty.visible = false
@@ -87,9 +89,9 @@ end sub
 
 sub loadMore()
     if m.loading then return
-    if m.total >= 0 and m.loaded >= m.total then return
+    if m.total >= 0 and m.base + m.loaded >= m.total then return
     m.loading = true
-    callApi("GET", browsePath(m.source, m.query, m.loaded, m.page), invalid, "onPage", m.generation)
+    callApi("GET", browsePath(m.source, m.query, m.base + m.loaded, m.page), invalid, "onPage", m.generation)
 end sub
 
 sub onPage(event as object)
@@ -104,6 +106,11 @@ sub onPage(event as object)
     end if
     page = browseCards(m.source, res.data)
     first = m.loaded = 0
+    if first
+        m.base = page.offset
+        ' The letters the list can jump to come with its first page, when sorted by title.
+        if page.letters <> invalid then m.letters = letterChoices(page.letters)
+    end if
     for each card in page.cards
         node = m.content.createChild("ContentNode")
         node.addFields(cardFields())
@@ -111,7 +118,7 @@ sub onPage(event as object)
     end for
     m.loaded = m.loaded + page.cards.Count()
     m.total = page.total
-    if not browsePaged(m.source) or page.cards.Count() = 0 then m.total = m.loaded
+    if not browsePaged(m.source) or page.cards.Count() = 0 then m.total = m.base + m.loaded
     if m.source.kind = "person" and res.data <> invalid and res.data.person <> invalid then m.titleLabel.text = res.data.person.name
     if m.source.kind = "collection" and res.data <> invalid and res.data.collection <> invalid
         m.titleLabel.text = res.data.collection.title
@@ -233,6 +240,13 @@ sub openMenu(section as string)
         if m.top.params.source.kind = "library" and m.libraryView = "library"
             entries.Push({ label: tr("Sort by"), detail: sortName(q.sort) })
             values.Push("sort")
+            ' Sorted by title, the grid can start at a letter (as the web's A–Z rail).
+            if q.sort = "title" and m.letters <> invalid and m.letters.Count() > 0
+                detail = tr("All titles")
+                if q.letter <> "" then detail = UCase(q.letter)
+                entries.Push({ label: tr("Jump to"), detail: detail })
+                values.Push("jump")
+            end if
             if q.sort <> "shuffle"
                 d = sortDirections(q.sort)
                 detail = d[0]
@@ -267,6 +281,16 @@ sub openMenu(section as string)
             if choices[i] = q.sort then selected = i
             entries.Push({ label: sortName(choices[i]), detail: "" })
             values.Push(choices[i])
+        end for
+    else if section = "jump"
+        m.options.title = tr("Jump to")
+        entries.Push({ label: tr("All titles"), detail: "" })
+        values.Push("")
+        selected = 0
+        for each l in m.letters
+            if l = q.letter then selected = values.Count()
+            entries.Push({ label: UCase(l), detail: "" })
+            values.Push(l)
         end for
     else if section = "order"
         m.options.title = tr("Order")
@@ -350,19 +374,27 @@ sub onOptionPicked()
     if section = "view"
         m.libraryView = v
         m.source = { kind: v, id: m.top.params.source.id, libraryKind: m.top.params.source.libraryKind }
+    else if section = "jump"
+        m.query.letter = v
     else if section = "sort"
-        if v <> m.query.sort then m.query.reverse = false
+        if v <> m.query.sort
+            m.query.reverse = false
+            m.query.letter = ""
+        end if
         m.query.sort = v
     else if section = "order"
         m.query.reverse = v
     else if section = "unwatched"
         m.query.unwatched = v
+        m.query.letter = ""
     else
         m.query[section] = valueString(v)
+        ' Another filter changes which letters have titles: the list starts again from the top.
+        m.query.letter = ""
     end if
     reload()
-    if section = "view"
-        ' Another view is a different grid: the panel closes onto it.
+    if section = "view" or section = "jump"
+        ' Another view is a different grid, and a letter is a place in it: the panel closes onto it.
         m.menu = ""
         m.options.visible = false
         m.grid.setFocus(true)
