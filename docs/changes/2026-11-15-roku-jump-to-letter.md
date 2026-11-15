@@ -43,7 +43,7 @@ status).
 
 - `npm run check`: no diagnostics, and the catalog is up to date (230 strings, three new: Jump to,
   All titles, From %1).
-- `npm test`: ALL PASSED, including 11 new browse checks:
+- `npm test`: ALL PASSED, including 10 new browse checks and one updated:
   - the first page asking for letters, and later pages not;
   - jumping in both orders;
   - carrying on after a jump;
