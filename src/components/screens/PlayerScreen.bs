@@ -203,7 +203,13 @@ sub onItem(event as object)
     load(valueOr(m.top.params.startMs, 0), {})
     loadCastAndEpisodes(it)
     if it.kind = "episode" and pref("auto_play", true) <> false
-        callApi("GET", "/items/" + escape(it.id) + "/next", invalid, "onNext")
+        if m.top.params.queue <> invalid
+            ' Playing through a queue (Shuffle Season): next is the queue's next entry, not Arc's.
+            n = queueNext(m.top.params.queue)
+            if n <> invalid then m.next = n.item
+        else
+            callApi("GET", "/items/" + escape(it.id) + "/next", invalid, "onNext")
+        end if
     end if
 end sub
 
@@ -1320,10 +1326,39 @@ sub playNext()
     if n = invalid then return
     startAt = 0
     if n.user_data <> invalid and n.user_data.played <> true and n.user_data.position_ms <> invalid then startAt = n.user_data.position_ms
+    q = m.top.params.queue
+    if q <> invalid and m.queueMoving <> true
+        ' The queue moves to the entry first (select passes over unavailable ones), then it plays.
+        m.queueMoving = true
+        callApi("PATCH", "/play-queues/" + escape(q.id), { revision: q.revision, operation: "select", entry_id: queueNext(q).id }, "onQueueMoved")
+        return
+    end if
+    playItem(n, startAt, invalid)
+end sub
+
+sub onQueueMoved(event as object)
+    res = event.getData()
+    if m.closed then return
+    q = invalid
+    if res.ok then q = res.data
+    e = queueCurrent(q)
+    if e = invalid
+        ' Arc refused the change (another device changed the queue, say): play on without it.
+        print "Arc: the play queue couldn't move on ("; res.status; "), playing the next episode without it"
+        playItem(m.next, 0, invalid)
+        return
+    end if
+    startAt = 0
+    n = e.item
+    if n.user_data <> invalid and n.user_data.played <> true and n.user_data.position_ms <> invalid then startAt = n.user_data.position_ms
+    playItem(n, startAt, q)
+end sub
+
+sub playItem(n as object, startAt as dynamic, queue as dynamic)
     title = m.top.findNode("title").text
     if n.series_title <> invalid then title = n.series_title
     print "Arc: playing the next episode"
-    m.top.action = { go: "play", replace: true, id: n.id, startMs: startAt, title: title, subtitle: joinParts([episodeCode(n), valueOr(n.title, "")], " · ") }
+    m.top.action = { go: "play", replace: true, id: n.id, startMs: startAt, title: title, subtitle: joinParts([episodeCode(n), valueOr(n.title, "")], " · "), queue: queue }
 end sub
 
 ' --- the options menu (* button) ---

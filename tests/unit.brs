@@ -16,6 +16,7 @@ sub Main()
     testTitlePage()
     testPlayerOsd()
     testPerson()
+    testSeasonActions()
     if m.failures = 0 then print "ALL PASSED" else print "FAILURES: "; m.failures
 end sub
 
@@ -355,4 +356,40 @@ sub testPerson()
     eq(personPart(page.credits[0]), "Heat (1995) · as Lt. Vincent Hanna", "person: their part")
     eq(personPart(page.credits[3]), "Directed (2001) · Director", "person: a part behind the camera")
     eq(personRows(invalid).Count(), 0, "person: no page")
+end sub
+
+sub testSeasonActions()
+    seen = { id: "1", user_data: { played: true } }
+    unseen = { id: "2", user_data: { played: false } }
+    fresh = { id: "3" }
+    gone = { id: "4", available: false }
+    eq(seasonOnDisk([seen, gone, fresh]).Count(), 2, "season: episodes on disk")
+    check(seasonWatched([seen, gone]), "season: watched when every one on disk is")
+    check(not seasonWatched([seen, unseen]), "season: not watched with one unwatched")
+    check(not seasonWatched([gone]), "season: not watched with nothing on disk")
+    card = [{ label: "Play", act: "play" }, { label: "Mark as watched", act: "watched" }, { label: "Go to show", act: "show" }]
+    acts = []
+    for each e in seasonMenu(card, [seen, unseen, gone])
+        acts.Push(e.act)
+    end for
+    eq(acts.Join(","), "play,watched,seasonWatched,shuffleSeason", "season menu: the card's, then the season's")
+    acts = []
+    for each e in seasonMenu(card, [seen, gone])
+        acts.Push(e.act)
+    end for
+    eq(acts.Join(","), "play,watched,seasonUnwatched", "season menu: unwatched, no shuffle for one")
+    eq(seasonMenu(card, [gone]).Count(), 2, "season menu: nothing for a season not on disk")
+    ids = shuffledIds([seen, unseen, fresh, gone])
+    eq(ids.Count(), 3, "shuffle: only episodes on disk")
+    sorted = [ids[0], ids[1], ids[2]]
+    sorted.Sort()
+    eq(sorted.Join(","), "1,2,3", "shuffle: each once")
+    q = { current_entry_id: "a", entries: [{ id: "a", available: true, item: seen }, { id: "b", available: false }, { id: "c", available: true, item: fresh }] }
+    eq(queueCurrent(q).id, "a", "queue: the current entry")
+    eq(queueNext(q).id, "c", "queue: next passes over unavailable entries")
+    q.current_entry_id = "c"
+    check(queueNext(q) = invalid, "queue: nothing after the last")
+    q.current_entry_id = "b"
+    check(queueCurrent(q) = invalid, "queue: an unavailable current entry")
+    check(queueNext(invalid) = invalid, "queue: none")
 end sub

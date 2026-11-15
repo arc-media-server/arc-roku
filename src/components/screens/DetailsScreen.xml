@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!-- A title's page, as the Apple TV app's: the artwork full screen, its logo, the rating box and
      genres, the overview, the year, length and quality badges, Starring and Director, the buttons
-     (Play or Resume, Play from the beginning, Watched, Watchlist), then rows: a show's seasons,
+     (Play or Resume, Play from the beginning, Watched, Watchlist), then rows: a show's seasons
+     (* on an episode: Mark Season as Watched, Shuffle Season),
      Trailers & Extras, Related, the cast (round pictures) and the collections it's in. -->
 <component name="DetailsScreen" extends="Group">
     <interface>
@@ -17,6 +18,8 @@
     <script type="text/brightscript" uri="pkg:/source/shared/cards.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/quality.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/titlepage.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/cardmenu.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/seasonactions.bs" />
     <children>
         <Poster id="backdrop" width="1920" height="1080" loadDisplayMode="scaleToZoom" loadWidth="1920" loadHeight="1080" />
         <Poster uri="pkg:/images/shade.png" width="1920" height="1080" />
@@ -38,6 +41,8 @@
                 drawFocusFeedback="false" rowFocusAnimationStyle="floatingFocus" visible="false" />
             <Label id="error" translation="[120, 680]" width="1400" wrap="true" font="font:SmallSystemFont" color="0xF59E9EFF" />
         </Group>
+        <!-- The * menu on a season's episode: its own actions, then the season's (seasonactions.bs). -->
+        <OptionsPanel id="cardPanel" visible="false" />
         <Animation id="slide" duration="0.25" easeFunction="outCubic">
             <Vector2DFieldInterpolator id="slideTo" key="[0.0, 1.0]" fieldToInterp="page.translation" />
         </Animation>

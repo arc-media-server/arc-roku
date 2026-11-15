@@ -16,6 +16,7 @@
     <script type="text/brightscript" uri="pkg:/source/shared/tracks.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/quality.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/playerosd.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/seasonactions.bs" />
     <children>
         <Rectangle width="1920" height="1080" color="0x000000FF" />
         <Video id="video" width="1920" height="1080" enableUI="false" />
