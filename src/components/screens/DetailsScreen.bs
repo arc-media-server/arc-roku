@@ -104,6 +104,7 @@ sub onItem(event as object)
         callApi("GET", "/series/" + escape(it.id) + "/seasons", invalid, "onSeasons", it.id)
     else
         m.seasons = []
+        m.seasonRows = []
     end if
     if it.kind <> "episode"
         callApi("GET", "/items/" + escape(it.id) + "/similar", invalid, "onSimilar", it.id)
@@ -258,6 +259,9 @@ sub onSeasons(event as object)
     if m.item = invalid or res.tag <> m.item.id then return
     m.seasons = []
     if res.ok and res.data <> invalid and res.data.seasons <> invalid then m.seasons = res.data.seasons
+    ' Each season, then the episodes the order doesn't place ("Not in This Order").
+    m.seasonRows = []
+    if res.ok then m.seasonRows = seasonRows(res.data)
     m.landed = false
     buildRows()
     showButtons()
@@ -270,12 +274,8 @@ sub buildRows()
     it = m.item
     if it = invalid or m.seasons = invalid then return
     specs = []
-    for each s in m.seasons
-        if s.episodes <> invalid and s.episodes.Count() > 0
-            title = tr("Season %1").Replace("%1", s.season_number.ToStr())
-            if s.name <> invalid and s.name <> "" then title = s.name
-            specs.Push({ kind: "season", title: title, style: "thumb", items: s.episodes })
-        end if
+    for each r in valueOr(m.seasonRows, [])
+        specs.Push({ kind: "season", title: r.title, style: "thumb", items: r.episodes, unplaced: r.unplaced })
     end for
     if it.extras <> invalid and it.extras.Count() > 0
         extras = []
@@ -328,9 +328,7 @@ sub buildRows()
             if spec.kind = "season"
                 e = card.item
                 node.title = valueOr(e.title, "")
-                line = "E" + valueOr(e.episode_number, 0).ToStr()
-                if e.runtime_min <> invalid then line = line + " · " + formatRuntime(e.runtime_min)
-                node.line2 = line
+                node.line2 = seasonCardLine(e, spec.unplaced = true)
                 node.addField("subtitleLine", "string", false)
                 node.subtitleLine = episodeLine(e)
             end if
@@ -370,8 +368,8 @@ sub buildRows()
     target = nextEpisode()
     wanted = m.top.params.episodeId
     if wanted <> invalid and wanted <> ""
-        for each s in m.seasons
-            for each e in valueOr(s.episodes, [])
+        for each r in valueOr(m.seasonRows, [])
+            for each e in r.episodes
                 if e.id = wanted then target = e
             end for
         end for
