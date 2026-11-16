@@ -120,7 +120,7 @@ sub onRecommended(event as object)
     m.specs = []
     m.results = []
     for each r in rows
-        m.specs.Push({ title: r.title, style: r.style })
+        m.specs.Push({ title: r.title, style: r.style, continueRow: r.continueRow })
         m.results.Push(r.cards)
     end for
     m.placed = 0
@@ -156,6 +156,7 @@ sub placeRows()
                 node = row.createChild("ContentNode")
                 node.addFields(cardFields())
                 fillCard(node, card, spec.style)
+                node.inContinue = spec.continueRow = true
             end for
             if spec.style = "thumb"
                 m.newSizes.Push([400, 330])

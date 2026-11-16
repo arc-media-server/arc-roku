@@ -12,6 +12,7 @@
     <script type="text/brightscript" uri="pkg:/source/shared/http.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/api.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/format.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/seasons.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/bif.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/tracks.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/quality.bs" />

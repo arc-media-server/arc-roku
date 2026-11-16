@@ -990,7 +990,8 @@ sub buildEpisodeTiles()
         code.translation = [16, 172]
         code.font = "font:SmallestBoldSystemFont"
         code.color = "0xFFFFFFFF"
-        code.text = "S" + valueOr(ep.season_number, 0).ToStr() + " · E" + valueOr(ep.episode_number, 0).ToStr()
+        ' An episode outside the order has no place in it, so no "S1 · E8" either.
+        if m.seasonUnplaced <> true then code.text = "S" + valueOr(ep.season_number, 0).ToStr() + " · E" + valueOr(ep.episode_number, 0).ToStr()
         name = t.group.createChild("Label")
         name.translation = [0, 228]
         name.width = 384
@@ -1092,22 +1093,13 @@ end sub
 
 sub onSeasons(event as object)
     res = event.getData()
-    if not res.ok or res.data = invalid or res.data.seasons = invalid or m.item = invalid then return
-    for each season in res.data.seasons
-        if season.episodes <> invalid
-            for each ep in season.episodes
-                if ep.id = m.item.id
-                    list = []
-                    for each e in season.episodes
-                        if e.available <> false then list.Push(e)
-                    end for
-                    m.seasonEpisodes = list
-                    m.tabNodes = invalid
-                    return
-                end if
-            end for
-        end if
-    end for
+    if not res.ok or res.data = invalid or m.item = invalid then return
+    ' The episode's season, or the episodes the order doesn't place when it's one of them.
+    row = seasonOf(res.data, m.item.id)
+    if row = invalid then return
+    m.seasonEpisodes = row.episodes
+    m.seasonUnplaced = row.unplaced
+    m.tabNodes = invalid
 end sub
 
 ' --- timeline thumbnails (Arc's BIF file) ---
