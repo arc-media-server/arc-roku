@@ -18,6 +18,7 @@ sub Main()
     testPerson()
     testSeasons()
     testCardMenu()
+    testSeasonActions()
     if m.failures = 0 then print "ALL PASSED" else print "FAILURES: "; m.failures
 end sub
 
@@ -389,6 +390,8 @@ sub testSeasons()
     eq(rows[2].title, "Not in This Order", "seasons: the unplaced row's name, last")
     check(rows[2].unplaced = true and rows[0].unplaced = false, "seasons: only the last row is unplaced")
     eq(rows[2].episodes[0].id, "x", "seasons: the unplaced episode is kept")
+    eq(rows[0].season_number, 1, "seasons: a season row keeps its number, for the season menu")
+    eq(rows[1].season_number, 0, "seasons: Specials is season 0")
     eq(seasonRows({ seasons: [{ season_number: 1, episodes: [e1] }], unplaced: invalid }).Count(), 1, "seasons: unplaced null")
     eq(seasonRows({ seasons: [{ season_number: 1, episodes: [e1] }], unplaced: [] }).Count(), 1, "seasons: unplaced empty")
     eq(seasonRows(invalid).Count(), 0, "seasons: no answer")
@@ -421,3 +424,39 @@ function menuActs(entries as object) as string
     end for
     return acts.Join(",")
 end function
+
+sub testSeasonActions()
+    seen = { id: "1", user_data: { played: true } }
+    unseen = { id: "2", user_data: { played: false } }
+    fresh = { id: "3" }
+    gone = { id: "4", available: false }
+    eq(seasonOnDisk([seen, gone, fresh]).Count(), 2, "season: episodes on disk")
+    check(seasonWatched([seen, gone]), "season: watched when every one on disk is")
+    check(not seasonWatched([seen, unseen]), "season: not watched with one unwatched")
+    check(not seasonWatched([gone]), "season: not watched with nothing on disk")
+    card = [{ label: "Play", act: "play" }, { label: "Mark as watched", act: "watched" }, { label: "Go to show", act: "show" }]
+    acts = []
+    for each e in seasonMenu(card, [seen, unseen, gone])
+        acts.Push(e.act)
+    end for
+    eq(acts.Join(","), "play,watched,seasonWatched,shuffleSeason", "season menu: the card's, then the season's")
+    acts = []
+    for each e in seasonMenu(card, [seen, gone])
+        acts.Push(e.act)
+    end for
+    eq(acts.Join(","), "play,watched,seasonUnwatched", "season menu: unwatched, no shuffle for one")
+    eq(seasonMenu(card, [gone]).Count(), 2, "season menu: nothing for a season not on disk")
+    ids = shuffledIds([seen, unseen, fresh, gone])
+    eq(ids.Count(), 3, "shuffle: only episodes on disk")
+    sorted = [ids[0], ids[1], ids[2]]
+    sorted.Sort()
+    eq(sorted.Join(","), "1,2,3", "shuffle: each once")
+    q = { current_entry_id: "a", entries: [{ id: "a", available: true, item: seen }, { id: "b", available: false }, { id: "c", available: true, item: fresh }] }
+    eq(queueCurrent(q).id, "a", "queue: the current entry")
+    eq(queueNext(q).id, "c", "queue: next passes over unavailable entries")
+    q.current_entry_id = "c"
+    check(queueNext(q) = invalid, "queue: nothing after the last")
+    q.current_entry_id = "b"
+    check(queueCurrent(q) = invalid, "queue: an unavailable current entry")
+    check(queueNext(invalid) = invalid, "queue: none")
+end sub

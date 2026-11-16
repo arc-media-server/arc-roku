@@ -213,6 +213,10 @@
   <translation>Continue Watching</translation>
 </message>
 <message>
+  <source>Couldn't change what's watched.</source>
+  <translation>Couldn't change what's watched.</translation>
+</message>
+<message>
   <source>Couldn't find Arc at that address.</source>
   <translation>Couldn't find Arc at that address.</translation>
 </message>
@@ -247,6 +251,10 @@
 <message>
   <source>Couldn't search.</source>
   <translation>Couldn't search.</translation>
+</message>
+<message>
+  <source>Couldn't start playing this season.</source>
+  <translation>Couldn't start playing this season.</translation>
 </message>
 <message>
   <source>Date added</source>
@@ -391,6 +399,14 @@
 <message>
   <source>Mark as watched</source>
   <translation>Mark as watched</translation>
+</message>
+<message>
+  <source>Mark Season as Unwatched</source>
+  <translation>Mark Season as Unwatched</translation>
+</message>
+<message>
+  <source>Mark Season as Watched</source>
+  <translation>Mark Season as Watched</translation>
 </message>
 <message>
   <source>Maximum (%1)</source>
@@ -695,6 +711,10 @@
 <message>
   <source>Shuffle</source>
   <translation>Shuffle</translation>
+</message>
+<message>
+  <source>Shuffle Season</source>
+  <translation>Shuffle Season</translation>
 </message>
 <message>
   <source>Sign in to %1</source>

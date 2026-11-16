@@ -1,0 +1,80 @@
+' A show's season actions, as the web's show page and the other apps' (arc-tv, arc-android): Mark
+' Season as Watched (or Unwatched) and Shuffle Season. They're in the * menu on a season's episode
+' and act on that season's episodes on disk. Shuffle plays through one of Arc's play queues; the
+' player then plays on through the queue instead of asking Arc for the next episode.
+
+' seasonOnDisk: the episodes that have a file (Arc marks the others available: false).
+function seasonOnDisk(episodes as dynamic) as object
+    out = []
+    if episodes = invalid then return out
+    for each e in episodes
+        if e <> invalid and e.available <> false then out.Push(e)
+    end for
+    return out
+end function
+
+' seasonWatched: every episode on disk is watched (and there's at least one).
+function seasonWatched(episodes as dynamic) as boolean
+    onDisk = seasonOnDisk(episodes)
+    if onDisk.Count() = 0 then return false
+    for each e in onDisk
+        if e.user_data = invalid or e.user_data.played <> true then return false
+    end for
+    return true
+end function
+
+' seasonMenu: the episode card's own entries (cardMenu, without Go to show: this is the show), then
+' the season's: Mark Season as Watched or Unwatched, and Shuffle Season with two or more on disk.
+function seasonMenu(cardEntries as object, episodes as dynamic) as object
+    out = []
+    for each e in cardEntries
+        if e.act <> "show" then out.Push(e)
+    end for
+    onDisk = seasonOnDisk(episodes)
+    if onDisk.Count() = 0 then return out
+    if seasonWatched(episodes)
+        out.Push({ label: tr("Mark Season as Unwatched"), act: "seasonUnwatched" })
+    else
+        out.Push({ label: tr("Mark Season as Watched"), act: "seasonWatched" })
+    end if
+    if onDisk.Count() > 1 then out.Push({ label: tr("Shuffle Season"), act: "shuffleSeason" })
+    return out
+end function
+
+' shuffledIds: the ids of the season's episodes on disk in a random order.
+function shuffledIds(episodes as dynamic) as object
+    ids = []
+    for each e in seasonOnDisk(episodes)
+        ids.Push(e.id)
+    end for
+    for i = ids.Count() - 1 to 1 step -1
+        j = Rnd(i + 1) - 1
+        x = ids[i]
+        ids[i] = ids[j]
+        ids[j] = x
+    end for
+    return ids
+end function
+
+' queueCurrent: the queue's current entry, if it's playable.
+function queueCurrent(queue as dynamic) as dynamic
+    if queue = invalid or queue.entries = invalid then return invalid
+    for each e in queue.entries
+        if e.id = queue.current_entry_id
+            if e.available = true and e.item <> invalid then return e
+            return invalid
+        end if
+    end for
+    return invalid
+end function
+
+' queueNext: the first playable entry after the current one (unavailable ones are passed over).
+function queueNext(queue as dynamic) as dynamic
+    if queue = invalid or queue.entries = invalid then return invalid
+    past = false
+    for each e in queue.entries
+        if past and e.available = true and e.item <> invalid then return e
+        if e.id = queue.current_entry_id then past = true
+    end for
+    return invalid
+end function
