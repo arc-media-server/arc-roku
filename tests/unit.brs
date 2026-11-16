@@ -16,6 +16,7 @@ sub Main()
     testTitlePage()
     testPlayerOsd()
     testPerson()
+    testSeasons()
     if m.failures = 0 then print "ALL PASSED" else print "FAILURES: "; m.failures
 end sub
 
@@ -355,4 +356,31 @@ sub testPerson()
     eq(personPart(page.credits[0]), "Heat (1995) · as Lt. Vincent Hanna", "person: their part")
     eq(personPart(page.credits[3]), "Directed (2001) · Director", "person: a part behind the camera")
     eq(personRows(invalid).Count(), 0, "person: no page")
+end sub
+
+sub testSeasons()
+    e1 = { id: "e1", episode_number: 1, runtime_min: 44, available: true }
+    e2 = { id: "e2", episode_number: 2, available: false }
+    s0 = { id: "s0", episode_number: 1 }
+    odd = { id: "x", episode_number: 20, runtime_min: 42 }
+    data = { seasons: [{ season_number: 1, name: "", episodes: [e1, e2] }, { season_number: 2, episodes: [] }, { season_number: 0, name: "Specials", episodes: [s0] }], unplaced: [odd] }
+    rows = seasonRows(data)
+    eq(rows.Count(), 3, "seasons: empty seasons left out, unplaced added")
+    eq(rows[0].title, "Season 1", "seasons: a season without a name")
+    eq(rows[1].title, "Specials", "seasons: a season's own name")
+    eq(rows[2].title, "Not in This Order", "seasons: the unplaced row's name, last")
+    check(rows[2].unplaced = true and rows[0].unplaced = false, "seasons: only the last row is unplaced")
+    eq(rows[2].episodes[0].id, "x", "seasons: the unplaced episode is kept")
+    eq(seasonRows({ seasons: [{ season_number: 1, episodes: [e1] }], unplaced: invalid }).Count(), 1, "seasons: unplaced null")
+    eq(seasonRows({ seasons: [{ season_number: 1, episodes: [e1] }], unplaced: [] }).Count(), 1, "seasons: unplaced empty")
+    eq(seasonRows(invalid).Count(), 0, "seasons: no answer")
+    eq(seasonRows({ seasons: [], unplaced: [odd] }).Count(), 1, "seasons: only unplaced episodes still show")
+    row = seasonOf(data, "e1")
+    check(row <> invalid and row.unplaced = false and row.episodes.Count() = 1, "seasons: an episode's season, available only")
+    row = seasonOf(data, "x")
+    check(row <> invalid and row.unplaced = true and row.episodes[0].id = "x", "seasons: an unplaced episode's row")
+    check(seasonOf(data, "nope") = invalid, "seasons: an episode not in any row")
+    eq(seasonCardLine(e1, false), "E1 · 44m", "seasons: number and length")
+    eq(seasonCardLine(odd, true), "42m", "seasons: unplaced shows only its length")
+    eq(seasonCardLine({ episode_number: 3 }, false), "E3", "seasons: no length")
 end sub
