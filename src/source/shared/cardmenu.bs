@@ -1,5 +1,6 @@
 ' The * menu on a title's card, as the other apps' card menu (TitleMenu): play, play from the
-' beginning, mark watched or unwatched, add to or remove from the Watchlist, go to the show.
+' beginning, mark watched or unwatched, add to or remove from the Watchlist, remove from Continue
+' Watching (on its rows only), go to the show.
 ' Screens show cardMenu's entries in an OptionsPanel and call runCardAction with the one picked;
 ' a change calls the screen's onCardChanged when Arc has saved it.
 
@@ -21,6 +22,9 @@ function cardMenu(node as dynamic) as object
     if kind <> "episode"
         if node.watchlisted then out.Push({ label: tr("Remove from Watchlist"), act: "unlist" }) else out.Push({ label: tr("Add to Watchlist"), act: "list" })
     end if
+    ' Only on a card in Continue Watching or Up Next: takes it out without marking it watched (an
+    ' episode takes its show out, until something of it is played again).
+    if node.inContinue = true then out.Push({ label: tr("Remove from Continue Watching"), act: "uncontinue" })
     if kind = "episode" and node.parentId <> "" then out.Push({ label: tr("Go to show"), act: "show" })
     if kind <> "episode" then out.Push({ label: tr("Go to details"), act: "open" })
     return out
@@ -35,5 +39,6 @@ function runCardAction(node as object, act as string) as dynamic
     if act = "open" then return { go: "open", id: node.itemId }
     if act = "watched" or act = "unwatched" then callApi("PUT", "/items/" + id + "/played", { played: act = "watched" }, "onCardChanged")
     if act = "list" or act = "unlist" then callApi("PUT", "/items/" + id + "/watchlist", { on: act = "list" }, "onCardChanged")
+    if act = "uncontinue" then callApi("DELETE", "/home/continue/" + id, invalid, "onCardChanged")
     return invalid
 end function

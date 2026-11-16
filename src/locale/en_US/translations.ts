@@ -621,6 +621,10 @@
   <translation>Remote</translation>
 </message>
 <message>
+  <source>Remove from Continue Watching</source>
+  <translation>Remove from Continue Watching</translation>
+</message>
+<message>
   <source>Remove from Watchlist</source>
   <translation>Remove from Watchlist</translation>
 </message>

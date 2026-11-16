@@ -41,7 +41,7 @@ function recommendedTitle(row as object, libraryName as string, libraryKind as s
     return valueString(row.title)
 end function
 
-' recommendedRows: Arc's answer as rows for Home's row list ({ title, style, cards }), leaving out
+' recommendedRows: Arc's answer as rows for Home's row list ({ title, style, cards, continueRow }), leaving out
 ' empty rows. A row's style is Arc's (poster or thumb); automatic is a poster, and a row of
 ' episodes (Continue Watching in a shows library) is 16:9.
 function recommendedRows(data as dynamic, libraryName as string, libraryKind as string) as object
@@ -59,7 +59,7 @@ function recommendedRows(data as dynamic, libraryName as string, libraryKind as 
             for each it in items
                 cards.Push({ item: it })
             end for
-            out.Push({ title: recommendedTitle(row, libraryName, libraryKind), style: style, cards: cards })
+            out.Push({ title: recommendedTitle(row, libraryName, libraryKind), style: style, cards: cards, continueRow: valueString(row.type) = "continue" })
         end if
     end for
     return out
