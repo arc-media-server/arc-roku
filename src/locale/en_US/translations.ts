@@ -93,6 +93,10 @@
   <translation>All</translation>
 </message>
 <message>
+  <source>All titles</source>
+  <translation>All titles</translation>
+</message>
+<message>
   <source>Always</source>
   <translation>Always</translation>
 </message>
@@ -305,6 +309,10 @@
   <translation>Forced</translation>
 </message>
 <message>
+  <source>From %1</source>
+  <translation>From %1</translation>
+</message>
+<message>
   <source>Genre</source>
   <translation>Genre</translation>
 </message>
@@ -343,6 +351,10 @@
 <message>
   <source>Interview</source>
   <translation>Interview</translation>
+</message>
+<message>
+  <source>Jump to</source>
+  <translation>Jump to</translation>
 </message>
 <message>
   <source>Large</source>
@@ -439,6 +451,10 @@
 <message>
   <source>None</source>
   <translation>None</translation>
+</message>
+<message>
+  <source>Not in This Order</source>
+  <translation>Not in This Order</translation>
 </message>
 <message>
   <source>Nothing here yet. Add a library in Arc's settings on the web.</source>
@@ -619,6 +635,10 @@
 <message>
   <source>Remote</source>
   <translation>Remote</translation>
+</message>
+<message>
+  <source>Remove from Continue Watching</source>
+  <translation>Remove from Continue Watching</translation>
 </message>
 <message>
   <source>Remove from Watchlist</source>

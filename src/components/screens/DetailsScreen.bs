@@ -107,6 +107,7 @@ sub onItem(event as object)
         callApi("GET", "/series/" + escape(it.id) + "/seasons", invalid, "onSeasons", it.id)
     else
         m.seasons = []
+        m.seasonRows = []
     end if
     if it.kind <> "episode"
         callApi("GET", "/items/" + escape(it.id) + "/similar", invalid, "onSimilar", it.id)
@@ -261,6 +262,9 @@ sub onSeasons(event as object)
     if m.item = invalid or res.tag <> m.item.id then return
     m.seasons = []
     if res.ok and res.data <> invalid and res.data.seasons <> invalid then m.seasons = res.data.seasons
+    ' Each season, then the episodes the order doesn't place ("Not in This Order").
+    m.seasonRows = []
+    if res.ok then m.seasonRows = seasonRows(res.data)
     ' After a change from the * menu the focus stays where it was; otherwise it lands afresh.
     if m.keepPlace <> true then m.landed = false
     m.keepPlace = false
@@ -275,13 +279,10 @@ sub buildRows()
     it = m.item
     if it = invalid or m.seasons = invalid then return
     specs = []
-    for i = 0 to m.seasons.Count() - 1
-        s = m.seasons[i]
-        if s.episodes <> invalid and s.episodes.Count() > 0
-            title = tr("Season %1").Replace("%1", s.season_number.ToStr())
-            if s.name <> invalid and s.name <> "" then title = s.name
-            specs.Push({ kind: "season", title: title, style: "thumb", items: s.episodes, season: i })
-        end if
+    rows = valueOr(m.seasonRows, [])
+    for i = 0 to rows.Count() - 1
+        r = rows[i]
+        specs.Push({ kind: "season", title: r.title, style: "thumb", items: r.episodes, unplaced: r.unplaced, season: i })
     end for
     if it.extras <> invalid and it.extras.Count() > 0
         extras = []
@@ -336,9 +337,7 @@ sub buildRows()
             if spec.kind = "season"
                 e = card.item
                 node.title = valueOr(e.title, "")
-                line = "E" + valueOr(e.episode_number, 0).ToStr()
-                if e.runtime_min <> invalid then line = line + " · " + formatRuntime(e.runtime_min)
-                node.line2 = line
+                node.line2 = seasonCardLine(e, spec.unplaced = true)
                 node.addField("subtitleLine", "string", false)
                 node.subtitleLine = episodeLine(e)
             end if
@@ -378,8 +377,8 @@ sub buildRows()
     target = nextEpisode()
     wanted = m.top.params.episodeId
     if wanted <> invalid and wanted <> ""
-        for each s in m.seasons
-            for each e in valueOr(s.episodes, [])
+        for each r in valueOr(m.seasonRows, [])
+            for each e in r.episodes
                 if e.id = wanted then target = e
             end for
         end for
@@ -457,7 +456,8 @@ function focusedSeason() as dynamic
     row = m.episodes.content.getChild(f[0])
     if row = invalid or row.rowKind <> "season" then return invalid
     node = row.getChild(f[1])
-    season = m.seasons[row.seasonIndex]
+    season = invalid
+    if m.seasonRows <> invalid then season = m.seasonRows[row.seasonIndex]
     if node = invalid or season = invalid then return invalid
     return { node: node, season: season, title: row.title }
 end function
@@ -465,7 +465,10 @@ end function
 sub showSeasonMenu()
     at = focusedSeason()
     if at = invalid then return
-    entries = seasonMenu(cardMenu(at.node), at.season.episodes)
+    ' Not in This Order isn't a season: its episodes keep their own menu, without the season's.
+    episodes = at.season.episodes
+    if at.season.unplaced = true then episodes = []
+    entries = seasonMenu(cardMenu(at.node), episodes)
     if entries.Count() = 0 then return
     m.menuAt = at
     m.menuEntries = entries
