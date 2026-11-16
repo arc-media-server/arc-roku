@@ -4,10 +4,11 @@
 ' profile's library order, and collections and playlists last. The layout is arranged on the web
 ' (Edit Home, Reorder libraries); the Roku follows it.
 '
-' Each row is { id, title, style ("poster" or "thumb"), path, shape }, where path is the /api/v1
+' Each row is { id, title, style ("poster" or "thumb"), path, shape, continueRow }, where path is the /api/v1
 ' request for its titles and shape says how the answer is laid out: "list" (an array of titles),
 ' "page" ({ items }), "recent" (a TV library's recent cards), "collection" ({ items }) or
-' "playlist" ({ entries: [{ item }] }).
+' "playlist" ({ entries: [{ item }] }). continueRow marks Continue Watching and Up Next, whose cards
+' can be taken out of them (DELETE /home/continue/{id}), as on the web.
 
 function resolveHomeRows(prefs as object, libraries as object, today as object) as object
     saved = {}
@@ -22,10 +23,10 @@ function resolveHomeRows(prefs as object, libraries as object, today as object) 
     if shownRow(saved, "continue")
         path = "/home/continue"
         if not split then path = path + "?with_up_next=1"
-        rows.Push({ id: "continue", title: tr("Continue Watching"), style: rowStyle(saved, "continue", "thumb"), path: path, shape: "list" })
+        rows.Push({ id: "continue", title: tr("Continue Watching"), style: rowStyle(saved, "continue", "thumb"), path: path, shape: "list", continueRow: true })
     end if
     if split and shownRow(saved, "next-up")
-        rows.Push({ id: "next-up", title: tr("Up Next"), style: rowStyle(saved, "next-up", "thumb"), path: "/home/next-up", shape: "list" })
+        rows.Push({ id: "next-up", title: tr("Up Next"), style: rowStyle(saved, "next-up", "thumb"), path: "/home/next-up", shape: "list", continueRow: true })
     end if
     pick = seasonalPick(today)
     if pick <> invalid and shownRow(saved, "seasonal")

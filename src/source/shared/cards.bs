@@ -3,7 +3,7 @@
 
 ' cardFields: what a card carries besides its picture and title.
 function cardFields() as object
-    return { itemId: "", kind: "", parentId: "", line2: "", progress: 0.0, style: "poster", backdrop: "", logo: "", meta: "", overview: "", resumeMs: 0, played: false, path: "", watchlisted: false, leftMin: 0 }
+    return { itemId: "", kind: "", parentId: "", line2: "", progress: 0.0, style: "poster", backdrop: "", logo: "", meta: "", overview: "", resumeMs: 0, played: false, path: "", watchlisted: false, leftMin: 0, inContinue: false }
 end function
 
 ' fillCard sets a ContentNode (with cardFields) for an item shown as "poster" or "thumb".
