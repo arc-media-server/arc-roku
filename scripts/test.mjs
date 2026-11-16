@@ -3,7 +3,7 @@
 import { execFileSync } from 'node:child_process';
 
 execFileSync('npx', ['bsc', '--create-package', 'false'], { stdio: 'inherit' });
-const shared = ['http', 'format', 'caps', 'home', 'bif', 'tracks', 'cards', 'browse', 'places', 'recommended', 'quality', 'titlepage', 'playerosd', 'person', 'seasons', 'cardmenu'].map((n) => `out/staging/source/shared/${n}.brs`);
+const shared = ['http', 'format', 'caps', 'home', 'bif', 'tracks', 'cards', 'browse', 'places', 'recommended', 'quality', 'titlepage', 'playerosd', 'person', 'seasons', 'cardmenu', 'seasonactions'].map((n) => `out/staging/source/shared/${n}.brs`);
 let out = '';
 try {
   out = execFileSync('npx', ['brs-cli', '--no-sg', ...shared, 'tests/unit.brs'], { encoding: 'utf8' });

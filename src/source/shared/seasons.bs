@@ -12,7 +12,7 @@ function seasonRows(data as dynamic) as object
             if s.episodes <> invalid and s.episodes.Count() > 0
                 title = tr("Season %1").Replace("%1", valueOr(s.season_number, 0).ToStr())
                 if s.name <> invalid and s.name <> "" then title = s.name
-                rows.Push({ title: title, unplaced: false, episodes: s.episodes })
+                rows.Push({ title: title, unplaced: false, episodes: s.episodes, season_number: valueOr(s.season_number, 0) })
             end if
         end for
     end if

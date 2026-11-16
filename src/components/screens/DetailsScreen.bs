@@ -25,6 +25,9 @@ sub init()
     m.related = {}
     m.landed = false
     m.actions = []
+    m.cardPanel = m.top.findNode("cardPanel")
+    m.cardPanel.observeField("picked", "onCardPicked")
+    m.cardPanel.observeField("closed", "closeCardPanel")
 end sub
 
 sub onParams()
@@ -262,7 +265,9 @@ sub onSeasons(event as object)
     ' Each season, then the episodes the order doesn't place ("Not in This Order").
     m.seasonRows = []
     if res.ok then m.seasonRows = seasonRows(res.data)
-    m.landed = false
+    ' After a change from the * menu the focus stays where it was; otherwise it lands afresh.
+    if m.keepPlace <> true then m.landed = false
+    m.keepPlace = false
     buildRows()
     showButtons()
 end sub
@@ -274,8 +279,10 @@ sub buildRows()
     it = m.item
     if it = invalid or m.seasons = invalid then return
     specs = []
-    for each r in valueOr(m.seasonRows, [])
-        specs.Push({ kind: "season", title: r.title, style: "thumb", items: r.episodes, unplaced: r.unplaced })
+    rows = valueOr(m.seasonRows, [])
+    for i = 0 to rows.Count() - 1
+        r = rows[i]
+        specs.Push({ kind: "season", title: r.title, style: "thumb", items: r.episodes, unplaced: r.unplaced, season: i })
     end for
     if it.extras <> invalid and it.extras.Count() > 0
         extras = []
@@ -314,6 +321,8 @@ sub buildRows()
         row.title = spec.title
         row.addField("rowKind", "string", false)
         row.rowKind = spec.kind
+        row.addField("seasonIndex", "integer", false)
+        if spec.season <> invalid then row.seasonIndex = spec.season
         cards = spec.cards
         if cards = invalid
             cards = []
@@ -422,6 +431,11 @@ end sub
 
 function onKeyEvent(key as string, press as boolean) as boolean
     if not press then return false
+    if m.cardPanel.visible then return true
+    if key = "options" and m.episodes.isInFocusChain()
+        showSeasonMenu()
+        return true
+    end if
     if key = "down" and m.buttons.isInFocusChain() and m.episodes.visible
         focusRows()
         return true
@@ -432,6 +446,95 @@ function onKeyEvent(key as string, press as boolean) as boolean
     end if
     return false
 end function
+
+'--- the * menu on a season's episode (cardmenu.bs, seasonactions.bs) ---
+
+' focusedSeason: the focused episode card and its season, when the focus is on a season row.
+function focusedSeason() as dynamic
+    f = m.episodes.rowItemFocused
+    if f = invalid or f.Count() < 2 or m.episodes.content = invalid then return invalid
+    row = m.episodes.content.getChild(f[0])
+    if row = invalid or row.rowKind <> "season" then return invalid
+    node = row.getChild(f[1])
+    season = invalid
+    if m.seasonRows <> invalid then season = m.seasonRows[row.seasonIndex]
+    if node = invalid or season = invalid then return invalid
+    return { node: node, season: season, title: row.title }
+end function
+
+sub showSeasonMenu()
+    at = focusedSeason()
+    if at = invalid then return
+    ' Not in This Order isn't a season: its episodes keep their own menu, without the season's.
+    episodes = at.season.episodes
+    if at.season.unplaced = true then episodes = []
+    entries = seasonMenu(cardMenu(at.node), episodes)
+    if entries.Count() = 0 then return
+    m.menuAt = at
+    m.menuEntries = entries
+    list = []
+    for each e in entries
+        list.Push({ label: e.label, detail: "" })
+    end for
+    m.cardPanel.title = at.node.title
+    m.cardPanel.entries = list
+    m.cardPanel.selected = -1
+    m.cardPanel.visible = true
+    m.cardPanel.show = true
+end sub
+
+sub onCardPicked()
+    i = m.cardPanel.picked
+    closeCardPanel()
+    if i < 0 or i >= m.menuEntries.Count() then return
+    act = m.menuEntries[i].act
+    at = m.menuAt
+    node = at.node
+    if act = "play" or act = "restart"
+        startMs = node.resumeMs
+        if act = "restart" then startMs = 0
+        m.top.action = { go: "play", id: node.itemId, startMs: startMs, title: m.item.title, subtitle: node.subtitleLine }
+    else if act = "seasonWatched" or act = "seasonUnwatched"
+        ' Arc's season_number is the season in the profile's episode order, as these rows are.
+        body = { played: act = "seasonWatched", season_number: at.season.season_number }
+        callApi("PUT", "/items/" + escape(m.item.id) + "/played", body, "onCardChanged")
+    else if act = "shuffleSeason"
+        callApi("POST", "/play-queues", { item_ids: shuffledIds(at.season.episodes) }, "onSeasonQueue", m.item.id)
+    else
+        go = runCardAction(node, act)
+        if go <> invalid then m.top.action = go
+    end if
+end sub
+
+sub closeCardPanel()
+    m.cardPanel.visible = false
+    focusRows()
+end sub
+
+' A watched change is saved: the page loads again (ticks, episodes left, what Play starts).
+sub onCardChanged(event as object)
+    res = event.getData()
+    if res.ok
+        m.keepPlace = true
+        load()
+    else
+        m.error.text = tr("Couldn't change what's watched.") + " " + res.error
+    end if
+end sub
+
+' Shuffle Season's queue is made: play its first entry, with the queue for the player to play on.
+sub onSeasonQueue(event as object)
+    res = event.getData()
+    if m.item = invalid or res.tag <> m.item.id then return
+    first = invalid
+    if res.ok then first = queueCurrent(res.data)
+    if first = invalid
+        m.error.text = tr("Couldn't start playing this season.") + " " + valueOr(res.error, "")
+        return
+    end if
+    print "Arc: shuffling a season ("; res.data.entries.Count(); " episodes)"
+    m.top.action = { go: "play", id: first.item.id, startMs: 0, title: m.item.title, subtitle: episodeLine(first.item), queue: res.data }
+end sub
 
 ' episodeLine: "S1 E4 · Shindig", for the player's second line.
 function episodeLine(e as object) as string
