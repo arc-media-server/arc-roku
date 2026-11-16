@@ -1,0 +1,49 @@
+' A show's episodes from GET /series/{id}/seasons, as rows: each season in the show's episode
+' order, then "Not in This Order" for the episodes the profile has that the order doesn't place
+' (the answer's `unplaced`). As on the web's show page, those come last and are never left out:
+' nothing silently disappears. Playing on (Play, Up Next) still follows the order's seasons only.
+
+' seasonRows: [{ title, unplaced, episodes }] for the rows that have episodes.
+function seasonRows(data as dynamic) as object
+    rows = []
+    if data = invalid then return rows
+    if data.seasons <> invalid
+        for each s in data.seasons
+            if s.episodes <> invalid and s.episodes.Count() > 0
+                title = tr("Season %1").Replace("%1", valueOr(s.season_number, 0).ToStr())
+                if s.name <> invalid and s.name <> "" then title = s.name
+                rows.Push({ title: title, unplaced: false, episodes: s.episodes })
+            end if
+        end for
+    end if
+    if data.unplaced <> invalid and data.unplaced.Count() > 0
+        rows.Push({ title: tr("Not in This Order"), unplaced: true, episodes: data.unplaced })
+    end if
+    return rows
+end function
+
+' seasonOf: the row holding the episode `id`, with only its available episodes (for the player's
+' Episodes card), as { unplaced, episodes }; invalid when the episode isn't in any row.
+function seasonOf(data as dynamic, id as string) as dynamic
+    for each row in seasonRows(data)
+        for each e in row.episodes
+            if e.id = id
+                list = []
+                for each x in row.episodes
+                    if x.available <> false then list.Push(x)
+                end for
+                return { unplaced: row.unplaced, episodes: list }
+            end if
+        end for
+    end for
+    return invalid
+end function
+
+' seasonCardLine: "E4 · 46m" under an episode's picture. An episode outside the order has no
+' number in it, so it shows only its length, as the web shows no number for it.
+function seasonCardLine(e as object, unplaced as boolean) as string
+    parts = []
+    if not unplaced then parts.Push("E" + valueOr(e.episode_number, 0).ToStr())
+    if e.runtime_min <> invalid then parts.Push(formatRuntime(e.runtime_min))
+    return parts.Join(" · ")
+end function
