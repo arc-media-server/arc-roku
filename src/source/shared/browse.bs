@@ -3,8 +3,9 @@
 ' watchlist, playlists, a person's titles), as the other apps share their grid.
 
 ' libraryQueryDefaults: a library's sort and filters before the viewer changes them (title, A to Z).
+' letter is where a title-sorted grid starts ("" for the beginning; "s" starts at S).
 function libraryQueryDefaults() as object
-    return { sort: "title", reverse: false, unwatched: false, genre: "", decade: "", resolution: "" }
+    return { sort: "title", reverse: false, unwatched: false, genre: "", decade: "", resolution: "", letter: "" }
 end function
 
 ' browsePath: the request for a grid's page. source: { kind, id, libraryKind, path }.
@@ -18,6 +19,12 @@ function browsePath(source as object, q as dynamic, offset as integer, limit as 
         if q.genre <> "" then params.genre = q.genre
         if q.decade <> "" then params.decade = q.decade
         if q.resolution <> "" then params.resolution = q.resolution
+        ' Sorted by title, the first page asks where each letter starts (letters) and, after a jump,
+        ' starts at that letter (Arc counts the titles before it; later pages carry on from there).
+        if q.sort = "title" and offset = 0
+            params.letters = true
+            if valueString(q.letter) <> "" then params.jump = UCase(q.letter)
+        end if
         return "/items" + queryString(params)
     end if
     if kind = "collections" then return "/libraries/" + valueString(source.id) + "/collections"
@@ -41,7 +48,7 @@ end function
 
 ' browseCards: Arc's answer as cards ({ item, line2 }) for fillCard, and the total when paged.
 function browseCards(source as object, data as dynamic) as object
-    out = { cards: [], total: 0 }
+    out = { cards: [], total: 0, offset: 0, letters: invalid }
     if data = invalid then return out
     kind = source.kind
     if kind = "library"
@@ -51,6 +58,9 @@ function browseCards(source as object, data as dynamic) as object
             end for
         end if
         if data.total <> invalid then out.total = data.total
+        ' After a jump the page starts part-way through the list.
+        if data.offset <> invalid then out.offset = data.offset
+        if data.letters <> invalid then out.letters = data.letters
     else if kind = "collections"
         for each c in data
             out.cards.Push({ item: { id: c.id, kind: "collection", title: c.title, images: valueOr(c.images, {}) }, line2: countLine(c.count) })
@@ -154,7 +164,21 @@ function querySummary(q as object) as string
     if q.genre <> "" then parts.Push(q.genre)
     if q.decade <> "" then parts.Push(tr("%1s").Replace("%1", q.decade))
     if q.resolution <> "" then parts.Push(resolutionName(q.resolution))
+    if q.sort = "title" and valueString(q.letter) <> "" then parts.Push(tr("From %1").Replace("%1", UCase(q.letter)))
     return joinWith(parts, " · ")
+end function
+
+' letterChoices: the letters a title-sorted list can jump to, A to Z, from the first page's
+' letters ([{ letter, count }]): only those with titles. "#" (numbers and symbols) is where the list
+' starts anyway, so All titles covers it.
+function letterChoices(letters as dynamic) as object
+    out = []
+    if letters = invalid then return out
+    for each l in letters
+        c = LCase(valueString(l.letter))
+        if c >= "a" and c <= "z" and Len(c) = 1 and l.count <> invalid and l.count > 0 then out.Push(c)
+    end for
+    return out
 end function
 
 function joinWith(parts as object, sep as string) as string
