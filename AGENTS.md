@@ -2,9 +2,9 @@
 
 The Roku client for Arc Media Server. Arc's own repository holds the product rules (`CLAUDE.md`
 there): they apply here too, in particular pull requests only (never push to main, never force
-push), a change note per change in `docs/changes/YYYY-MM-DD-<slug>.md`, product decisions logged on
-Arc's #80, and never marking real-device, playback or HDR checks done without evidence from a real
-Roku.
+push), a change note per change in `docs/changes/YYYY-MM-DD-<slug>.md`, product decisions noted in
+the PR (or, when the owner has to choose, an Arc issue labelled `owner decision`; #80 is closed),
+and never marking real-device, playback or HDR checks done without evidence from a real Roku.
 
 - Talk to Arc only through `/api/v1` (`docs/api-v1-contract.txt` in Arc). If the app needs something
   the API lacks, add it to Arc in its own PR and link the two.
