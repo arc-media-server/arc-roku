@@ -19,6 +19,7 @@ sub Main()
     testSeasons()
     testCardMenu()
     testSeasonActions()
+    testThemeMusic()
     if m.failures = 0 then print "ALL PASSED" else print "FAILURES: "; m.failures
 end sub
 
@@ -459,4 +460,22 @@ sub testSeasonActions()
     q.current_entry_id = "b"
     check(queueCurrent(q) = invalid, "queue: an unavailable current entry")
     check(queueNext(invalid) = invalid, "queue: none")
+end sub
+
+' Theme music
+sub testThemeMusic()
+    item = {kind: "movie", theme_url: "/api/items/abc/theme"}
+    eq(themeMusicPath(item, {}), "/api/v1/items/abc/theme", "movie theme defaults on")
+    eq(themeMusicPath(item, {theme_music: false}), "", "theme switch off")
+    item.theme_url = "/api/items/abc/theme?v=123"
+    eq(themeMusicPath(item, {}), "/api/v1/items/abc/theme?v=123", "server theme cache version")
+    item.theme_url = "/api/items/abc/theme"
+    item.kind = "episode"
+    eq(themeMusicPath(item, {}), "", "episodes have no theme")
+    item.kind = "series"
+    eq(themeMusicPath(item, {}), "/api/v1/items/abc/theme", "show theme")
+    item.theme_url = "https://other.invalid/api/items/abc/theme"
+    eq(themeMusicPath(item, {}), "", "never send sign-in to an external theme")
+    item.theme_url = "/api/items/abc/stream"
+    eq(themeMusicPath(item, {}), "", "only theme routes")
 end sub
