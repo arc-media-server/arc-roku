@@ -28,6 +28,8 @@ sub init()
     m.cardPanel = m.top.findNode("cardPanel")
     m.cardPanel.observeField("picked", "onCardPicked")
     m.cardPanel.observeField("closed", "closeCardPanel")
+    ' Live updates
+    m.cardPanel.observeField("visible", "onLivePanelVisibility")
 end sub
 
 sub onParams()
@@ -68,6 +70,21 @@ end sub
 ' Back from the player: the resume point and watched state have changed.
 sub returned(_ = invalid as dynamic)
     load()
+end sub
+
+' Live updates: avoid replacing an open options panel.
+sub liveRefresh(_ = invalid as dynamic)
+    if m.cardPanel.visible
+        m.liveDirty = true
+        return
+    end if
+    m.liveDirty = false
+    m.keepPlace = true
+    load()
+end sub
+
+sub onLivePanelVisibility()
+    if not m.cardPanel.visible and m.liveDirty = true then liveRefresh()
 end sub
 
 sub load()

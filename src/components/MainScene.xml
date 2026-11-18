@@ -3,6 +3,8 @@
      each screen's "action" leads. -->
 <component name="MainScene" extends="Scene">
     <interface>
+        <!-- Live updates -->
+        <field id="liveForeground" type="boolean" value="true" onChange="syncLiveUpdates" />
         <field id="launchArgs" type="assocarray" onChange="onLaunchArgs" />
         <field id="inputArgs" type="assocarray" onChange="onInputArgs" />
     </interface>
@@ -10,6 +12,8 @@
     <script type="text/brightscript" uri="pkg:/source/shared/http.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/api.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/caps.bs" />
+    <!-- Live updates -->
+    <script type="text/brightscript" uri="pkg:/source/shared/liveupdates.bs" />
     <children>
         <Rectangle id="background" width="1920" height="1080" color="0x0B0F10FF" />
         <Group id="screens" />
