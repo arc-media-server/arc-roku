@@ -114,6 +114,8 @@ sub draw()
     rows = []
     rows.Push(["auto_play", tr("Auto-Play Next Episode"), onOff(pref("auto_play", true) <> false)])
     rows.Push(["auto_skip", tr("Skip Intros Automatically"), onOff(pref("auto_skip", false) = true)])
+    ' Theme music
+    rows.Push(["theme_music", tr("Theme Music"), onOff(pref("theme_music", true) <> false)])
     for each key in ["audio_language", "subtitle_mode", "subtitle_language", "size", "color", "background", "position"]
         rows.Push([key, choiceLabel(key), choiceName(key, currentValue(key))])
     end for
@@ -147,6 +149,8 @@ sub onRow()
         save("auto_play", pref("auto_play", true) = false)
     else if key = "auto_skip"
         save("auto_skip", pref("auto_skip", false) <> true)
+    else if key = "theme_music"
+        save("theme_music", pref("theme_music", true) = false)
     else if key = "profiles"
         m.top.action = { go: "profiles" }
     else if key = "server"
