@@ -18,6 +18,7 @@
     <script type="text/brightscript" uri="pkg:/source/shared/quality.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/playerosd.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/seasonactions.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/preroll.bs" />
     <children>
         <Rectangle width="1920" height="1080" color="0x000000FF" />
         <Video id="video" width="1920" height="1080" enableUI="false" />
@@ -68,6 +69,8 @@
         </Group>
         <OptionsPanel id="options" visible="false" />
         <Label id="error" translation="[160, 460]" width="1600" horizAlign="center" wrap="true" font="font:MediumSystemFont" color="0xF0F4F4FF" visible="false" />
+        <!-- Pre-roll: a deadline independent of the network Task. -->
+        <Timer id="prerollDeadline" repeat="false" duration="3" />
         <Timer id="progressTimer" repeat="true" duration="10" />
         <Timer id="pingTimer" repeat="true" duration="30" />
         <Timer id="tick" repeat="true" duration="0.25" />
