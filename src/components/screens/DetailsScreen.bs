@@ -207,6 +207,60 @@ function nextEpisode() as dynamic
     return first
 end function
 
+
+' Star rating: the existing OptionsPanel, with current choice ticked and focused.
+sub showTitleMenu()
+    m.ratingPanel = "more"
+    m.cardPanel.title = m.item.title
+    current = 0
+    if m.item.user_data <> invalid and m.item.user_data.rating <> invalid then current = m.item.user_data.rating
+    m.cardPanel.entries = [{ label: tr("Rate…"), detail: ratingStars(current) }]
+    m.cardPanel.selected = -1
+    m.cardPanel.visible = true
+    m.cardPanel.show = true
+end sub
+
+sub onRatingPicked()
+    i = m.cardPanel.picked
+    if m.ratingPanel = "more"
+        current = 0
+        if m.item.user_data <> invalid and m.item.user_data.rating <> invalid then current = m.item.user_data.rating
+        m.ratingEntries = ratingChoices(current)
+        m.ratingPanel = "rating"
+        m.cardPanel.title = tr("Your Rating")
+        m.cardPanel.entries = m.ratingEntries
+        selected = -1
+        if current > 0 then selected = 10 - current
+        m.cardPanel.selected = selected
+        m.cardPanel.show = true
+        return
+    end if
+    if i < 0 or i >= m.ratingEntries.Count() then return
+    rating = m.ratingEntries[i].rating
+    current = 0
+    if m.item.user_data <> invalid and m.item.user_data.rating <> invalid then current = m.item.user_data.rating
+    closeCardPanel()
+    if rating = current then return
+    if m.item.user_data = invalid then m.item.user_data = {}
+    m.item.user_data.rating = rating
+    m.error.text = ""
+    req = ratingRequest(m.item.id, rating)
+    callApi(req.method, req.path, req.body, "onRatingSaved", { id: m.item.id, rating: rating, previous: current })
+end sub
+
+sub onRatingSaved(event as object)
+    res = event.getData()
+    if m.item = invalid or res.tag.id <> m.item.id then return
+    if res.ok
+        print "Arc: rating saved"
+        load()
+    else
+        print "Arc: rating not saved"
+        if m.item.user_data.rating = res.tag.rating then m.item.user_data.rating = res.tag.previous
+        m.error.text = tr("Couldn't save your rating. Try again.")
+    end if
+end sub
+
 sub showButtons()
     it = m.item
     if it = invalid then return
@@ -245,6 +299,9 @@ sub showButtons()
         buttons.Push({ label: tr("Go to show"), icon: "show" })
         m.actions.Push({ kind: "open", id: it.parent_id })
     end if
+    ' Star rating: reuse the title's button bar and OptionsPanel.
+    buttons.Push({ label: tr("More"), icon: "more" })
+    m.actions.Push({ kind: "more" })
     ' The focus stays on the same button when the page reloads (after Watched, say).
     keep = m.buttons.focusIndex
     m.buttons.buttons = buttons
@@ -260,6 +317,8 @@ sub onButton()
         callApi("PUT", "/items/" + escape(m.item.id) + "/played", { played: a.on }, "onChanged")
     else if a.kind = "watchlist"
         callApi("PUT", "/items/" + escape(m.item.id) + "/watchlist", { on: a.on }, "onChanged")
+    else if a.kind = "more"
+        showTitleMenu()
     else if a.kind = "open"
         m.top.action = { go: "open", id: a.id }
     end if
@@ -449,6 +508,10 @@ end sub
 function onKeyEvent(key as string, press as boolean) as boolean
     if not press then return false
     if m.cardPanel.visible then return true
+    if key = "options" and m.buttons.isInFocusChain()
+        showTitleMenu()
+        return true
+    end if
     if key = "options" and m.episodes.isInFocusChain()
         showSeasonMenu()
         return true
@@ -501,6 +564,11 @@ sub showSeasonMenu()
 end sub
 
 sub onCardPicked()
+    ' Star rating owns this panel only while a title menu/rating list is open.
+    if m.ratingPanel <> invalid and m.ratingPanel <> ""
+        onRatingPicked()
+        return
+    end if
     i = m.cardPanel.picked
     closeCardPanel()
     if i < 0 or i >= m.menuEntries.Count() then return
@@ -525,6 +593,11 @@ end sub
 
 sub closeCardPanel()
     m.cardPanel.visible = false
+    if m.ratingPanel <> invalid and m.ratingPanel <> ""
+        m.ratingPanel = ""
+        focusButtons()
+        return
+    end if
     focusRows()
 end sub
 
