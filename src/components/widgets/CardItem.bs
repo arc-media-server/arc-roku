@@ -22,6 +22,12 @@ sub onContent()
     c = m.top.itemContent
     if c = invalid then return
     if c.style = "named" then m.face.uri = c.HDPosterUrl else m.picture.uri = c.HDPosterUrl
+    m.picture.opacity = 1
+    m.blank.opacity = 1
+    if c.available = false
+        m.picture.opacity = 0.45
+        m.blank.opacity = 0.45
+    end if
     m.line1.text = c.title
     m.line2.text = c.line2
     layout()
