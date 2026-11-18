@@ -78,6 +78,13 @@ sub init()
     m.ended = false
     m.skipMarker = invalid
     m.menuValues = []
+    ' Pre-roll belongs only to this initial player.
+    m.prerollWaiting = false
+    m.prerollActive = false
+    m.prerollIndex = -1
+    m.prerollClips = []
+    m.prerollDeadline = m.top.findNode("prerollDeadline")
+    m.prerollDeadline.observeField("fire", "onPrerollDeadline")
     m.isExtra = false
     ' Where the remote is in the controls: "picture" (Left/Right skip, OK pauses), "buttons" (the
     ' round buttons), "tabs" (the tab row) or "card" (the tiles in the open card).
@@ -108,7 +115,75 @@ sub onParams()
         callApi("POST", "/cast", { url: p.extra.url }, "onExtraCast")
         return
     end if
+    if prerollEnabled(p)
+        m.prerollWaiting = true
+        m.prerollDeadline.control = "start"
+        callApi("GET", prerollPath(p.id), invalid, "onPrerollList")
+        return
+    end if
+    startFilm()
+end sub
+
+' Pre-roll: failures and late replies cannot hold up or restart the film.
+sub startFilm()
+    if m.closed then return
+    m.prerollWaiting = false
+    m.prerollActive = false
+    m.prerollDeadline.control = "stop"
+    m.skip.visible = false
+    m.skip.translation = [1460, 840]
     callApi("GET", "/me/prefs", invalid, "onPrefs")
+end sub
+
+sub onPrerollDeadline()
+    if not m.prerollWaiting or m.closed then return
+    print "Arc: pre-roll list timed out; playing the film"
+    startFilm()
+end sub
+
+sub onPrerollList(event as object)
+    if not m.prerollWaiting or m.closed then return
+    m.prerollWaiting = false
+    m.prerollDeadline.control = "stop"
+    res = event.getData()
+    if res.ok then m.prerollClips = prerollClips(res.data)
+    if not res.ok then print "Arc: pre-roll list failed; playing the film"
+    m.prerollActive = true
+    nextPreroll()
+end sub
+
+sub nextPreroll()
+    if not m.prerollActive or m.closed then return
+    m.prerollActive = false
+    m.video.control = "stop"
+    m.prerollIndex = m.prerollIndex + 1
+    if m.prerollIndex >= m.prerollClips.Count()
+        startFilm()
+        return
+    end if
+    m.controls.visible = false
+    m.skipText.text = tr("Skip")
+    m.skip.translation = [1460, 936]
+    m.skip.visible = true
+    ' The player owns the remote; Skip is its sole focused action, as the existing marker Skip.
+    m.top.setFocus(true)
+    m.prerollActive = true
+    callApi("POST", "/cast", { url: m.prerollClips[m.prerollIndex].url }, "onPrerollCast", m.prerollIndex)
+end sub
+
+sub onPrerollCast(event as object)
+    res = event.getData()
+    if m.closed or not m.prerollActive or res.tag <> m.prerollIndex then return
+    if not res.ok or res.data = invalid or res.data.url = invalid
+        print "Arc: pre-roll cast failed; moving on"
+        nextPreroll()
+        return
+    end if
+    content = CreateObject("roSGNode", "ContentNode")
+    content.url = res.data.url
+    content.streamFormat = "mp4"
+    m.video.content = content
+    m.video.control = "play"
 end sub
 
 sub onExtraCast(event as object)
@@ -170,6 +245,7 @@ end sub
 
 sub leaving(_ = invalid as dynamic)
     m.closed = true
+    m.prerollDeadline.control = "stop"
     if m.plan <> invalid then report("stopped", positionMs())
     m.video.control = "stop"
     for each t in [m.progressTimer, m.pingTimer, m.tick, m.hideTimer, m.seekTimer, m.upNextTimer]
@@ -332,6 +408,18 @@ end function
 
 sub onVideoState()
     s = m.video.state
+    if m.closed then return
+    if m.prerollActive
+        if s = "finished" or s = "error"
+            if s = "error" then print "Arc: pre-roll failed; moving on"
+            nextPreroll()
+        else if s = "playing"
+            m.spinner.visible = false
+            m.spinner.control = "stop"
+        end if
+        return
+    end if
+    if m.prerollWaiting then return
     if s = "playing"
         m.spinner.visible = false
         m.spinner.control = "stop"
@@ -588,6 +676,14 @@ end sub
 
 function onKeyEvent(key as string, press as boolean) as boolean
     if not press then return false
+    if m.prerollWaiting or m.prerollActive
+        if key = "back"
+            m.top.action = { go: "back" }
+        else if key = "OK" and m.prerollActive
+            nextPreroll()
+        end if
+        return true
+    end if
     ' Keys the options panel leaves (it keeps the focus while open) go nowhere else.
     if m.options.visible then return true
     if m.upNextIn >= 0

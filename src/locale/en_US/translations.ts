@@ -749,6 +749,10 @@
   <translation>Sign Out of This Roku</translation>
 </message>
 <message>
+  <source>Skip</source>
+  <translation>Skip</translation>
+</message>
+<message>
   <source>Skip Credits</source>
   <translation>Skip Credits</translation>
 </message>
