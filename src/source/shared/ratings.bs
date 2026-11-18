@@ -1,0 +1,27 @@
+ ' Star rating: best first, 1–10 half stars, zero clears.
+function ratingStars(rating as integer) as string
+    if rating < 0 then rating = 0
+    if rating > 10 then rating = 10
+    text = ""
+    for i = 1 to Int(rating / 2)
+        text = text + "★"
+    end for
+    if rating mod 2 = 1 then text = text + "½"
+    return text
+end function
+
+function ratingChoices(current as integer) as object
+    out = []
+    for r = 10 to 1 step -1
+        out.Push({ label: ratingStars(r), detail: tr("%1 of 5").Replace("%1", (r / 2).ToStr().Trim()), rating: r })
+    end for
+    if current > 0 then out.Push({ label: tr("Clear Rating"), detail: "", rating: 0 })
+    return out
+end function
+
+' Star rating request, shared by the title menu and stand-in-server tests.
+function ratingRequest(itemId as string, rating as integer) as object
+    if rating < 0 then rating = 0
+    if rating > 10 then rating = 10
+    return { method: "PUT", path: "/items/" + CreateObject("roUrlTransfer").Escape(itemId) + "/rating", body: { rating: rating } }
+end function
