@@ -16,6 +16,8 @@
     </interface>
     <script type="text/brightscript" uri="pkg:/source/shared/http.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/api.bs" />
+    <!-- Star rating -->
+    <script type="text/brightscript" uri="pkg:/source/shared/ratings.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/format.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/seasons.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/cards.bs" />

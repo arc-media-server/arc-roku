@@ -19,6 +19,7 @@ sub Main()
     testPerson()
     testSeasons()
     testCardMenu()
+    testStarRating()
     testSeasonActions()
     if m.failures = 0 then print "ALL PASSED" else print "FAILURES: "; m.failures
 end sub
@@ -34,6 +35,23 @@ end sub
 
 sub eq(got as dynamic, want as dynamic, what as string)
     check(got = want, what + " (got " + FormatJson(got) + ", want " + FormatJson(want) + ")")
+end sub
+
+
+sub testStarRating()
+    eq(ratingStars(9), "★★★★½", "rating halves")
+    eq(ratingStars(1), "½", "rating minimum")
+    eq(ratingStars(0), "", "rating cleared")
+    choices = ratingChoices(9)
+    eq(choices.Count(), 11, "clear only when rated")
+    eq(choices[0].rating, 10, "best first")
+    eq(choices[9].rating, 1, "half star last")
+    eq(choices[10].rating, 0, "clear uses zero")
+    eq(ratingChoices(0).Count(), 10, "no clear without rating")
+    req = ratingRequest("a/b", 9)
+    eq(req.method, "PUT", "rating PUT")
+    eq(req.path, "/items/a%2Fb/rating", "rating escaped path")
+    eq(req.body.rating, 9, "rating half-star body")
 end sub
 
 sub testHttp()
