@@ -1,0 +1,22 @@
+' Pre-roll policy: the server filters episodes and home videos. Replacements never ask.
+function prerollEnabled(params as object) as boolean
+    start = 0
+    if params.startMs <> invalid then start = params.startMs
+    return start <= 0 and params.preroll <> false and params.together <> true and params.extra = invalid
+end function
+
+function prerollClips(value as dynamic) as object
+    clips = []
+    if GetInterface(value, "ifArray") = invalid then return clips
+    for each clip in value
+        if GetInterface(clip, "ifAssociativeArray") <> invalid
+            if GetInterface(clip.url, "ifString") <> invalid and clip.url <> "" then clips.Push(clip)
+        end if
+    end for
+    return clips
+end function
+
+' The same encoded route is used by the player and native transport regression.
+function prerollPath(id as string) as string
+    return "/items/" + CreateObject("roUrlTransfer").Escape(id) + "/preroll"
+end function
