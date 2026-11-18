@@ -1,0 +1,22 @@
+sub testLiveHints()
+    state = liveState()
+    liveEvent(state, "resync", "{}", "start", 0)
+    eq(state.pending.Count(), 0, "live skips opening resync")
+    liveEvent(state, "invalidate", "{""topic"":""profile""}", "next", 100)
+    eq(liveFlush(state, 1599).Count(), 0, "live batches first 1.5 seconds")
+    eq(liveFlush(state, 1600).profile, true, "live flushes first hint")
+    for i = 1601 to 6500 step 100
+        liveAdd(state, "catalog", i)
+    end for
+    eq(liveFlush(state, 6599).Count(), 0, "scan hints cannot cause reload flood")
+    eq(liveFlush(state, 6600).catalog, true, "continuous scans flush every 5 seconds")
+    liveEvent(state, "resync", "{}", "later", 7000)
+    eq(state.pending.resync, true, "later resync is real")
+    liveEvent(state, "invalidate", "bad json", "later", 7100)
+    liveAdd(state, "future_topic", 7100)
+    eq(state.pending.Count(), 1, "unknown and malformed hints ignored")
+    eq(liveTouches({ profile: true }, ["catalog"]), false, "topics remain targeted")
+    eq(liveTouches({ resync: true }, ["profile"]), true, "resync touches all consumers")
+    eq(liveRetry({ "Retry-After": "12" }, 5000), 12000, "rate limit retry respected")
+    eq(liveRetry({ "Retry-After": "9999" }, 5000), 5000, "retry bounded")
+end sub

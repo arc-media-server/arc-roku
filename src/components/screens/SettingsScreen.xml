@@ -9,6 +9,8 @@
         <function name="takeFocus" />
         <function name="leaving" />
         <function name="returned" />
+        <!-- Live updates -->
+        <function name="liveRefresh" />
     </interface>
     <script type="text/brightscript" uri="pkg:/source/shared/http.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/api.bs" />

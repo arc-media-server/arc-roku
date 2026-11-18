@@ -179,6 +179,8 @@ end sub
 sub closePanel()
     m.options.visible = false
     m.rows.setFocus(true)
+    ' Live updates
+    if m.liveDirty = true then liveRefresh()
 end sub
 
 ' save: shown at once; a failure to save is left quiet, as on the other apps.
@@ -198,3 +200,13 @@ function onKeyEvent(key as string, press as boolean) as boolean
     if m.options.visible then return true
     return false
 end function
+
+' Live updates: avoid replacing an open options panel.
+sub liveRefresh(_ = invalid as dynamic)
+    if m.options.visible
+        m.liveDirty = true
+        return
+    end if
+    m.liveDirty = false
+    callApi("GET", "/me/prefs", invalid, "onPrefs")
+end sub

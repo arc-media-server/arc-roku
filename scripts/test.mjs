@@ -3,10 +3,10 @@
 import { execFileSync } from 'node:child_process';
 
 execFileSync('npx', ['bsc', '--create-package', 'false'], { stdio: 'inherit' });
-const shared = ['http', 'format', 'caps', 'home', 'bif', 'tracks', 'cards', 'browse', 'places', 'recommended', 'quality', 'titlepage', 'playerosd', 'person', 'seasons', 'cardmenu', 'seasonactions'].map((n) => `out/staging/source/shared/${n}.brs`);
+const shared = ['liveupdates', 'http', 'format', 'caps', 'home', 'bif', 'tracks', 'cards', 'browse', 'places', 'recommended', 'quality', 'titlepage', 'playerosd', 'person', 'seasons', 'cardmenu', 'seasonactions'].map((n) => `out/staging/source/shared/${n}.brs`);
 let out = '';
 try {
-  out = execFileSync('npx', ['brs-cli', '--no-sg', ...shared, 'tests/unit.brs'], { encoding: 'utf8' });
+  out = execFileSync('npx', ['brs-cli', '--no-sg', ...shared, 'tests/live-hints.brs', 'tests/unit.brs'], { encoding: 'utf8' });
 } catch (e) {
   out = (e.stdout || '') + (e.stderr || '');
 }
@@ -15,3 +15,6 @@ if (!out.includes('ALL PASSED')) {
   console.error('Unit tests failed.');
   process.exit(1);
 }
+
+// Live updates: exercise the real native stream more than once against a stand-in.
+await import('./test-live-updates.mjs');
