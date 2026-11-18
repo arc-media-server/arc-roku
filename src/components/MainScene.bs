@@ -164,7 +164,7 @@ sub onAction(event as object)
     else if go = "play"
         ' Up Next replaces the player that's finishing.
         if a.replace = true then pop()
-        push("PlayerScreen", { id: a.id, startMs: a.startMs, title: a.title, subtitle: a.subtitle, queue: a.queue })
+        push("PlayerScreen", { id: a.id, startMs: a.startMs, title: a.title, subtitle: a.subtitle, queue: a.queue, preroll: a.replace <> true, together: a.together })
     else if go = "playExtra"
         push("PlayerScreen", { extra: { url: a.url }, title: a.title, subtitle: a.subtitle })
     else if go = "grid"
