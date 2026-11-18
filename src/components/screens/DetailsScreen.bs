@@ -509,6 +509,8 @@ end sub
 sub closeCardPanel()
     m.cardPanel.visible = false
     focusRows()
+    ' Live updates
+    if m.liveDirty = true then liveRefresh()
 end sub
 
 ' A watched change is saved: the page loads again (ticks, episodes left, what Play starts).
@@ -543,3 +545,14 @@ function episodeLine(e as object) as string
     if e.title <> invalid and e.title <> "" then return code + " · " + e.title
     return code
 end function
+
+' Live updates: avoid replacing an open options panel.
+sub liveRefresh(_ = invalid as dynamic)
+    if m.cardPanel.visible
+        m.liveDirty = true
+        return
+    end if
+    m.liveDirty = false
+    m.keepPlace = true
+    load()
+end sub

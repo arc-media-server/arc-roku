@@ -1,0 +1,71 @@
+' Live updates: Android LiveHints.kt topic sets and bounded, clock-driven batching.
+function liveState() as object
+    return { pending: {}, due: -1, last: -100000, fresh: true, cursor: "" }
+end function
+
+function liveTouches(topics as object, wanted as object) as boolean
+    if topics.DoesExist("resync") then return true
+    for each topic in wanted
+        if topics.DoesExist(topic) then return true
+    end for
+    return false
+end function
+
+sub liveAdd(state as object, topic as string, now as integer)
+    known = ["resync", "catalog", "library", "profile", "playback", "artwork", "optimized", "previews", "markers"]
+    found = false
+    for each key in known
+        if topic = key then found = true
+    end for
+    if not found then return
+    state.pending[topic] = true
+    if state.due >= 0 then return
+    state.due = now + 1500
+    if state.last + 5000 > state.due then state.due = state.last + 5000
+end sub
+
+sub liveEvent(state as object, kind as string, data as string, cursor as string, now as integer)
+    if Len(cursor) <= 80 and cursor <> "" then state.cursor = cursor
+    if kind = "resync"
+        if state.fresh then state.fresh = false else liveAdd(state, "resync", now)
+    else if kind = "invalidate"
+        state.fresh = false
+        hint = ParseJson(data)
+        if type(hint) = "roAssociativeArray"
+            if GetInterface(hint.topic, "ifString") <> invalid then liveAdd(state, hint.topic, now)
+        end if
+    end if
+end sub
+
+function liveFlush(state as object, now as integer) as object
+    if state.due < 0 or now < state.due then return {}
+    topics = state.pending
+    state.pending = {}
+    state.due = -1
+    state.last = now
+    return topics
+end function
+
+function liveRetry(headers as object, fallback as integer) as integer
+    for each key in headers
+        if LCase(key) = "retry-after"
+            seconds = Val(headers[key])
+            if seconds >= 1 and seconds <= 600 then return Int(seconds * 1000)
+        end if
+    end for
+    return fallback
+end function
+
+' Native SSE delivers frames as they arrive, without buffering a 30-minute response body.
+function liveTransfer(server as string, token as string, cursor as string, port as object) as object
+    transfer = CreateObject("roUrlTransfer")
+    transfer.SetMessagePort(port)
+    transfer.SetUrl(absoluteUrl(server, "/events"))
+    transfer.SetCertificatesFile("common:/certs/ca-bundle.crt")
+    transfer.InitClientCertificates()
+    transfer.AddHeader("Accept", "text/event-stream")
+    transfer.AddHeader("Authorization", "Bearer " + token)
+    if cursor <> "" then transfer.AddHeader("Last-Event-ID", cursor)
+    transfer.SetMinimumTransferRate(1, 45)
+    return transfer
+end function

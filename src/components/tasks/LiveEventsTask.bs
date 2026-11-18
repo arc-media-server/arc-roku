@@ -1,0 +1,74 @@
+sub init()
+    m.top.functionName = "work"
+end sub
+
+sub work()
+    ' Native streaming SSE was added in Roku OS 16. Older firmware keeps navigation refresh.
+    version = CreateObject("roDeviceInfo").GetOSVersion()
+    if Val(version.major) < 16
+        print "Arc: live updates require Roku OS 16; navigation refresh remains available"
+        return
+    end if
+    port = CreateObject("roMessagePort")
+    clock = CreateObject("roTimespan")
+    state = liveState()
+    state.cursor = m.top.cursor
+    backoff = 5000
+    failures = 0
+    missed = m.top.catchUp
+    while not m.top.stopRequested
+        state.fresh = state.cursor = ""
+        transfer = liveTransfer(m.top.server, m.top.token, state.cursor, port)
+        connected = false
+        delay = backoff
+        running = transfer.AsyncGetSSEvents()
+        while running and not m.top.stopRequested
+            msg = wait(100, port)
+            if m.top.stopRequested then exit while
+            now = clock.TotalMilliseconds()
+            if type(msg) = "roUrlEvent" and msg.GetSourceIdentity() = transfer.GetIdentity()
+                if msg.GetInt() = 2
+                    connected = true
+                    backoff = 5000
+                    failures = 0
+                    if missed
+                        missed = false
+                        liveAdd(state, "resync", now)
+                        ' The reconnect itself performs one catch-up, as Android does.
+                        state.due = now
+                    end if
+                else
+                    running = false
+                    delay = liveRetry(msg.GetResponseHeaders(), backoff)
+                    if msg.GetResponseCode() = 401
+                        m.global.unauthorized = true
+                        transfer.AsyncCancel()
+                        return
+                    end if
+                end if
+            else if type(msg) = "roSSEvent"
+                if msg.GetSourceIdentity() = transfer.GetIdentity()
+                    liveEvent(state, msg.GetEvent(), msg.GetData(), msg.GetId(), now)
+                    state.cursor = transfer.SseLastEventId()
+                    m.top.cursor = state.cursor
+                end if
+            end if
+            topics = liveFlush(state, now)
+            if topics.Count() > 0 then m.top.topics = topics
+        end while
+        transfer.AsyncCancel()
+        if not connected
+            failures = failures + 1
+            if failures = 1 then print "Arc: live updates unavailable; retrying"
+            backoff = backoff * 2
+            if backoff > 60000 then backoff = 60000
+        end if
+        missed = true
+        untilTime = clock.TotalMilliseconds() + delay
+        while not m.top.stopRequested and clock.TotalMilliseconds() < untilTime
+            wait(100, port)
+            topics = liveFlush(state, clock.TotalMilliseconds())
+            if topics.Count() > 0 then m.top.topics = topics
+        end while
+    end while
+end sub

@@ -8,6 +8,13 @@
 sub init()
     m.global.addFields({ server: "", token: "", serverName: "", profile: {}, caps: {}, unauthorized: false })
     m.global.observeField("unauthorized", "onUnauthorized")
+    ' Live updates
+    m.global.addField("liveTopics", "assocarray", true)
+    m.global.liveTopics = {}
+    m.liveTask = invalid
+    m.global.observeField("profile", "syncLiveUpdates")
+    m.global.observeField("token", "syncLiveUpdates")
+    m.top.observeField("visible", "syncLiveUpdates")
     m.screens = m.top.findNode("screens")
     m.rail = m.top.findNode("rail")
     m.rail.observeField("picked", "onRailPicked")
@@ -154,6 +161,7 @@ sub onAction(event as object)
         replaceAll("HomeScreen", {})
         openPendingLink()
     else if go = "profiles"
+        m.global.profile = {}
         callApi("DELETE", "/auth/profile", invalid, "onIgnored")
         replaceAll("ProfilesScreen", {})
     else if go = "signOut"
@@ -252,6 +260,7 @@ sub onRailPicked()
     i = m.rail.picked
     m.rail.open = false
     if i < 0
+        m.global.profile = {}
         callApi("DELETE", "/auth/profile", invalid, "onIgnored")
         m.places = []
         replaceAll("ProfilesScreen", {})
@@ -294,4 +303,50 @@ sub openPendingLink()
     if link = invalid then return
     m.pendingLink = invalid
     push("DetailsScreen", { id: link.id })
+end sub
+
+' Live updates: stop before profile/server changes; the old task owns its own connection.
+sub syncLiveUpdates()
+    profile = m.global.profile
+    wanted = m.top.visible and m.top.liveForeground and m.global.token <> "" and profile <> invalid
+    if wanted then wanted = profile.id <> invalid
+    identity = ""
+    if wanted then identity = m.global.server + ":" + m.global.token + ":" + profile.id
+    if m.liveIdentity = identity then return
+    previousIdentity = m.liveIdentity
+    m.liveIdentity = identity
+    if m.liveTask <> invalid
+        m.liveTask.unobserveField("topics")
+        m.liveTask.stopRequested = true
+        m.liveCursor = m.liveTask.cursor
+        m.liveCursorIdentity = previousIdentity
+        m.liveTask = invalid
+    end if
+    if not wanted then return
+    m.liveTask = CreateObject("roSGNode", "LiveEventsTask")
+    m.liveTask.server = m.global.server
+    m.liveTask.token = m.global.token
+    if m.liveCursorIdentity = identity then m.liveTask.cursor = m.liveCursor
+    m.liveTask.observeField("topics", "onLiveTopics")
+    m.liveTask.catchUp = m.livePreviousIdentity = identity
+    m.livePreviousIdentity = identity
+    m.liveTask.control = "run"
+end sub
+
+sub onLiveTopics(event as object)
+    topics = event.getData()
+    m.global.liveTopics = topics
+    if m.stack.Count() = 0 then return
+    screen = m.stack.Peek()
+    kind = screen.subtype()
+    ' Grids/search/player are never reloaded while in use. They refresh on normal navigation.
+    if kind = "HomeScreen" and liveTouches(topics, ["catalog", "library", "profile", "playback", "artwork"])
+        screen.callFunc("returned", invalid)
+    else if kind = "LibraryScreen" and liveTouches(topics, ["catalog", "library", "profile", "playback", "artwork"])
+        screen.callFunc("liveRefresh", invalid)
+    else if kind = "DetailsScreen" and liveTouches(topics, ["catalog", "profile", "playback", "artwork", "optimized", "previews"])
+        screen.callFunc("liveRefresh", invalid)
+    else if kind = "SettingsScreen" and liveTouches(topics, ["profile"])
+        screen.callFunc("liveRefresh", invalid)
+    end if
 end sub
