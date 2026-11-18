@@ -833,6 +833,10 @@
   <translation>The file's default</translation>
 </message>
 <message>
+  <source>Theme Music</source>
+  <translation>Theme Music</translation>
+</message>
+<message>
   <source>This Roku couldn't play this title.</source>
   <translation>This Roku couldn't play this title.</translation>
 </message>

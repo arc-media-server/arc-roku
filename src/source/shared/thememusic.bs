@@ -1,0 +1,11 @@
+' Theme music: only a film/show's own Arc route can receive the scene's sign-in.
+function themeMusicPath(item as dynamic, prefs as dynamic) as string
+    if item = invalid then return ""
+    if item.kind <> "movie" and item.kind <> "series" then return ""
+    if prefs <> invalid and prefs.theme_music = false then return ""
+    if item.theme_url = invalid then return ""
+    path = item.theme_url
+    match = CreateObject("roRegex", "^/api/(v1/)?items/[a-f0-9]+/theme(\?v=[A-Za-z0-9._-]+)?$", "")
+    if not match.IsMatch(path) then return ""
+    return apiPath(path)
+end function

@@ -25,7 +25,11 @@
     <script type="text/brightscript" uri="pkg:/source/shared/titlepage.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/cardmenu.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/seasonactions.bs" />
+    <!-- Theme music -->
+    <script type="text/brightscript" uri="pkg:/source/shared/thememusic.bs" />
+    <script type="text/brightscript" uri="ThemeMusic.bs" />
     <children>
+        <Audio id="themeMusic" loop="false" />
         <Poster id="backdrop" width="1920" height="1080" loadDisplayMode="scaleToZoom" loadWidth="1920" loadHeight="1080" />
         <Poster uri="pkg:/images/shade.png" width="1920" height="1080" />
         <!-- Everything over the artwork; it slides up when the rows below the buttons have the focus. -->

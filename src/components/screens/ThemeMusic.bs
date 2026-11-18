@@ -1,0 +1,66 @@
+' Theme music: Audio owns only this page's tune, once per visit, never the film player.
+sub initThemeMusic()
+    m.theme = m.top.findNode("themeMusic")
+    shareSignIn([m.theme])
+    m.themePlayed = false
+    m.themeAllowed = true
+    m.top.observeField("visible", "onThemeVisible")
+    if not m.global.hasField("liveTopics") then m.global.addField("liveTopics", "assocarray", true)
+    m.global.observeField("liveTopics", "onThemeLiveTopics")
+    m.theme.observeField("state", "onThemeState")
+end sub
+
+sub loadThemeMusic()
+    callApi("GET", "/me/prefs", invalid, "onThemePrefs", m.top.params.id)
+end sub
+
+sub onThemePrefs(event as object)
+    res = event.getData()
+    if res.tag <> m.top.params.id or not res.ok then return
+    if res.data <> invalid and res.data.theme_music = false
+        m.theme.control = "stop"
+        return
+    end if
+    if m.item = invalid or m.themePlayed or not m.themeAllowed or not m.top.visible then return
+    path = themeMusicPath(m.item, res.data)
+    if path = "" then return
+    m.themePlayed = true
+    content = CreateObject("roSGNode", "ContentNode")
+    content.url = absoluteUrl(m.global.server, path)
+    m.theme.content = content
+    m.theme.loop = false
+    m.theme.control = "play"
+end sub
+
+sub stopThemeMusic()
+    m.themeAllowed = false
+    m.theme.control = "stop"
+    m.theme.content = invalid
+end sub
+
+sub onThemeVisible()
+    if not m.top.visible then stopThemeMusic()
+end sub
+
+sub onThemeState()
+    if m.theme.state = "error"
+        ' Never print the native error text: it may contain a media URL.
+        print "Arc: theme music unavailable"
+        stopThemeMusic()
+    end if
+end sub
+
+sub onThemeLiveTopics()
+    topics = m.global.liveTopics
+    if topics = invalid or not m.top.visible then return
+    if topics.profile = true or topics.resync = true then loadThemeMusic()
+end sub
+
+sub beginThemeVisit()
+    if m.themeVisitId = m.top.params.id then return
+    stopThemeMusic()
+    m.themeVisitId = m.top.params.id
+    m.themePlayed = false
+    m.themeAllowed = true
+    m.item = invalid
+end sub
