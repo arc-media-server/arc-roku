@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Live updates: one authenticated native SSE stream, networking off the render thread. -->
+<component name="LiveEventsTask" extends="Task">
+    <interface>
+        <field id="server" type="string" />
+        <field id="token" type="string" />
+        <field id="cursor" type="string" />
+        <field id="catchUp" type="boolean" />
+        <field id="stopRequested" type="boolean" />
+        <field id="topics" type="assocarray" alwaysNotify="true" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/source/shared/http.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/liveupdates.bs" />
+</component>
