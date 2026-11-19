@@ -369,7 +369,7 @@ sub onSeasons(event as object)
 end sub
 
 ' buildRows lays out what's under the buttons, as the Apple TV app's title page: a show's seasons,
-' then Trailers & Extras, Related, the cast and the collections the title is in. Rows are rebuilt as
+' then Trailers & Extras, More Like This, the cast and the collections the title is in. Rows are rebuilt as
 ' each part arrives, keeping the focus where it was.
 sub buildRows()
     it = m.item
@@ -388,7 +388,7 @@ sub buildRows()
         end for
         specs.Push({ kind: "extra", title: tr("Trailers & Extras"), style: "thumb", cards: extras })
     end if
-    if m.related.similar <> invalid and m.related.similar.Count() > 0 then specs.Push({ kind: "title", title: tr("Related"), style: "poster", items: m.related.similar })
+    if m.related.similar <> invalid and m.related.similar.Count() > 0 then specs.Push({ kind: "title", title: tr("More Like This"), style: "poster", items: m.related.similar })
     if it.credits <> invalid
         cast = []
         for each c in it.credits
