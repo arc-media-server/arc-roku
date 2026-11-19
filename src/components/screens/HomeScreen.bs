@@ -5,6 +5,7 @@
 ' (places.bs) once it has the libraries and the profile's preferences.
 
 sub init()
+    m.global.observeField("hideSpoilers", "showHero")
     m.rows = m.top.findNode("rows")
     m.backdrop = m.top.findNode("backdrop")
     m.logo = m.top.findNode("logo")
@@ -215,13 +216,19 @@ end sub
 sub showHero()
     c = focusedCard()
     if c = invalid then return
-    m.backdrop.uri = c.backdrop
+    art = c.backdrop
+    overview = c.overview
+    if c.spoilerEligible = true and hideSpoilers()
+        art = c.safeBackdrop
+        overview = ""
+    end if
+    m.backdrop.uri = art
     m.logo.uri = c.logo
     m.heroTitle.visible = c.logo = ""
     m.heroTitle.text = c.title
     meta = c.meta
     m.heroMeta.text = meta
-    m.heroOverview.text = c.overview
+    m.heroOverview.text = overview
 end sub
 
 sub onSelected()

@@ -1,4 +1,5 @@
 sub init()
+    m.global.observeField("hideSpoilers", "onContent")
     m.edge = m.top.findNode("edge")
     m.blank = m.top.findNode("blank")
     m.picture = m.top.findNode("picture")
@@ -21,7 +22,9 @@ end sub
 sub onContent()
     c = m.top.itemContent
     if c = invalid then return
-    if c.style = "named" then m.face.uri = c.HDPosterUrl else m.picture.uri = c.HDPosterUrl
+    art = c.HDPosterUrl
+    if c.spoilerEligible = true and hideSpoilers() then art = c.safeArt
+    if c.style = "named" then m.face.uri = art else m.picture.uri = art
     m.picture.opacity = 1
     m.blank.opacity = 1
     if c.available = false

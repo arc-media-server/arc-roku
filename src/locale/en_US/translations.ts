@@ -261,6 +261,10 @@
   <translation>Couldn't reach Arc.</translation>
 </message>
 <message>
+  <source>Couldn't save this setting. Try again.</source>
+  <translation>Couldn't save this setting. Try again.</translation>
+</message>
+<message>
   <source>Couldn't save your rating. Try again.</source>
   <translation>Couldn't save your rating. Try again.</translation>
 </message>
@@ -343,6 +347,10 @@
 <message>
   <source>Hide Missing Episodes</source>
   <translation>Hide Missing Episodes</translation>
+</message>
+<message>
+  <source>Hide Spoilers</source>
+  <translation>Hide Spoilers</translation>
 </message>
 <message>
   <source>Highest first</source>

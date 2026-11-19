@@ -8,6 +8,7 @@
         <field id="launchArgs" type="assocarray" onChange="onLaunchArgs" />
         <field id="inputArgs" type="assocarray" onChange="onInputArgs" />
     </interface>
+    <script type="text/brightscript" uri="pkg:/source/shared/spoilers.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/settings.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/http.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/api.bs" />

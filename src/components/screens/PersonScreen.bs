@@ -2,6 +2,7 @@
 ' changes the backdrop and the "their part" line to the focused title; OK opens the title's page.
 
 sub init()
+    m.global.observeField("hideSpoilers", "onFocusMoved")
     m.rows = m.top.findNode("rows")
     m.backdrop = m.top.findNode("backdrop")
     m.photo = m.top.findNode("photo")
@@ -97,7 +98,9 @@ sub showFocused(row as integer, col as integer)
     if col < 0 or col >= credits.Count() then return
     c = credits[col]
     m.top.findNode("part").text = personPart(c)
-    img = c.item.images
+    safe = spoilerSafeItem(c.item, hideSpoilers())
+    m.backdrop.uri = ""
+    img = safe.images
     if img <> invalid
         art = img.backdrop
         if art = invalid then art = img.primary

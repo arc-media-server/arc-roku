@@ -10,6 +10,7 @@
         <field id="focusPercent" type="float" onChange="onFocus" />
         <field id="rowFocusPercent" type="float" />
     </interface>
+    <script type="text/brightscript" uri="pkg:/source/shared/spoilers.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/format.bs" />
     <children>
         <Rectangle id="edge" color="0xFFFFFFFF" opacity="0" />
