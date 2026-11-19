@@ -23,6 +23,8 @@ sub init()
     m.restoring = false
     m.item = invalid
     m.seasons = invalid
+    m.showMissing = false
+    m.seasonsRequest = 0
     m.related = {}
     m.landed = false
     m.actions = []
@@ -34,6 +36,8 @@ sub init()
 end sub
 
 sub onParams()
+    m.showMissing = false
+    m.seasonsRequest++
     beginThemeVisit()
     load()
 end sub
@@ -126,7 +130,7 @@ sub onItem(event as object)
     m.overview.text = valueOr(it.overview, "")
     m.related = {}
     if it.kind = "series"
-        callApi("GET", "/series/" + escape(it.id) + "/seasons", invalid, "onSeasons", it.id)
+        requestSeasons(m.showMissing)
     else
         m.seasons = []
         m.seasonRows = []
@@ -219,7 +223,9 @@ sub showTitleMenu()
     m.cardPanel.title = m.item.title
     current = 0
     if m.item.user_data <> invalid and m.item.user_data.rating <> invalid then current = m.item.user_data.rating
-    m.cardPanel.entries = [{ label: tr("Rate…"), detail: ratingStars(current) }]
+    entries = [{ label: tr("Rate…"), detail: ratingStars(current) }]
+    if m.item.kind = "series" then entries.Push(missingEpisodesEntry(m.showMissing))
+    m.cardPanel.entries = entries
     m.cardPanel.selected = -1
     m.cardPanel.visible = true
     m.cardPanel.show = true
@@ -228,6 +234,12 @@ end sub
 sub onRatingPicked()
     i = m.cardPanel.picked
     if m.ratingPanel = "more"
+        if i = 1 and m.item.kind = "series"
+            closeCardPanel()
+            toggleMissingEpisodes()
+            return
+        end if
+        if i <> 0 then return
         current = 0
         if m.item.user_data <> invalid and m.item.user_data.rating <> invalid then current = m.item.user_data.rating
         m.ratingEntries = ratingChoices(current)
@@ -338,11 +350,27 @@ sub onChanged(event as object)
     end if
 end sub
 
+sub requestSeasons(missing as boolean)
+    m.seasonsRequest++
+    callApi("GET", seasonsPath(m.item.id, missing), invalid, "onSeasons", { id: m.item.id, missing: missing, request: m.seasonsRequest })
+end sub
+
+sub toggleMissingEpisodes()
+    m.keepPlace = true
+    requestSeasons(not m.showMissing)
+end sub
+
 sub onSeasons(event as object)
     res = event.getData()
-    if m.item = invalid or res.tag <> m.item.id then return
-    m.seasons = []
-    if res.ok and res.data <> invalid and res.data.seasons <> invalid then m.seasons = res.data.seasons
+    if m.item = invalid or res.tag = invalid then return
+    if res.tag.id <> m.item.id or res.tag.request <> m.seasonsRequest then return
+    if not res.ok or res.data = invalid
+        m.error.text = tr("Couldn't load episodes. Try again.")
+        return
+    end if
+    m.error.text = ""
+    m.showMissing = res.tag.missing
+    m.seasons = valueOr(res.data.seasons, [])
     ' Each season, then the episodes the order doesn't place ("Not in This Order").
     m.seasonRows = []
     if res.ok then m.seasonRows = seasonRows(res.data)
@@ -443,6 +471,11 @@ sub buildRows()
         for each rowNode in content.getChildren(-1, 0)
             if rowNode.title = m.focusRow
                 col = m.focusCol
+                if m.focusItemId <> invalid and m.focusItemId <> ""
+                    for c = 0 to rowNode.getChildCount() - 1
+                        if rowNode.getChild(c).itemId = m.focusItemId then col = c
+                    end for
+                end if
                 if col >= rowNode.getChildCount() then col = rowNode.getChildCount() - 1
                 if col < 0 then col = 0
                 m.episodes.jumpToRowItem = [r, col]
@@ -492,6 +525,7 @@ sub onRowFocus()
     if row = invalid then return
     m.focusRow = row.title
     m.focusCol = f[1]
+    m.focusItemId = row.getChild(f[1]).itemId
 end sub
 
 sub onEpisode()
@@ -500,6 +534,7 @@ sub onEpisode()
     node = row.getChild(f[1])
     kind = row.rowKind
     if kind = "season"
+        if node.available = false or node.itemId = "" then return
         m.top.action = { go: "play", id: node.itemId, startMs: node.resumeMs, title: m.item.title, subtitle: node.subtitleLine }
     else if kind = "cast"
         m.top.action = { go: "person", title: node.title, id: node.itemId }
@@ -553,8 +588,10 @@ sub showSeasonMenu()
     ' Not in This Order isn't a season: its episodes keep their own menu, without the season's.
     episodes = at.season.episodes
     if at.season.unplaced = true then episodes = []
-    entries = seasonMenu(cardMenu(at.node), episodes)
-    if entries.Count() = 0 then return
+    cardEntries = []
+    if at.node.available <> false and at.node.itemId <> "" then cardEntries = cardMenu(at.node)
+    entries = seasonMenu(cardEntries, episodes)
+    entries.Push(missingEpisodesEntry(m.showMissing))
     m.menuAt = at
     m.menuEntries = entries
     list = []
@@ -580,7 +617,12 @@ sub onCardPicked()
     act = m.menuEntries[i].act
     at = m.menuAt
     node = at.node
+    if act = "showMissing" or act = "hideMissing"
+        toggleMissingEpisodes()
+        return
+    end if
     if act = "play" or act = "restart"
+        if node.available = false or node.itemId = "" then return
         startMs = node.resumeMs
         if act = "restart" then startMs = 0
         m.top.action = { go: "play", id: node.itemId, startMs: startMs, title: m.item.title, subtitle: node.subtitleLine }
