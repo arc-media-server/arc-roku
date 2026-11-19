@@ -6,15 +6,17 @@
 ' Back closes the screen on top; on Home it leaves the app.
 
 sub init()
-    m.global.addFields({ server: "", token: "", serverName: "", profile: {}, caps: {}, unauthorized: false })
+    m.global.addFields({ hideSpoilers: true, spoilerRevision: 0, server: "", token: "", serverName: "", profile: {}, caps: {}, unauthorized: false })
     m.global.observeField("unauthorized", "onUnauthorized")
     ' Live updates
     m.global.addField("liveTopics", "assocarray", true)
     m.global.liveTopics = {}
     m.liveTask = invalid
     m.global.observeField("profile", "syncLiveUpdates")
+    m.global.observeField("profile", "loadSpoilerPrefs")
     m.global.observeField("token", "syncLiveUpdates")
     m.top.observeField("visible", "syncLiveUpdates")
+    m.top.observeField("visible", "loadSpoilerPrefs")
     m.screens = m.top.findNode("screens")
     m.rail = m.top.findNode("rail")
     m.rail.observeField("picked", "onRailPicked")
@@ -335,6 +337,7 @@ end sub
 
 sub onLiveTopics(event as object)
     topics = event.getData()
+    if liveTouches(topics, ["profile"]) then loadSpoilerPrefs()
     m.global.liveTopics = topics
     if m.stack.Count() = 0 then return
     screen = m.stack.Peek()
@@ -349,4 +352,21 @@ sub onLiveTopics(event as object)
     else if kind = "SettingsScreen" and liveTouches(topics, ["profile"])
         screen.callFunc("liveRefresh", invalid)
     end if
+end sub
+
+' Fetch once on profile selection/change or a live profile hint, never once per card.
+sub loadSpoilerPrefs()
+    if m.top <> invalid and m.top.visible = false then return
+    m.global.spoilerRevision++
+    m.global.hideSpoilers = true
+    profile = m.global.profile
+    if profile = invalid or profile.id = invalid or m.global.token = "" then return
+    callApi("GET", "/me/prefs", invalid, "onSpoilerPrefs", { revision: m.global.spoilerRevision, profile: profile.id })
+end sub
+
+sub onSpoilerPrefs(event as object)
+    res = event.getData()
+    if res.tag = invalid or m.global.profile = invalid then return
+    if res.tag.profile <> m.global.profile.id or res.tag.revision <> m.global.spoilerRevision then return
+    if res.ok and res.data <> invalid then m.global.hideSpoilers = res.data.hide_spoilers = true
 end sub

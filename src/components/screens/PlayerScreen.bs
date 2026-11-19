@@ -9,6 +9,7 @@
 ' Subtitles are drawn from Arc's WebVTT. Skip Intro / Credits and Up Next follow Arc's markers.
 
 sub init()
+    m.global.observeField("hideSpoilers", "onSpoilerPreference")
     m.video = m.top.findNode("video")
     m.spinner = m.top.findNode("spinner")
     m.spinner.poster.uri = "pkg:/images/spinner.png"
@@ -934,7 +935,7 @@ sub buildCard()
 end sub
 
 sub buildInfoCard()
-    it = m.item
+    it = spoilerSafeItem(m.item, hideSpoilers())
     if it = invalid then return
     back = m.card.createChild("Rectangle")
     back.width = 1680
@@ -1075,7 +1076,8 @@ end sub
 sub buildEpisodeTiles()
     current = 0
     i = 0
-    for each ep in m.seasonEpisodes
+    for each rawEpisode in m.seasonEpisodes
+        ep = spoilerSafeItem(rawEpisode, hideSpoilers())
         t = newTile(384, 216)
         pic = t.group.createChild("Poster")
         pic.width = 384
@@ -1371,15 +1373,7 @@ sub startUpNext()
     m.upNextIn = 10
     m.top.findNode("upNextHeading").text = joinParts([tr("Up next"), episodeCode(n)], " · ")
     m.top.findNode("upNextTitle").text = valueOr(n.title, "")
-    thumb = m.top.findNode("upNextThumb")
-    shareSignIn([thumb])
-    if n.images <> invalid
-        if n.images.primary <> invalid
-            thumb.uri = imageUrl(n.images.primary)
-        else if n.images.series_backdrop <> invalid
-            thumb.uri = imageUrl(n.images.series_backdrop)
-        end if
-    end if
+    setUpNextArtwork()
     m.top.findNode("upNextKeys").text = tr("OK to play now · Back to keep watching")
     drawUpNext()
     m.upNext.visible = true
@@ -1647,4 +1641,29 @@ end sub
 sub setPoster(p as object, path as dynamic)
     shareSignIn([p])
     p.uri = imageUrl(path)
+end sub
+
+sub setUpNextArtwork()
+    n = spoilerSafeItem(m.next, hideSpoilers())
+    if n = invalid then return
+    thumb = m.top.findNode("upNextThumb")
+    shareSignIn([thumb])
+    thumb.uri = ""
+    if n.images <> invalid
+        if n.images.primary <> invalid
+            thumb.uri = imageUrl(n.images.primary)
+        else if n.images.series_backdrop <> invalid
+            thumb.uri = imageUrl(n.images.series_backdrop)
+        end if
+    end if
+end sub
+
+sub onSpoilerPreference()
+    if m.next <> invalid then setUpNextArtwork()
+    if m.card <> invalid and m.tabNames <> invalid and m.tabIndex <> invalid
+        if m.tabIndex >= 0 and m.tabIndex < m.tabNames.Count()
+            name = m.tabNames[m.tabIndex]
+            if name = "info" or name = "episodes" then buildCard()
+        end if
+    end if
 end sub
