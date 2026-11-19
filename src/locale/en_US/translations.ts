@@ -233,6 +233,10 @@
   <translation>Couldn't get a code from Arc.</translation>
 </message>
 <message>
+  <source>Couldn't load episodes. Try again.</source>
+  <translation>Couldn't load episodes. Try again.</translation>
+</message>
+<message>
   <source>Couldn't load Home.</source>
   <translation>Couldn't load Home.</translation>
 </message>
@@ -339,6 +343,10 @@
 <message>
   <source>Go to show</source>
   <translation>Go to show</translation>
+</message>
+<message>
+  <source>Hide Missing Episodes</source>
+  <translation>Hide Missing Episodes</translation>
 </message>
 <message>
   <source>Hide Spoilers</source>
@@ -479,6 +487,10 @@
 <message>
   <source>Not in This Order</source>
   <translation>Not in This Order</translation>
+</message>
+<message>
+  <source>Not on disk</source>
+  <translation>Not on disk</translation>
 </message>
 <message>
   <source>Nothing here yet. Add a library in Arc's settings on the web.</source>
@@ -731,6 +743,10 @@
 <message>
   <source>Show</source>
   <translation>Show</translation>
+</message>
+<message>
+  <source>Show Missing Episodes</source>
+  <translation>Show Missing Episodes</translation>
 </message>
 <message>
   <source>Show Subtitles</source>
