@@ -461,6 +461,10 @@
   <translation>More in %1</translation>
 </message>
 <message>
+  <source>More Like This</source>
+  <translation>More Like This</translation>
+</message>
+<message>
   <source>Most recent first</source>
   <translation>Most recent first</translation>
 </message>
@@ -663,10 +667,6 @@
 <message>
   <source>Rediscover</source>
   <translation>Rediscover</translation>
-</message>
-<message>
-  <source>Related</source>
-  <translation>Related</translation>
 </message>
 <message>
   <source>Release date</source>

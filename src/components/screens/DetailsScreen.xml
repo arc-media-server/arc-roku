@@ -3,7 +3,7 @@
      genres, the overview, the year, length and quality badges, Starring and Director, the buttons
      (Play or Resume, Play from the beginning, Watched, Watchlist), then rows: a show's seasons
      (* on an episode: Mark Season as Watched, Shuffle Season),
-     Trailers & Extras, Related, the cast (round pictures) and the collections it's in. -->
+     Trailers & Extras, More Like This, the cast (round pictures) and the collections it's in. -->
 <component name="DetailsScreen" extends="Group">
     <interface>
         <field id="params" type="assocarray" onChange="onParams" />
