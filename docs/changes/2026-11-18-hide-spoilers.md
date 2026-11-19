@@ -23,8 +23,8 @@ No new server API, dependency or device-specific playback behavior.
 
 ## Checks
 
-- Baseline main `8418474`; independent `codex/roku-hide-spoilers` branch. It does not include
-  unmerged Show Missing Episodes PR #22.
+- Original baseline main `8418474`; `codex/roku-hide-spoilers`. The merge update below
+  integrates the subsequently merged Show Missing Episodes PR #22.
 - `npm run check`: passed (BrighterScript, 247-string catalog). Repeated after adding the
   relevant foreground preference refresh; the affected profile callback passed again.
 - `npm test`: **266 shared assertions passed**, plus existing native SSE, pre-roll and rating
@@ -52,3 +52,18 @@ No new server API, dependency or device-specific playback behavior.
 
 Existing API Task logs the failed preference route once (queries stripped). Save failure uses
 the existing note area; no duplicate warning, per-card logs, metadata bodies, secrets or URLs.
+
+## Main merge — 19 November 2026
+
+Merged main `30938d9` (Show Missing Episodes #22) without rewriting branch history. Resolved
+shared card fields/rendering by retaining both availability/dimming and spoiler eligibility/safe
+artwork. Both feature test entry points remain; regenerated the string catalog (251 strings).
+Auto-merged title/season menus were inspected and retained.
+
+Validation of this combined tree: `npm run check` passed; **274 shared assertions passed**;
+focused missing-episode and spoiler API/callback scripts passed. Extended the actual CardItem
+callback regression to check a missing protected card uses safe art AND 0.45 opacity, and that
+available cards restore opacity without losing protection. The shared malformed-JSON fixture
+prints its expected parser diagnostic; assertions still pass. No repeated simulator walk or
+unrelated native SSE/playback checks; the layout is unchanged and previous screenshots remain
+historical evidence.
