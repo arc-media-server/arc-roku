@@ -3,7 +3,7 @@
 
 ' cardFields: what a card carries besides its picture and title.
 function cardFields() as object
-    return { available: true, itemId: "", kind: "", parentId: "", line2: "", progress: 0.0, style: "poster", backdrop: "", logo: "", meta: "", overview: "", resumeMs: 0, played: false, path: "", watchlisted: false, leftMin: 0, inContinue: false }
+    return { available: true, spoilerEligible: false, safeArt: "", safeBackdrop: "", itemId: "", kind: "", parentId: "", line2: "", progress: 0.0, style: "poster", backdrop: "", logo: "", meta: "", overview: "", resumeMs: 0, played: false, path: "", watchlisted: false, leftMin: 0, inContinue: false }
 end function
 
 ' fillCard sets a ContentNode (with cardFields) for an item shown as "poster" or "thumb".
@@ -28,6 +28,9 @@ sub fillCard(node as object, card as object, style as string)
     if ep then logo = img.series_logo
 
     node.itemId = valueOr(it.id, "")
+    node.spoilerEligible = spoilerEligible(it)
+    node.safeArt = imageUrl(safeEpisodeArt(it))
+    node.safeBackdrop = fullImage(node.safeArt)
     node.available = it.available <> false
     node.kind = it.kind
     if it.path <> invalid then node.path = it.path

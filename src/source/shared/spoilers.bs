@@ -1,0 +1,39 @@
+' Presentation only: source metadata and playback identity stay unchanged.
+function spoilerEligible(item as dynamic) as boolean
+    if item = invalid or item.kind <> "episode" then return false
+    data = item.user_data
+    if data = invalid then return true
+    if data.played = true then return false
+    if data.position_ms <> invalid and data.position_ms > 0 then return false
+    return true
+end function
+
+function hideSpoilers() as boolean
+    if m.global = invalid then return true
+    return m.global.hideSpoilers <> false
+end function
+
+function safeEpisodeArt(item as object) as dynamic
+    if item.images = invalid then return invalid
+    if item.images.series_backdrop <> invalid then return item.images.series_backdrop
+    return item.images.series_primary
+end function
+
+function spoilerSafeItem(item as dynamic, hide as boolean) as dynamic
+    if not hide or not spoilerEligible(item) then return item
+    out = {}
+    for each key in item
+        out[key] = item[key]
+    end for
+    images = {}
+    if item.images <> invalid
+        for each key in item.images
+            images[key] = item.images[key]
+        end for
+    end if
+    images.primary = safeEpisodeArt(item)
+    images.backdrop = images.primary
+    out.images = images
+    out.overview = ""
+    return out
+end function
