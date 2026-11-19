@@ -10,6 +10,7 @@
         <function name="leaving" />
         <function name="returned" />
     </interface>
+    <script type="text/brightscript" uri="pkg:/source/shared/spoilers.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/http.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/api.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/format.bs" />

@@ -14,6 +14,7 @@
         <!-- Live updates -->
         <function name="liveRefresh" />
     </interface>
+    <script type="text/brightscript" uri="pkg:/source/shared/spoilers.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/http.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/api.bs" />
     <!-- Star rating -->

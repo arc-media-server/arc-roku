@@ -1,4 +1,5 @@
 sub init()
+    m.global.observeField("hideSpoilers", "renderSummary")
     initThemeMusic()
     m.backdrop = m.top.findNode("backdrop")
     m.logo = m.top.findNode("logo")
@@ -108,22 +109,8 @@ sub onItem(event as object)
     if res.tag <> m.top.params.id then return
     m.item = res.data
     loadThemeMusic()
+    renderSummary()
     it = m.item
-    img = it.images
-    if img = invalid then img = {}
-    ep = it.kind = "episode"
-    backdrop = img.backdrop
-    if ep then backdrop = img.primary
-    if ep and backdrop = invalid then backdrop = img.series_backdrop
-    if img.backdrop_full <> invalid and not ep then backdrop = img.backdrop_full
-    m.backdrop.uri = imageUrl(backdrop)
-    logo = img.logo
-    if ep then logo = img.series_logo
-    m.logo.uri = imageUrl(logo)
-    m.titleLabel.visible = logo = invalid
-    if ep and it.series_title <> invalid then m.titleLabel.text = it.series_title else m.titleLabel.text = it.title
-    showHeroLines(it)
-    m.overview.text = valueOr(it.overview, "")
     m.related = {}
     if it.kind = "series"
         callApi("GET", "/series/" + escape(it.id) + "/seasons", invalid, "onSeasons", it.id)
@@ -638,3 +625,23 @@ function episodeLine(e as object) as string
     if e.title <> invalid and e.title <> "" then return code + " · " + e.title
     return code
 end function
+
+sub renderSummary()
+    if m.item = invalid then return
+    it = spoilerSafeItem(m.item, hideSpoilers())
+    img = it.images
+    if img = invalid then img = {}
+    ep = it.kind = "episode"
+    backdrop = img.backdrop
+    if ep then backdrop = img.primary
+    if ep and backdrop = invalid then backdrop = img.series_backdrop
+    if img.backdrop_full <> invalid and not ep then backdrop = img.backdrop_full
+    m.backdrop.uri = imageUrl(backdrop)
+    logo = img.logo
+    if ep then logo = img.series_logo
+    m.logo.uri = imageUrl(logo)
+    m.titleLabel.visible = logo = invalid
+    if ep and it.series_title <> invalid then m.titleLabel.text = it.series_title else m.titleLabel.text = it.title
+    showHeroLines(it)
+    m.overview.text = valueOr(it.overview, "")
+end sub
