@@ -28,7 +28,7 @@
         <Group id="subs" />
         <BusySpinner id="spinner" translation="[912, 492]" />
         <!-- The controls, in the Apple TV app's arrangement: the show's name large at the bottom left
-             with "S2, E4 • name" above it, three round buttons at the right (Playback, Audio,
+             with "S2 · E4 · name" above it, three round buttons at the right (Playback, Audio,
              Subtitles), the timeline split at the chapters with the time played under its marker
              and the time left at the end, and a tab row under it (Info, Chapters, Cast, Episodes)
              whose card slides up while the title and timeline step aside. -->

@@ -266,7 +266,7 @@ sub onItem(event as object)
     title = it.title
     sub2 = ""
     if it.kind = "episode"
-        ' The show's name large, "S2, E4 • the episode's name" above it.
+        ' The show's name large, "S2 · E4 · the episode's name" above it.
         if it.series_title <> invalid then title = it.series_title
         sub2 = osdEpisodeLine(it)
     end if
@@ -1088,7 +1088,7 @@ sub buildEpisodeTiles()
         code.font = "font:SmallestBoldSystemFont"
         code.color = "0xFFFFFFFF"
         ' An episode outside the order has no place in it, so no "S1 · E8" either.
-        if m.seasonUnplaced <> true then code.text = "S" + valueOr(ep.season_number, 0).ToStr() + " · E" + valueOr(ep.episode_number, 0).ToStr()
+        if m.seasonUnplaced <> true then code.text = episodeNumber(ep.season_number, ep.episode_number)
         name = t.group.createChild("Label")
         name.translation = [0, 228]
         name.width = 384
@@ -1439,7 +1439,7 @@ sub playItem(n as object, startAt as dynamic, queue as dynamic)
     title = m.top.findNode("title").text
     if n.series_title <> invalid then title = n.series_title
     print "Arc: playing the next episode"
-    m.top.action = { go: "play", replace: true, id: n.id, startMs: startAt, title: title, subtitle: joinParts([episodeCode(n), valueOr(n.title, "")], " · "), queue: queue }
+    m.top.action = { go: "play", replace: true, id: n.id, startMs: startAt, title: title, subtitle: episodeTitled(n), queue: queue }
 end sub
 
 ' --- the options menu (* button) ---

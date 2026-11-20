@@ -28,11 +28,30 @@ function formatClock(ms as dynamic) as string
     return m.ToStr() + ":" + ss
 end function
 
-' episodeCode: S1 E4 for an episode, "" otherwise.
+' episodeCode: "S1 · E4" for an episode ("Special 3" in season 0), "" otherwise. Every Arc app
+' writes episode numbers this way (AGENT-RULES, "Episode numbers").
 function episodeCode(item as object) as string
     if item = invalid or item.kind <> "episode" then return ""
-    if item.season_number = invalid or item.episode_number = invalid then return ""
-    return "S" + item.season_number.ToStr() + " E" + item.episode_number.ToStr()
+    return episodeNumber(item.season_number, item.episode_number)
+end function
+
+' episodeNumber: "S1 · E4", or "Special 3" for season 0; "" without both numbers.
+function episodeNumber(season as dynamic, episode as dynamic) as string
+    if season = invalid or episode = invalid then return ""
+    if season = 0 then return tr("Special %1").Replace("%1", episode.ToStr())
+    return "S" + season.ToStr() + " · E" + episode.ToStr()
+end function
+
+' episodeTitled: "S1 · E4 · Pilot" where the episode itself is the subject (the player, a title's
+' page, play queues); the code alone without a title, the title alone without numbers.
+function episodeTitled(item as object) as string
+    if item = invalid then return ""
+    code = episodeCode(item)
+    title = ""
+    if item.title <> invalid then title = item.title
+    if code = "" then return title
+    if title = "" then return code
+    return code + " · " + title
 end function
 
 ' resumeMs is where a title carries on from, or 0 when it isn't part-way through.
@@ -82,7 +101,7 @@ function metaLine(item as object) as string
     return parts.Join(" · ")
 end function
 
-' playLabel: "Play", "Resume from 12:04", "Play S1 E2", "Resume S1 E2".
+' playLabel: "Play", "Resume from 12:04", "Play S1 · E2", "Resume S1 · E2".
 function playLabel(item as object) as string
     code = episodeCode(item)
     r = resumeMs(item)
