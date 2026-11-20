@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!-- A title's page, as the Apple TV app's: the artwork full screen, its logo, the rating box and
      genres, the overview, the year, length and quality badges, Starring and Director, the buttons
-     (Play or Resume, Play from the beginning, Watched, Watchlist), then rows: a show's seasons
-     (* on an episode: Mark Season as Watched, Shuffle Season),
+     (Play or Resume, Play from the beginning, Watched, Watchlist), then a show's season tabs over
+     the chosen season's episodes (* on an episode: Mark Season as Watched, Shuffle Season), then rows:
      the cast (round pictures), the collections it's in, More Like This and Trailers & Extras. -->
 <component name="DetailsScreen" extends="Group">
     <interface>
@@ -35,21 +35,24 @@
         <Poster uri="pkg:/images/shade.png" width="1920" height="1080" />
         <!-- Everything over the artwork; it slides up when the rows below the buttons have the focus. -->
         <Group id="page">
-            <Poster id="logo" translation="[192, 96]" width="640" height="200" loadDisplayMode="scaleToFit" />
-            <Label id="title" translation="[192, 170]" width="1200" font="font:LargeBoldSystemFont" color="0xF0F4F4FF" />
+            <Poster id="logo" translation="[170, 96]" width="640" height="200" loadDisplayMode="scaleToFit" />
+            <Label id="title" translation="[170, 170]" width="1200" font="font:LargeBoldSystemFont" color="0xF0F4F4FF" />
             <!-- As the Apple TV's: the rating box and genres, the overview, then the year and length
                  with the file's quality badges; Starring and Director at the right. -->
-            <LayoutGroup id="line1" translation="[192, 336]" layoutDirection="horiz" itemSpacings="[16]" vertAlignment="center" />
-            <Label id="overview" translation="[192, 384]" width="1000" height="130" wrap="true" maxLines="3" font="font:SmallSystemFont" color="0xC6D0D0FF" />
-            <LayoutGroup id="line2" translation="[192, 546]" layoutDirection="horiz" itemSpacings="[12]" vertAlignment="center" />
+            <LayoutGroup id="line1" translation="[170, 336]" layoutDirection="horiz" itemSpacings="[16]" vertAlignment="center" />
+            <Label id="overview" translation="[170, 384]" width="1000" height="130" wrap="true" maxLines="3" font="font:SmallSystemFont" color="0xC6D0D0FF" />
+            <LayoutGroup id="line2" translation="[170, 546]" layoutDirection="horiz" itemSpacings="[12]" vertAlignment="center" />
             <Label id="starring" translation="[1220, 460]" width="580" wrap="true" maxLines="2" horizAlign="right" font="font:SmallestSystemFont" color="0xC6D0D0FF" />
             <Label id="director" translation="[1220, 532]" width="580" horizAlign="right" font="font:SmallestSystemFont" color="0xC6D0D0FF" />
-            <ButtonBar id="buttons" translation="[192, 594]" />
-            <RowList id="episodes" translation="[192, 740]" itemComponentName="CardItem" numRows="2" itemSize="[1728, 420]" vertFocusAnimationStyle="fixedFocus"
+            <ButtonBar id="buttons" translation="[170, 594]" />
+            <!-- A show's seasons as tabs (then Not in This Order), as arc-tv's and arc-apple's; the
+                 chosen one's episodes are the first row under them. -->
+            <PillBar id="seasonTabs" translation="[162, 740]" followFocus="true" visible="false" />
+            <RowList id="episodes" translation="[170, 740]" itemComponentName="CardItem" numRows="2" itemSize="[1750, 420]" vertFocusAnimationStyle="fixedFocus"
                 rowItemSize="[[400, 330]]" rowItemSpacing="[[28, 0]]" itemSpacing="[0, 40]" showRowLabel="[true]"
                 rowLabelOffset="[[0, 16]]" rowLabelColor="0xF0F4F4FF" rowLabelFont="font:MediumBoldSystemFont"
                 drawFocusFeedback="false" rowFocusAnimationStyle="floatingFocus" visible="false" />
-            <Label id="error" translation="[192, 680]" width="1400" wrap="true" font="font:SmallSystemFont" color="0xF59E9EFF" />
+            <Label id="error" translation="[170, 680]" width="1400" wrap="true" font="font:SmallSystemFont" color="0xF59E9EFF" />
         </Group>
         <!-- The * menu on a season's episode: its own actions, then the season's (seasonactions.bs). -->
         <OptionsPanel id="cardPanel" visible="false" />

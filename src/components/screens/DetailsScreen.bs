@@ -11,6 +11,11 @@ sub init()
     m.overview = m.top.findNode("overview")
     m.buttons = m.top.findNode("buttons")
     m.episodes = m.top.findNode("episodes")
+    m.tabs = m.top.findNode("seasonTabs")
+    m.tabs.observeField("picked", "onSeasonTab")
+    m.tabs.observeField("leave", "focusRows")
+    m.seasonTab = 0
+    m.tabLabels = ""
     m.error = m.top.findNode("error")
     shareSignIn([m.backdrop, m.logo])
     m.buttons.observeField("picked", "onButton")
@@ -38,6 +43,7 @@ end sub
 
 sub onParams()
     m.showMissing = false
+    m.seasonTab = 0
     m.seasonsRequest++
     beginThemeVisit()
     load()
@@ -45,12 +51,19 @@ end sub
 
 ' Coming back (from the player or another page), the focus returns where it was.
 sub takeFocus(_ = invalid as dynamic)
-    if m.rowsFocused = true then focusRows() else focusButtons()
+    if m.tabsFocused = true and m.tabs.visible
+        focusTabs()
+    else if m.rowsFocused = true
+        focusRows()
+    else
+        focusButtons()
+    end if
 end sub
 
 ' The page slides up so the rows sit under the top of the screen, and back down for the buttons.
 sub focusButtons()
     m.rowsFocused = false
+    m.tabsFocused = false
     m.buttons.opacity = 1
     m.buttons.setFocus(true)
     slideTo(0)
@@ -59,9 +72,57 @@ end sub
 ' The buttons fade while the rows have the focus: they'd show their focused one otherwise.
 sub focusRows()
     m.rowsFocused = true
+    m.tabsFocused = false
     m.buttons.opacity = 0
     m.episodes.setFocus(true)
     slideTo(-560)
+end sub
+
+' A show's season tabs sit at the top with the chosen season's episodes under them.
+sub focusTabs()
+    m.rowsFocused = false
+    m.tabsFocused = true
+    m.buttons.opacity = 0
+    m.tabs.opacity = 1
+    m.tabs.setFocus(true)
+    slideTo(-560)
+end sub
+
+' Moving along the tabs (or OK on one) shows that season's episodes.
+sub onSeasonTab()
+    i = m.tabs.picked
+    if i = m.seasonTab then return
+    m.seasonTab = i
+    m.tabs.selected = i
+    m.focusRow = ""
+    m.focusCol = 0
+    m.focusItemId = ""
+    buildRows()
+end sub
+
+' showTabs: one tab per season (then Not in This Order), only for a show; the rows move down
+' under them.
+sub showTabs()
+    rows = valueOr(m.seasonRows, [])
+    labels = []
+    for each r in rows
+        labels.Push(r.title)
+    end for
+    if m.seasonTab >= labels.Count() then m.seasonTab = 0
+    joined = labels.Join(Chr(10))
+    if joined <> m.tabLabels
+        m.tabLabels = joined
+        m.tabs.labels = labels
+    end if
+    m.tabs.selected = m.seasonTab
+    m.tabs.visible = labels.Count() > 0
+    if m.tabs.visible
+        m.episodes.translation = [170, 840]
+        m.episodes.showRowLabel = [false, true]
+    else
+        m.episodes.translation = [170, 740]
+        m.episodes.showRowLabel = [true]
+    end if
 end sub
 
 sub slideTo(y as integer)
@@ -179,6 +240,20 @@ sub onCollection(event as object)
 end sub
 
 ' nextEpisode: the one part-way through, else the first not watched, specials last.
+' landingEpisode: the episode the page was opened for, else the one Play would start.
+function landingEpisode() as dynamic
+    target = nextEpisode()
+    wanted = m.top.params.episodeId
+    if wanted <> invalid and wanted <> ""
+        for each r in valueOr(m.seasonRows, [])
+            for each e in r.episodes
+                if e.id = wanted then target = e
+            end for
+        end for
+    end if
+    return target
+end function
+
 function nextEpisode() as dynamic
     if m.seasons = invalid then return invalid
     ordered = []
@@ -376,10 +451,22 @@ sub buildRows()
     if it = invalid or m.seasons = invalid then return
     specs = []
     rows = valueOr(m.seasonRows, [])
-    for i = 0 to rows.Count() - 1
-        r = rows[i]
-        specs.Push({ kind: "season", title: r.title, style: "thumb", items: r.episodes, unplaced: r.unplaced, season: i })
-    end for
+    ' Landing: the tab holding the episode the page was opened for, else the one Play would start.
+    if m.landed <> true
+        target = landingEpisode()
+        if target <> invalid
+            for i = 0 to rows.Count() - 1
+                for each e in rows[i].episodes
+                    if e.id = target.id then m.seasonTab = i
+                end for
+            end for
+        end if
+    end if
+    showTabs()
+    if rows.Count() > 0
+        r = rows[m.seasonTab]
+        specs.Push({ kind: "season", title: r.title, style: "thumb", items: r.episodes, unplaced: r.unplaced, season: m.seasonTab })
+    end if
     if it.credits <> invalid
         cast = []
         for each c in it.credits
@@ -475,15 +562,8 @@ sub buildRows()
     m.landed = true
     m.restoring = false
     ' Land on the episode the page was opened for, else the one Play would start.
-    target = nextEpisode()
+    target = landingEpisode()
     wanted = m.top.params.episodeId
-    if wanted <> invalid and wanted <> ""
-        for each r in valueOr(m.seasonRows, [])
-            for each e in r.episodes
-                if e.id = wanted then target = e
-            end for
-        end for
-    end if
     if target <> invalid
         r = 0
         for each rowNode in content.getChildren(-1, 0)
@@ -510,6 +590,10 @@ sub onRowFocus()
     if f = invalid or f.Count() < 2 or m.episodes.content = invalid then return
     row = m.episodes.content.getChild(f[0])
     if row = invalid then return
+    ' The tabs belong to the season row: they fade while a row below it has the focus.
+    if m.tabs.visible
+        if f[0] = 0 then m.tabs.opacity = 1 else m.tabs.opacity = 0
+    end if
     m.focusRow = row.title
     m.focusCol = f[1]
     m.focusItemId = row.getChild(f[1]).itemId
@@ -543,11 +627,19 @@ function onKeyEvent(key as string, press as boolean) as boolean
         showSeasonMenu()
         return true
     end if
+    if key = "down" and m.buttons.isInFocusChain() and m.tabs.visible
+        focusTabs()
+        return true
+    end if
     if key = "down" and m.buttons.isInFocusChain() and m.episodes.visible
         focusRows()
         return true
     end if
-    if key = "up" and m.episodes.isInFocusChain()
+    if key = "up" and m.episodes.isInFocusChain() and m.tabs.visible
+        focusTabs()
+        return true
+    end if
+    if key = "up" and (m.episodes.isInFocusChain() or m.tabs.isInFocusChain())
         focusButtons()
         return true
     end if

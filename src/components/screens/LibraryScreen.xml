@@ -17,6 +17,6 @@
     <script type="text/brightscript" uri="pkg:/source/shared/format.bs" />
     <children>
         <Group id="pages" />
-        <PillBar id="pills" translation="[184, 44]" />
+        <PillBar id="pills" translation="[162, 44]" />
     </children>
 </component>
