@@ -71,7 +71,7 @@ sub reload()
     else
         m.grid.numColumns = 7
         m.grid.itemSize = [220, 330]
-        m.grid.itemSpacing = [32, 40]
+        m.grid.itemSpacing = [28, 40]
         m.grid.numRows = 3
     end if
     m.content = CreateObject("roSGNode", "ContentNode")
@@ -152,7 +152,7 @@ sub showSummary()
     else if m.source.kind = "collection" and m.overview <> invalid and m.overview <> ""
         m.summary.text = m.overview
         ' Two lines of overview need the room of one more line above the posters.
-        m.grid.translation = [120, 280]
+        m.grid.translation = [192, 280]
     else if m.total > 0
         m.summary.text = countLine(m.total)
     else

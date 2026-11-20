@@ -397,10 +397,6 @@
   <translation>Least recent first</translation>
 </message>
 <message>
-  <source>Left for libraries and search · * for options</source>
-  <translation>Left for libraries and search · * for options</translation>
-</message>
-<message>
   <source>Length</source>
   <translation>Length</translation>
 </message>

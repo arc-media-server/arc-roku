@@ -123,10 +123,12 @@ end sub
 
 sub onFocus()
     c = m.top.itemContent
+    focus = m.top.focusPercent
+    if m.top.itemHasFocus then focus = 1
     if c <> invalid and c.style = "named"
-        m.ring.opacity = m.top.focusPercent
+        m.ring.opacity = focus
         m.edge.opacity = 0
         return
     end if
-    m.edge.opacity = m.top.focusPercent
+    m.edge.opacity = focus
 end sub

@@ -368,8 +368,8 @@ sub onSeasons(event as object)
     showButtons()
 end sub
 
-' buildRows lays out what's under the buttons, as the Apple TV app's title page: a show's seasons,
-' then Trailers & Extras, More Like This, the cast and the collections the title is in. Rows are rebuilt as
+' buildRows lays out what's under the buttons, in the order of Arc's other TV apps: a show's seasons,
+' then the cast, the collections the title is in, More Like This and Trailers & Extras. Rows are rebuilt as
 ' each part arrives, keeping the focus where it was.
 sub buildRows()
     it = m.item
@@ -380,15 +380,6 @@ sub buildRows()
         r = rows[i]
         specs.Push({ kind: "season", title: r.title, style: "thumb", items: r.episodes, unplaced: r.unplaced, season: i })
     end for
-    if it.extras <> invalid and it.extras.Count() > 0
-        extras = []
-        img = valueOr(it.images, {})
-        for each e in it.extras
-            extras.Push({ item: { id: e.id, kind: "extra", title: e.title, path: e.stream_url, images: { primary: img.backdrop, backdrop: img.backdrop } }, line2: extraKind(e.kind) })
-        end for
-        specs.Push({ kind: "extra", title: tr("Trailers & Extras"), style: "thumb", cards: extras })
-    end if
-    if m.related.similar <> invalid and m.related.similar.Count() > 0 then specs.Push({ kind: "title", title: tr("More Like This"), style: "poster", items: m.related.similar })
     if it.credits <> invalid
         cast = []
         for each c in it.credits
@@ -409,6 +400,15 @@ sub buildRows()
         end for
     end if
 
+    if m.related.similar <> invalid and m.related.similar.Count() > 0 then specs.Push({ kind: "title", title: tr("More Like This"), style: "poster", items: m.related.similar })
+    if it.extras <> invalid and it.extras.Count() > 0
+        extras = []
+        img = valueOr(it.images, {})
+        for each e in it.extras
+            extras.Push({ item: { id: e.id, kind: "extra", title: e.title, path: e.stream_url, images: { primary: img.backdrop, backdrop: img.backdrop } }, line2: extraKind(e.kind) })
+        end for
+        specs.Push({ kind: "extra", title: tr("Trailers & Extras"), style: "thumb", cards: extras })
+    end if
     content = CreateObject("roSGNode", "ContentNode")
     sizes = []
     heights = []
