@@ -5,6 +5,7 @@
 //
 //   src/images/mask-poster.png   220x330  a white rounded rectangle on transparent (MaskGroup)
 //   src/images/mask-thumb.png    400x225  the same for 16:9 pictures
+//   src/images/mask-backdrop.png 400x300  the same for Backdrops (4:3)
 //   src/images/focus-ring.9.png  43x43    a nine-patch white ring with rounded corners, drawn
 //                                         inside a focused card; the 1 px black guides mark its
 //                                         one stretchable row and column
@@ -49,6 +50,7 @@ const ring = page(S + 2, S + 2,
 const jobs = [
   { out: 'src/images/mask-poster.png', w: 220, h: 330, html: mask(220, 330) },
   { out: 'src/images/mask-thumb.png', w: 400, h: 225, html: mask(400, 225) },
+  { out: 'src/images/mask-backdrop.png', w: 400, h: 300, html: mask(400, 300) },
   { out: 'src/images/focus-ring.9.png', w: S + 2, h: S + 2, html: ring },
 ];
 
