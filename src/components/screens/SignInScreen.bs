@@ -3,6 +3,8 @@ sub init()
     m.top.findNode("steps").text = tr("On your phone or computer, open Arc, choose Link a Device from your profile menu, and type this code.")
     m.top.findNode("link").text = m.global.server.Replace("http://", "").Replace("https://", "") + "/link"
     m.code = m.top.findNode("code")
+    ' A system font at a custom size: Roku's "font:SystemFontFile" URI isn't drawn by the simulator.
+    m.code.font.size = 140
     m.note = m.top.findNode("note")
     m.buttons = m.top.findNode("buttons")
     m.buttons.buttons = [tr("New code"), tr("Use another server")]
