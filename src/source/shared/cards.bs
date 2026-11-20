@@ -60,8 +60,8 @@ sub fillCard(node as object, card as object, style as string)
     subText = ""
     if ep
         if it.series_title <> invalid then title = it.series_title
+        ' Only the number under the show's name: the episode's title never shares the line.
         subText = episodeCode(it)
-        if it.title <> invalid and it.title <> "" then subText = subText + " · " + it.title
     else if card.season <> invalid
         subText = tr("Season %1").Replace("%1", card.season.ToStr())
         if card.episodes <> invalid and card.episodes > 1 then subText = subText + " · " + tr("%1 new episodes").Replace("%1", card.episodes.ToStr())

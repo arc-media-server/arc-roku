@@ -39,11 +39,14 @@ function seasonOf(data as dynamic, id as string) as dynamic
     return invalid
 end function
 
-' seasonCardLine: "E4 · 46m" under an episode's picture. An episode outside the order has no
+' seasonCardLine: "S1 · E4 · 46m" under an episode's picture. An episode outside the order has no
 ' number in it, so it shows only its length, as the web shows no number for it.
 function seasonCardLine(e as object, unplaced as boolean) as string
     parts = []
-    if not unplaced then parts.Push("E" + valueOr(e.episode_number, 0).ToStr())
+    if not unplaced
+        code = episodeNumber(e.season_number, e.episode_number)
+        if code <> "" then parts.Push(code)
+    end if
     if e.runtime_min <> invalid then parts.Push(formatRuntime(e.runtime_min))
     if e.available = false then parts.Push(tr("Not on disk"))
     return parts.Join(" · ")

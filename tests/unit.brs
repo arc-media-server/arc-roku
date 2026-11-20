@@ -77,8 +77,13 @@ sub testFormat()
     eq(formatClock(3725000), "1:02:05", "formatClock with hours")
     eq(formatClock(65000), "1:05", "formatClock minutes")
     ep = { kind: "episode", season_number: 1, episode_number: 4, title: "Shindig", user_data: { position_ms: 600000, played: false } }
-    eq(episodeCode(ep), "S1 E4", "episodeCode")
-    eq(playLabel(ep), "Resume S1 E4", "playLabel resumes an episode")
+    eq(episodeCode(ep), "S1 · E4", "episodeCode")
+    eq(episodeCode({ kind: "episode", season_number: 0, episode_number: 3 }), "Special 3", "episodeCode: a special")
+    eq(episodeCode({ kind: "episode", season_number: 1 }), "", "episodeCode: no episode number")
+    eq(episodeTitled(ep), "S1 · E4 · Shindig", "episodeTitled")
+    eq(episodeTitled({ kind: "episode", title: "Pilot" }), "Pilot", "episodeTitled: no numbers")
+    eq(playLabel(ep), "Resume S1 · E4", "playLabel resumes an episode")
+    eq(playLabel({ kind: "episode", season_number: 2, episode_number: 1 }), "Play S2 · E1", "playLabel plays an episode")
     movie = { kind: "movie", year: 1999, runtime_min: 136, content_rating: "15", genres: ["Action", "Science Fiction", "Thriller"], user_data: { played: false } }
     eq(playLabel(movie), "Play", "playLabel plays a movie")
     movie.user_data.position_ms = 754000
@@ -349,7 +354,7 @@ sub testTitlePage()
         { role: "actor", name: "Anne Hathaway" }, { role: "actor", name: "Michael Caine" }, { role: "actor", name: "Jessica Chastain" }] }
     eq(heroGenres(movie), "Adventure · Drama · Science Fiction", "title page: three genres")
     eq(heroFacts(movie), "2014 · 2h 49m", "title page: year and length")
-    eq(heroFacts({ kind: "episode", season_number: 1, episode_number: 8, title: "Ariel", runtime_min: 46 }), "S1 E8 · Ariel · 46m", "title page: an episode's facts")
+    eq(heroFacts({ kind: "episode", season_number: 1, episode_number: 8, title: "Ariel", runtime_min: 46 }), "S1 · E8 · Ariel · 46m", "title page: an episode's facts")
     eq(joinNames(creditNames(movie, "actor", 3)), "Matthew McConaughey, Anne Hathaway, and Michael Caine", "title page: three actors")
     eq(joinNames(creditNames(movie, "director", 3)), "Christopher Nolan", "title page: one director")
     eq(joinNames(["A", "B"]), "A and B", "title page: two names")
@@ -370,7 +375,7 @@ sub testPlayerOsd()
     eq(Int(osdMarkerX(pieces, widths, 8, 12000)), 1216, "osd: the marker at the end")
     eq(osdTabs(true, false, true).Join("|"), "info|chapters|episodes", "osd: tabs by what there is")
     ep = { kind: "episode", season_number: 2, episode_number: 4, title: "Day of Atonement", release_date: "2026-10-24" }
-    eq(osdEpisodeLine(ep), "S2, E4 • Day of Atonement", "osd: the episode line")
+    eq(osdEpisodeLine(ep), "S2 · E4 · Day of Atonement", "osd: the episode line")
     eq(osdEpisodeLine({ kind: "movie", title: "Heat" }), "", "osd: a film has no episode line")
     eq(osdMeta(ep, 24 * 60000), "S2 · E4 · 24m · 24 Oct 2026", "osd: the Info card's line")
     eq(osdMeta({ kind: "movie", year: 1995 }, 170 * 60000), "2h 50m · 1995", "osd: a film's line")
@@ -401,7 +406,7 @@ sub testPerson()
 end sub
 
 sub testSeasons()
-    e1 = { id: "e1", episode_number: 1, runtime_min: 44, available: true }
+    e1 = { id: "e1", season_number: 1, episode_number: 1, runtime_min: 44, available: true }
     e2 = { id: "e2", episode_number: 2, available: false }
     s0 = { id: "s0", episode_number: 1 }
     odd = { id: "x", episode_number: 20, runtime_min: 42 }
@@ -424,9 +429,10 @@ sub testSeasons()
     row = seasonOf(data, "x")
     check(row <> invalid and row.unplaced = true and row.episodes[0].id = "x", "seasons: an unplaced episode's row")
     check(seasonOf(data, "nope") = invalid, "seasons: an episode not in any row")
-    eq(seasonCardLine(e1, false), "E1 · 44m", "seasons: number and length")
+    eq(seasonCardLine(e1, false), "S1 · E1 · 44m", "seasons: number and length")
+    eq(seasonCardLine({ season_number: 0, episode_number: 3 }, false), "Special 3", "seasons: a special")
     eq(seasonCardLine(odd, true), "42m", "seasons: unplaced shows only its length")
-    eq(seasonCardLine({ episode_number: 3 }, false), "E3", "seasons: no length")
+    eq(seasonCardLine({ season_number: 2, episode_number: 3 }, false), "S2 · E3", "seasons: no length")
 end sub
 
 sub testCardMenu()
