@@ -1,6 +1,8 @@
 sub init()
     m.global.observeField("hideSpoilers", "onContent")
     m.edge = m.top.findNode("edge")
+    m.card = m.top.findNode("card")
+    m.frame = m.top.findNode("frame")
     m.blank = m.top.findNode("blank")
     m.picture = m.top.findNode("picture")
     m.track = m.top.findNode("track")
@@ -37,11 +39,17 @@ sub onContent()
 end sub
 
 ' Posters fill the card; 16:9 pictures leave room for two lines of text under them.
+' The card's room on either side of it in its slot: cardPad in cards.bs, which the lists use.
+const PAD = 14
+' How much a focused card grows, as arc-tv's (which grow 8%, with more room around them).
+const ZOOM = 0.06
+
 sub layout()
     c = m.top.itemContent
-    w = m.top.width
+    w = m.top.width - 2 * PAD
     h = m.top.height
     if w <= 0 or h <= 0 then return
+    m.card.translation = [PAD, 0]
     ' "named" (people): a poster with the name and role under it.
     named = c <> invalid and c.style = "named"
     thumb = c <> invalid and (c.style = "thumb" or named)
@@ -51,8 +59,7 @@ sub layout()
     ' A person: a round picture as wide as the card, the name and role under it.
     m.round.visible = named
     m.ring.visible = named
-    m.blank.visible = not named
-    m.picture.visible = not named
+    m.frame.visible = not named
     if named
         m.round.maskSize = [w, w]
         for each n in [m.roundBlank, m.face]
@@ -73,15 +80,11 @@ sub layout()
     end for
     m.picture.loadWidth = w
     m.picture.loadHeight = ph
-    e = 5
-    sides = { edgeTop: [0, 0, w, e], edgeBottom: [0, ph - e, w, e], edgeLeft: [0, 0, e, ph], edgeRight: [w - e, 0, e, ph] }
-    for each id in sides
-        r = m.top.findNode(id)
-        s = sides[id]
-        r.translation = [s[0], s[1]]
-        r.width = s[2]
-        r.height = s[3]
-    end for
+    m.frame.maskSize = [w, ph]
+    if ph > w then m.frame.maskUri = "pkg:/images/mask-poster.png" else m.frame.maskUri = "pkg:/images/mask-thumb.png"
+    m.edge.width = w
+    m.edge.height = ph
+    m.card.scaleRotateCenter = [w / 2, ph / 2]
     m.line1.visible = thumb
     m.line2.visible = thumb
     m.line1.translation = [0, ph + 14]
@@ -132,6 +135,8 @@ sub onFocus()
     focus = m.top.focusPercent
     if m.top.itemHasFocus then focus = 1
     if not m.top.rowListHasFocus or not m.top.gridHasFocus then focus = 0
+    grow = 1 + ZOOM * focus
+    m.card.scale = [grow, grow]
     if c <> invalid and c.style = "named"
         m.ring.opacity = focus
         m.edge.opacity = 0

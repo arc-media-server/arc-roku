@@ -15,9 +15,9 @@ sub init()
     m.focus = 0
 end sub
 
-' Where a place's row sits: 72 apart from 180 down.
+' Where a place's row sits: 72 apart from 226 down (under the logo and the profile).
 function rowY(i as integer) as integer
-    return 180 + i * 72
+    return 226 + i * 72
 end function
 
 sub onPlaces()
@@ -65,11 +65,15 @@ sub onOpen()
         m.focus = m.top.current + 1
         m.top.findNode("dimFade").reverse = false
         m.top.findNode("panelFade").reverse = false
+        m.top.findNode("markFade").reverse = false
+        m.top.findNode("wordmarkFade").reverse = false
         m.anim.control = "start"
         m.top.setFocus(true)
     else
         m.top.findNode("dimFade").reverse = true
         m.top.findNode("panelFade").reverse = true
+        m.top.findNode("markFade").reverse = true
+        m.top.findNode("wordmarkFade").reverse = true
         m.anim.control = "start"
     end if
     paint()
@@ -103,7 +107,7 @@ sub paint()
     if open
         m.pill.opacity = 1
         if m.focus = 0
-            m.pill.translation = [24, 66]
+            m.pill.translation = [24, 112]
         else
             m.pill.translation = [24, rowY(m.focus - 1)]
         end if

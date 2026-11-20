@@ -12,6 +12,8 @@
     <script type="text/brightscript" uri="pkg:/source/shared/http.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/api.bs" />
     <children>
+        <!-- Arc's stacked logo above, as arc-tv's sign-in. -->
+        <Poster uri="pkg:/images/logo-stacked.png" width="113" height="120" translation="[903, 48]" />
         <Label id="title" width="1920" horizAlign="center" translation="[0, 200]" font="font:LargeBoldSystemFont" color="0xF0F4F4FF" />
         <Label id="steps" width="1200" horizAlign="center" wrap="true" translation="[360, 290]" font="font:MediumSystemFont" color="0x9AA7A7FF" />
         <Label id="link" width="1920" horizAlign="center" translation="[0, 420]" font="font:MediumBoldSystemFont" color="0xF5F5F7FF" />

@@ -18,6 +18,10 @@
     <children>
         <Rectangle id="background" width="1920" height="1080" color="0x0B0F10FF" />
         <Group id="screens" />
+        <!-- A new screen fades in (push). -->
+        <Animation id="screenFade" duration="0.2" easeFunction="outQuad">
+            <FloatFieldInterpolator id="screenFadeTo" key="[0.0, 1.0]" keyValue="[0.0, 1.0]" />
+        </Animation>
         <NavRail id="rail" visible="false" />
         <BusySpinner id="spinner" translation="[912, 492]" visible="false" />
     </children>
