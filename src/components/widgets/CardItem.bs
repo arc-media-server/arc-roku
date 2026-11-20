@@ -73,9 +73,15 @@ sub layout()
     end for
     m.picture.loadWidth = w
     m.picture.loadHeight = ph
-    m.edge.translation = [-5, -5]
-    m.edge.width = w + 10
-    m.edge.height = ph + 10
+    e = 5
+    sides = { edgeTop: [0, 0, w, e], edgeBottom: [0, ph - e, w, e], edgeLeft: [0, 0, e, ph], edgeRight: [w - e, 0, e, ph] }
+    for each id in sides
+        r = m.top.findNode(id)
+        s = sides[id]
+        r.translation = [s[0], s[1]]
+        r.width = s[2]
+        r.height = s[3]
+    end for
     m.line1.visible = thumb
     m.line2.visible = thumb
     m.line1.translation = [0, ph + 14]
@@ -123,10 +129,12 @@ end sub
 
 sub onFocus()
     c = m.top.itemContent
+    focus = m.top.focusPercent
+    if m.top.itemHasFocus then focus = 1
     if c <> invalid and c.style = "named"
-        m.ring.opacity = m.top.focusPercent
+        m.ring.opacity = focus
         m.edge.opacity = 0
         return
     end if
-    m.edge.opacity = m.top.focusPercent
+    m.edge.opacity = focus
 end sub
