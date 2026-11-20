@@ -8,12 +8,13 @@
         <field id="width" type="float" onChange="layout" />
         <field id="height" type="float" onChange="layout" />
         <field id="focusPercent" type="float" onChange="onFocus" />
+        <!-- Grids can report focus as itemHasFocus alone (the simulator's MarkupGrid does). -->
+        <field id="itemHasFocus" type="boolean" onChange="onFocus" />
         <field id="rowFocusPercent" type="float" />
     </interface>
     <script type="text/brightscript" uri="pkg:/source/shared/spoilers.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/format.bs" />
     <children>
-        <Rectangle id="edge" color="0xFFFFFFFF" opacity="0" />
         <Rectangle id="blank" color="0x1C2526FF" />
         <Poster id="picture" loadDisplayMode="scaleToZoom" />
         <!-- A person's picture is round (the Apple TV's cast), with a ring when focused. -->
@@ -28,6 +29,13 @@
         <Rectangle id="track" color="0x00000099" visible="false" />
         <Rectangle id="bar" color="0xF5F5F7FF" visible="false" />
         <Poster id="tick" uri="pkg:/images/watched.png" width="40" height="40" visible="false" />
+        <!-- The focus edge, drawn just inside the picture so a row or grid never clips it. -->
+        <Group id="edge" opacity="0">
+            <Rectangle id="edgeTop" color="0xFFFFFFFF" />
+            <Rectangle id="edgeBottom" color="0xFFFFFFFF" />
+            <Rectangle id="edgeLeft" color="0xFFFFFFFF" />
+            <Rectangle id="edgeRight" color="0xFFFFFFFF" />
+        </Group>
         <Label id="line1" font="font:SmallBoldSystemFont" color="0xF0F4F4FF" horizAlign="center" />
         <Label id="line2" font="font:SmallestSystemFont" color="0x9AA7A7FF" horizAlign="center" />
     </children>

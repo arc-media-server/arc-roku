@@ -14,7 +14,6 @@ sub init()
     m.heroOverview = m.top.findNode("heroOverview")
     shareSignIn([m.backdrop, m.logo])
     m.empty = m.top.findNode("empty")
-    m.top.findNode("hint").text = tr("Left for libraries and search · * for options")
     m.cardPanel = m.top.findNode("cardPanel")
     m.cardPanel.observeField("picked", "onCardPicked")
     m.cardPanel.observeField("closed", "closeCardPanel")
@@ -37,11 +36,9 @@ sub onParams()
     if p <> invalid then m.library = p.library
     if m.library <> invalid
         ' Under the library's pills: the hero sits lower and has no overview.
-        m.top.findNode("hint").visible = false
-        m.logo.translation = [120, 165]
+        m.logo.translation = [192, 165]
         m.logo.height = 150
-        m.logo.loadHeight = 150
-        m.heroTitle.translation = [120, 210]
+        m.heroTitle.translation = [192, 210]
         m.heroOverview.visible = false
     end if
     load()
