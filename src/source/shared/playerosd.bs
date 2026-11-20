@@ -62,22 +62,18 @@ function osdTabs(hasChapters as boolean, hasCast as boolean, hasEpisodes as bool
     return out
 end function
 
-' osdEpisodeLine: "S2, E4 • Day of Atonement" above the show's name (a film has none).
+' osdEpisodeLine: "S2 · E4 · Day of Atonement" above the show's name (a film has none).
 function osdEpisodeLine(item as dynamic) as string
     if item = invalid or item.kind <> "episode" then return ""
-    if item.season_number = invalid or item.episode_number = invalid then return valueOrEmpty(item.title)
-    line = "S" + item.season_number.ToStr() + ", E" + item.episode_number.ToStr()
-    if item.title <> invalid and item.title <> "" then line = line + " • " + item.title
-    return line
+    return episodeTitled(item)
 end function
 
 ' osdMeta: the Info card's line, "S2 · E4 · 24m · 24 Oct 2026" (a film: its length and date or year).
 function osdMeta(item as dynamic, totalMs as double) as string
     if item = invalid then return ""
     parts = []
-    if item.kind = "episode" and item.season_number <> invalid and item.episode_number <> invalid
-        parts.Push("S" + item.season_number.ToStr() + " · E" + item.episode_number.ToStr())
-    end if
+    code = episodeCode(item)
+    if code <> "" then parts.Push(code)
     minutes = Int(totalMs / 60000)
     if minutes > 0 then parts.Push(formatRuntime(minutes))
     day = osdDay(valueOrEmpty(item.release_date))
