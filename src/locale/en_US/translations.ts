@@ -805,6 +805,10 @@
   <translation>Sort by</translation>
 </message>
 <message>
+  <source>Special %1</source>
+  <translation>Special %1</translation>
+</message>
+<message>
   <source>Starring %1</source>
   <translation>Starring %1</translation>
 </message>

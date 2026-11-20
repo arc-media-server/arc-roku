@@ -15,9 +15,8 @@ end function
 ' heroFacts: the year (or an episode's code and name) and length, joined by " · ".
 function heroFacts(item as object) as string
     parts = []
-    code = episodeCode(item)
-    if code <> ""
-        if item.title <> invalid and item.title <> "" then parts.Push(code + " · " + item.title) else parts.Push(code)
+    if episodeCode(item) <> ""
+        parts.Push(episodeTitled(item))
     else if item.year <> invalid and item.year > 0
         parts.Push(item.year.ToStr())
     end if

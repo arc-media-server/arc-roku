@@ -746,12 +746,9 @@ sub onSeasonQueue(event as object)
     m.top.action = { go: "play", id: first.item.id, startMs: 0, title: m.item.title, subtitle: episodeLine(first.item), queue: res.data }
 end sub
 
-' episodeLine: "S1 E4 · Shindig", for the player's second line.
+' episodeLine: "S1 · E4 · Shindig", for the player's second line.
 function episodeLine(e as object) as string
-    code = episodeCode(e)
-    if code = "" then return valueOr(e.title, "")
-    if e.title <> invalid and e.title <> "" then return code + " · " + e.title
-    return code
+    return episodeTitled(e)
 end function
 
 sub renderSummary()
