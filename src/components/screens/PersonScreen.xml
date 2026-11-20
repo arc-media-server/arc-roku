@@ -23,12 +23,10 @@
         <Poster uri="pkg:/images/shade.png" width="1920" height="1080" />
         <Rectangle width="1920" height="1080" color="0x0B121466" />
         <Poster id="photo" translation="[170, 150]" width="240" height="240" loadDisplayMode="scaleToZoom" maskUri="pkg:/images/circle-mask.png" />
-        <Label id="initials" translation="[170, 150]" width="240" height="240" horizAlign="center" vertAlign="center" color="0xF5F5F7FF" visible="false">
-            <Font role="font" uri="font:BoldSystemFontFile" size="84" />
-        </Label>
-        <Label id="name" translation="[410, 190]" width="1390" font="font:LargeBoldSystemFont" color="0xF5F5F7FF" />
-        <Label id="summary" translation="[410, 278]" width="1390" font="font:SmallBoldSystemFont" color="0xE6E9E9FF" />
-        <Label id="part" translation="[410, 326]" width="1390" font="font:SmallSystemFont" color="0xC6D0D0FF" />
+        <Label id="initials" translation="[170, 150]" width="240" height="240" horizAlign="center" vertAlign="center" font="font:LargeBoldSystemFont" color="0xF5F5F7FF" visible="false" />
+        <Label id="name" translation="[460, 190]" width="1340" font="font:LargeBoldSystemFont" color="0xF5F5F7FF" />
+        <Label id="summary" translation="[460, 278]" width="1340" font="font:SmallBoldSystemFont" color="0xE6E9E9FF" />
+        <Label id="part" translation="[460, 326]" width="1340" font="font:SmallSystemFont" color="0xC6D0D0FF" />
         <RowList id="rows" translation="[170, 470]" itemComponentName="CardItem" numRows="2" itemSize="[1750, 400]"
             rowItemSize="[[220, 330]]" rowItemSpacing="[[28, 0]]" itemSpacing="[0, 48]" showRowLabel="[true]" rowLabelOffset="[[0, 16]]"
             rowLabelColor="0xF0F4F4FF" rowLabelFont="font:MediumBoldSystemFont" drawFocusFeedback="false"

@@ -1,6 +1,8 @@
 sub init()
     m.ring = m.top.findNode("ring")
     m.name = m.top.findNode("name")
+    ' A system font at a custom size: Roku's "font:SystemFontFile" URI isn't drawn by the simulator.
+    m.top.findNode("letter").font.size = 96
 end sub
 
 sub onContent()
