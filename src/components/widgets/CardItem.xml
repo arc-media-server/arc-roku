@@ -10,6 +10,10 @@
         <field id="focusPercent" type="float" onChange="onFocus" />
         <!-- Grids can report focus as itemHasFocus alone (the simulator's MarkupGrid does). -->
         <field id="itemHasFocus" type="boolean" onChange="onFocus" />
+        <!-- Whether the row list or grid itself has the focus: the edge shows only then, so it
+             isn't left on a card while the focus is elsewhere (season tabs, buttons, the rail). -->
+        <field id="rowListHasFocus" type="boolean" value="true" onChange="onFocus" />
+        <field id="gridHasFocus" type="boolean" value="true" onChange="onFocus" />
         <field id="rowFocusPercent" type="float" />
     </interface>
     <script type="text/brightscript" uri="pkg:/source/shared/spoilers.bs" />
