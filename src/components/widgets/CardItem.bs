@@ -131,6 +131,7 @@ sub onFocus()
     c = m.top.itemContent
     focus = m.top.focusPercent
     if m.top.itemHasFocus then focus = 1
+    if not m.top.rowListHasFocus or not m.top.gridHasFocus then focus = 0
     if c <> invalid and c.style = "named"
         m.ring.opacity = focus
         m.edge.opacity = 0

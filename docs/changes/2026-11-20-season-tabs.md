@@ -13,6 +13,11 @@ The second of three PRs that bring the Roku app in line with arc-tv and arc-appl
   the same way. The tabs fade while a row below the episodes (Cast and so on) has the focus.
   The page still lands on the episode it was opened for, or the one Play would start, with its
   season's tab chosen.
+- **Where the focus is** (owner: no sign of being on the tabs). The chosen tab is now a faint
+  capsule with white text, and the focused tab solid white with black text, as arc-tv's. Cards
+  show their white edge only while their row list or grid has the focus (`rowListHasFocus`,
+  `gridHasFocus`), so the episode under the tabs no longer looks focused; this also applies on
+  Home when the rail is open, and anywhere else focus leaves the cards.
 - **The gap beside the rail is about 25% smaller** (owner): pages start 170 px from the left
   instead of 192 px (66 px past the rail's icons instead of 88 px), rows are 1750 px wide.
 

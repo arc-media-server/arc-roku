@@ -47,6 +47,11 @@ sub paint()
             it.cap.visible = true
             it.cap.color = "0xFFFFFFFF"
             it.label.color = "0x000000FF"
+        else if chosen and m.top.followFocus
+            ' Season tabs, as arc-tv's: the chosen tab is a faint capsule until the bar has the focus.
+            it.cap.visible = true
+            it.cap.color = "0xFFFFFF2E"
+            it.label.color = "0xF5F5F7FF"
         else if chosen
             it.cap.visible = true
             if focused then it.cap.color = "0xB8BCBEFF" else it.cap.color = "0xFFFFFFFF"
