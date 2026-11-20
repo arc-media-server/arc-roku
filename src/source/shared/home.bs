@@ -4,7 +4,7 @@
 ' profile's library order, and collections and playlists last. The layout is arranged on the web
 ' (Edit Home, Reorder libraries); the Roku follows it.
 '
-' Each row is { id, title, style ("poster" or "thumb"), path, shape, continueRow }, where path is the /api/v1
+' Each row is { id, title, style ("poster", "thumb" or "backdrop"), path, shape, continueRow }, where path is the /api/v1
 ' request for its titles and shape says how the answer is laid out: "list" (an array of titles),
 ' "page" ({ items }), "recent" (a TV library's recent cards), "collection" ({ items }) or
 ' "playlist" ({ entries: [{ item }] }). continueRow marks Continue Watching and Up Next, whose cards
@@ -85,7 +85,9 @@ function rowStyle(saved as object, id as string, fallback as string) as string
     r = saved[id]
     if r = invalid or r.style = invalid then return fallback
     if r.style = "poster" then return "poster"
-    if r.style = "thumb" or r.style = "arc" then return "thumb"
+    if r.style = "thumb" then return "thumb"
+    ' "arc" is what the web calls Backdrops.
+    if r.style = "arc" then return "backdrop"
     return fallback
 end function
 

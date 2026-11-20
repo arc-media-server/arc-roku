@@ -13,11 +13,41 @@ function cardSlot(w as integer, h as integer) as object
     return [w + 2 * cardPad(), h]
 end function
 
+' The picture and caption sizes for each card style, so every row, grid and the card itself agree:
+' posters 220 x 330, 16:9 pictures 400 x 225, Backdrops 400 x 300 (arc-tv's 4:3 "Arc" look), and
+' people's round pictures 220 across. Each has two lines under it (the title, then the year, the
+' episode or what the row says), which need cardCaption() below the picture.
+function cardCaption() as integer
+    return 80
+end function
+
+function cardPicture(style as string) as object
+    if style = "thumb" then return [400, 225]
+    if style = "backdrop" then return [400, 300]
+    if style = "named" then return [220, 220]
+    return [220, 330]
+end function
+
+' cardSize: the slot a card of this style takes in a row or grid, its caption included.
+function cardSize(style as string) as object
+    pic = cardPicture(style)
+    h = pic[1] + cardCaption()
+    if h < 330 then h = 330
+    return cardSlot(pic[0], h)
+end function
+
+' cardRowHeight: a row of these cards with its title above them.
+function cardRowHeight(style as string) as integer
+    slot = cardSize(style)
+    return slot[1] + 70
+end function
+
 function cardFields() as object
     return { available: true, spoilerEligible: false, safeArt: "", safeBackdrop: "", itemId: "", kind: "", parentId: "", line2: "", progress: 0.0, style: "poster", backdrop: "", logo: "", meta: "", overview: "", resumeMs: 0, played: false, path: "", watchlisted: false, leftMin: 0, inContinue: false }
 end function
 
-' fillCard sets a ContentNode (with cardFields) for an item shown as "poster" or "thumb".
+' fillCard sets a ContentNode (with cardFields) for an item shown as "poster", "thumb" or
+' "backdrop" (the title's background art with its logo on it, the web's Backdrops look).
 sub fillCard(node as object, card as object, style as string)
     it = card.item
     img = it.images
@@ -47,7 +77,13 @@ sub fillCard(node as object, card as object, style as string)
     if it.path <> invalid then node.path = it.path
     if it.parent_id <> invalid then node.parentId = it.parent_id
     node.style = style
-    if style = "thumb" then node.HDPosterUrl = imageUrl(thumb) else node.HDPosterUrl = imageUrl(poster)
+    if style = "thumb"
+        node.HDPosterUrl = imageUrl(thumb)
+    else if style = "backdrop"
+        node.HDPosterUrl = imageUrl(backdrop)
+    else
+        node.HDPosterUrl = imageUrl(poster)
+    end if
     node.backdrop = fullImage(imageUrl(backdrop))
     node.logo = imageUrl(logo)
     node.overview = valueOr(it.overview, "")

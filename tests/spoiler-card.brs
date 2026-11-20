@@ -5,6 +5,8 @@ sub Main()
     m.face = {}
     m.line1 = {}
     m.line2 = {}
+    m.logo = {}
+    m.logoTitle = {}
     m.top = {width:0,height:0,itemContent:{style:"thumb",title:"Episode One",line2:"E1",HDPosterUrl:"/still",safeArt:"/show",spoilerEligible:true,available:false}}
     onContent()
     if m.picture.uri <> "/show" then stop
