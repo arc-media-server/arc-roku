@@ -48,9 +48,9 @@
             <!-- A show's seasons as tabs (then Not in This Order), as arc-tv's and arc-apple's; the
                  chosen one's episodes are the first row under them. -->
             <PillBar id="seasonTabs" translation="[162, 740]" followFocus="true" visible="false" />
-            <RowList id="episodes" translation="[170, 740]" itemComponentName="CardItem" numRows="2" itemSize="[1750, 420]" vertFocusAnimationStyle="fixedFocus"
-                rowItemSize="[[400, 330]]" rowItemSpacing="[[28, 0]]" itemSpacing="[0, 40]" showRowLabel="[true]"
-                rowLabelOffset="[[0, 16]]" rowLabelColor="0xF0F4F4FF" rowLabelFont="font:MediumBoldSystemFont"
+            <RowList id="episodes" translation="[156, 740]" itemComponentName="CardItem" numRows="2" itemSize="[1750, 420]" vertFocusAnimationStyle="fixedFocus"
+                rowItemSize="[[428, 330]]" rowItemSpacing="[[0, 0]]" itemSpacing="[0, 40]" showRowLabel="[true]"
+                rowLabelOffset="[[14, 16]]" rowLabelColor="0xF0F4F4FF" rowLabelFont="font:MediumBoldSystemFont"
                 drawFocusFeedback="false" rowFocusAnimationStyle="floatingFocus" visible="false" />
             <Label id="error" translation="[170, 680]" width="1400" wrap="true" font="font:SmallSystemFont" color="0xF59E9EFF" />
         </Group>

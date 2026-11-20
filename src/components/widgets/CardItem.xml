@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!-- A title on a row: its poster (or a 16:9 picture, or a person's picture, with two lines centred under it), how far
      through it is (a thin bar on posters; on 16:9 pictures a resume strip: play mark, bar and minutes left, as on the
-     Apple TV), and a white edge when it has focus. Sized by its row. -->
+     Apple TV), and, with focus, a white ring and a slight zoom, as arc-tv's. Sized by its row, which leaves room for the zoom. -->
 <component name="CardItem" extends="Group">
     <interface>
         <field id="itemContent" type="node" onChange="onContent" />
@@ -19,28 +19,30 @@
     <script type="text/brightscript" uri="pkg:/source/shared/spoilers.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/format.bs" />
     <children>
-        <Rectangle id="blank" color="0x1C2526FF" />
-        <Poster id="picture" loadDisplayMode="scaleToZoom" />
-        <!-- A person's picture is round (the Apple TV's cast), with a ring when focused. -->
-        <Poster id="ring" uri="pkg:/images/ring.png" visible="false" opacity="0" />
-        <MaskGroup id="round" maskUri="pkg:/images/circle-mask.png" visible="false">
-            <Rectangle id="roundBlank" color="0x1C2526FF" />
-            <Poster id="face" loadDisplayMode="scaleToZoom" />
-        </MaskGroup>
-        <Poster id="strip" uri="pkg:/images/strip.png" visible="false" />
-        <Poster id="play" uri="pkg:/images/play-mini.png" width="22" height="22" visible="false" />
-        <Label id="left" font="font:SmallestBoldSystemFont" color="0xFFFFFFFF" visible="false" />
-        <Rectangle id="track" color="0x00000099" visible="false" />
-        <Rectangle id="bar" color="0xF5F5F7FF" visible="false" />
-        <Poster id="tick" uri="pkg:/images/watched.png" width="40" height="40" visible="false" />
-        <!-- The focus edge, drawn just inside the picture so a row or grid never clips it. -->
-        <Group id="edge" opacity="0">
-            <Rectangle id="edgeTop" color="0xFFFFFFFF" />
-            <Rectangle id="edgeBottom" color="0xFFFFFFFF" />
-            <Rectangle id="edgeLeft" color="0xFFFFFFFF" />
-            <Rectangle id="edgeRight" color="0xFFFFFFFF" />
+        <!-- Everything sits in "card", inset by cardPad (cards.bs) in its slot so the zoom and the
+             ring have room inside the row or grid, which would clip them at its edge. -->
+        <Group id="card">
+            <!-- The picture with rounded corners (arc-tv's cards have them). -->
+            <MaskGroup id="frame" maskUri="pkg:/images/mask-poster.png">
+                <Rectangle id="blank" color="0x1C2526FF" />
+                <Poster id="picture" loadDisplayMode="scaleToZoom" />
+                <Poster id="strip" uri="pkg:/images/strip.png" visible="false" />
+            </MaskGroup>
+            <!-- A person's picture is round (the Apple TV's cast), with a ring when focused. -->
+            <Poster id="ring" uri="pkg:/images/ring.png" visible="false" opacity="0" />
+            <MaskGroup id="round" maskUri="pkg:/images/circle-mask.png" visible="false">
+                <Rectangle id="roundBlank" color="0x1C2526FF" />
+                <Poster id="face" loadDisplayMode="scaleToZoom" />
+            </MaskGroup>
+            <Poster id="play" uri="pkg:/images/play-mini.png" width="22" height="22" visible="false" />
+            <Label id="left" font="font:SmallestBoldSystemFont" color="0xFFFFFFFF" visible="false" />
+            <Rectangle id="track" color="0x00000099" visible="false" />
+            <Rectangle id="bar" color="0xF5F5F7FF" visible="false" />
+            <Poster id="tick" uri="pkg:/images/watched.png" width="40" height="40" visible="false" />
+            <!-- The focus ring: a white rounded edge just inside the picture (a nine-patch). -->
+            <Poster id="edge" uri="pkg:/images/focus-ring.9.png" opacity="0" />
+            <Label id="line1" font="font:SmallBoldSystemFont" color="0xF0F4F4FF" horizAlign="center" />
+            <Label id="line2" font="font:SmallestSystemFont" color="0x9AA7A7FF" horizAlign="center" />
         </Group>
-        <Label id="line1" font="font:SmallBoldSystemFont" color="0xF0F4F4FF" horizAlign="center" />
-        <Label id="line2" font="font:SmallestSystemFont" color="0x9AA7A7FF" horizAlign="center" />
     </children>
 </component>

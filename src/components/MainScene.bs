@@ -103,11 +103,27 @@ function push(name as string, params as object) as object
     screen.params = params
     screen.observeField("action", "onAction")
     m.screens.appendChild(screen)
+    fadeIn(screen)
     m.stack.Push(screen)
     screen.callFunc("takeFocus", invalid)
     updateRail()
     return screen
 end function
+
+' fadeIn: the new screen comes in over 0.2 s, as the other TV apps' page changes.
+sub fadeIn(screen as object)
+    if m.screenCount = invalid then m.screenCount = 0
+    m.screenCount = m.screenCount + 1
+    screen.id = "screen" + m.screenCount.ToStr()
+    screen.opacity = 0
+    fade = m.top.findNode("screenFade")
+    fade.control = "stop"
+    ' A fade cut short (screens opened quickly in turn) leaves the earlier screen fully shown.
+    if m.fading <> invalid then m.fading.opacity = 1
+    m.fading = screen
+    m.top.findNode("screenFadeTo").fieldToInterp = screen.id + ".opacity"
+    fade.control = "start"
+end sub
 
 sub pop()
     if m.stack.Count() = 0 then return

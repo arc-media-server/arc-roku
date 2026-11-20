@@ -21,13 +21,19 @@
         <Rectangle id="panel" width="400" height="1080" color="0x0E1112FF" opacity="0" />
         <Poster id="pill" uri="pkg:/images/nav/pill.png" width="344" height="68" opacity="0" />
         <Poster id="disc" uri="pkg:/images/nav/disc.png" width="68" height="68" blendColor="0xFFFFFF33" />
-        <Poster id="avatar" width="60" height="60" translation="[36, 70]" />
-        <Label id="initial" width="60" height="60" translation="[36, 70]" horizAlign="center" vertAlign="center" font="font:SmallBoldSystemFont" color="0xFFFFFFFF" />
-        <Label id="profileLabel" translation="[116, 82]" width="260" font="font:SmallBoldSystemFont" color="0xF5F5F7FF" opacity="0" />
+        <!-- Arc's logo at the top, as arc-tv's rail: the mark while it's shut (centred on the icons),
+             the main logo once it opens. -->
+        <Poster id="mark" uri="pkg:/images/logo-mark.png" width="56" height="56" translation="[42, 36]" />
+        <Poster id="wordmark" uri="pkg:/images/logo-main.png" width="181" height="48" translation="[52, 40]" opacity="0" />
+        <Poster id="avatar" width="60" height="60" translation="[36, 116]" />
+        <Label id="initial" width="60" height="60" translation="[36, 116]" horizAlign="center" vertAlign="center" font="font:SmallBoldSystemFont" color="0xFFFFFFFF" />
+        <Label id="profileLabel" translation="[116, 128]" width="260" font="font:SmallBoldSystemFont" color="0xF5F5F7FF" opacity="0" />
         <Group id="rows" />
         <Animation id="anim" duration="0.2" easeFunction="outQuad">
             <FloatFieldInterpolator id="dimFade" key="[0.0, 1.0]" keyValue="[0.0, 0.6]" fieldToInterp="dim.opacity" />
             <FloatFieldInterpolator id="panelFade" key="[0.0, 1.0]" keyValue="[0.0, 0.92]" fieldToInterp="panel.opacity" />
+            <FloatFieldInterpolator id="markFade" key="[0.0, 1.0]" keyValue="[1.0, 0.0]" fieldToInterp="mark.opacity" />
+            <FloatFieldInterpolator id="wordmarkFade" key="[0.0, 1.0]" keyValue="[0.0, 1.0]" fieldToInterp="wordmark.opacity" />
         </Animation>
     </children>
 </component>

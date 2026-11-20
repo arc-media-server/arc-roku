@@ -65,13 +65,13 @@ sub reload()
     m.style = browseStyle(m.source)
     if m.style = "thumb"
         m.grid.numColumns = 4
-        m.grid.itemSize = [400, 330]
-        m.grid.itemSpacing = [26, 36]
+        m.grid.itemSize = cardSlot(400, 330)
+        m.grid.itemSpacing = [0, 36]
         m.grid.numRows = 3
     else
         m.grid.numColumns = 7
-        m.grid.itemSize = [220, 330]
-        m.grid.itemSpacing = [28, 40]
+        m.grid.itemSize = cardSlot(220, 330)
+        m.grid.itemSpacing = [0, 40]
         m.grid.numRows = 3
     end if
     m.content = CreateObject("roSGNode", "ContentNode")
@@ -152,7 +152,7 @@ sub showSummary()
     else if m.source.kind = "collection" and m.overview <> invalid and m.overview <> ""
         m.summary.text = m.overview
         ' Two lines of overview need the room of one more line above the posters.
-        m.grid.translation = [170, 280]
+        m.grid.translation = [156, 280]
     else if m.total > 0
         m.summary.text = countLine(m.total)
     else
