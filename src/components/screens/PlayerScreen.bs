@@ -37,8 +37,7 @@ sub init()
         line = m.subs.createChild("Group")
         back = line.createChild("Rectangle")
         text = line.createChild("Label")
-        text.font = CreateObject("roSGNode", "Font")
-        text.font.uri = "font:SystemFontFile"
+        text.font = "font:MediumSystemFont" ' sized in applySubtitleLook; see SignInScreen on why not a font file
         m.subLines.Push({ group: line, back: back, text: text })
     end for
     m.skip = m.top.findNode("skip")
