@@ -13,12 +13,16 @@ sub init()
     m.tick = m.top.findNode("tick")
     m.line1 = m.top.findNode("line1")
     m.line2 = m.top.findNode("line2")
+    m.shade = m.top.findNode("shade")
+    m.logo = m.top.findNode("logo")
+    m.logoTitle = m.top.findNode("logoTitle")
     m.ring = m.top.findNode("ring")
     m.round = m.top.findNode("round")
     m.roundBlank = m.top.findNode("roundBlank")
     m.face = m.top.findNode("face")
     m.picture.setHttpAgent(m.top.getScene().getHttpAgent())
     m.face.setHttpAgent(m.top.getScene().getHttpAgent())
+    m.logo.setHttpAgent(m.top.getScene().getHttpAgent())
 end sub
 
 sub onContent()
@@ -35,10 +39,14 @@ sub onContent()
     end if
     m.line1.text = c.title
     m.line2.text = c.line2
+    backdrop = c.style = "backdrop"
+    if backdrop then m.logo.uri = c.logo else m.logo.uri = ""
+    m.logoTitle.text = c.title
     layout()
 end sub
 
-' Posters fill the card; 16:9 pictures leave room for two lines of text under them.
+' The picture's height comes from its style (cardPicture in cards.bs); the two lines go under it
+' when the slot leaves room for them (cardSize does).
 ' The card's room on either side of it in its slot: cardPad in cards.bs, which the lists use.
 const PAD = 14
 ' How much a focused card grows, as arc-tv's (which grow 8%, with more room around them).
@@ -53,9 +61,12 @@ sub layout()
     ' "named" (people): a poster with the name and role under it.
     named = c <> invalid and c.style = "named"
     thumb = c <> invalid and (c.style = "thumb" or named)
-    ph = h
+    backdrop = c <> invalid and c.style = "backdrop"
+    ph = Int(w * 3 / 2)
     if thumb then ph = Int(w * 9 / 16)
+    if backdrop then ph = Int(w * 3 / 4)
     if named then ph = w
+    if ph > h then ph = h
     ' A person: a round picture as wide as the card, the name and role under it.
     m.round.visible = named
     m.ring.visible = named
@@ -81,12 +92,38 @@ sub layout()
     m.picture.loadWidth = w
     m.picture.loadHeight = ph
     m.frame.maskSize = [w, ph]
-    if ph > w then m.frame.maskUri = "pkg:/images/mask-poster.png" else m.frame.maskUri = "pkg:/images/mask-thumb.png"
+    if ph > w
+        m.frame.maskUri = "pkg:/images/mask-poster.png"
+    else if backdrop
+        m.frame.maskUri = "pkg:/images/mask-backdrop.png"
+    else
+        m.frame.maskUri = "pkg:/images/mask-thumb.png"
+    end if
+    ' A Backdrop's logo sits low and centred, 72% across, as arc-tv's, clear of the progress bar;
+    ' without a logo, the title. (No loadWidth: the simulator would stretch the logo to it.)
+    m.shade.visible = backdrop
+    m.logo.visible = backdrop and m.logo.uri <> ""
+    m.logoTitle.visible = backdrop and m.logo.uri = ""
+    if backdrop
+        m.shade.translation = [0, ph / 2]
+        m.shade.width = w
+        m.shade.height = ph / 2
+        lw = Int(w * 0.72)
+        lh = Int(ph * 0.26)
+        m.logo.translation = [(w - lw) / 2, ph - 40 - lh]
+        m.logo.width = lw
+        m.logo.height = lh
+        m.logoTitle.translation = [24, ph - 40 - 90]
+        m.logoTitle.width = w - 48
+        m.logoTitle.height = 90
+    end if
     m.edge.width = w
     m.edge.height = ph
     m.card.scaleRotateCenter = [w / 2, ph / 2]
-    m.line1.visible = thumb
-    m.line2.visible = thumb
+    ' Every card has its caption when its slot leaves room for it.
+    caption = h >= ph + 60
+    m.line1.visible = caption
+    m.line2.visible = caption and m.line2.text <> ""
     m.line1.translation = [0, ph + 14]
     m.line1.width = w
     m.line2.translation = [0, ph + 50]
@@ -96,7 +133,7 @@ sub layout()
     m.track.visible = progress > 0
     m.bar.visible = progress > 0
     ' A 16:9 picture gets the resume strip: a shade along the bottom, a play mark, a short bar
-    ' and the minutes left. Posters keep a thin bar across the bottom.
+    ' and the minutes left. Posters and Backdrops keep a thin bar across the bottom.
     strip = progress > 0 and thumb and not named
     m.strip.visible = strip
     m.play.visible = strip

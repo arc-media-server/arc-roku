@@ -139,6 +139,12 @@ sub testHome()
     split = resolveHomeRows({ split_up_next: true }, [], invalid)
     eq(split[0].path + " " + split[1].id, "/home/continue next-up", "split Up Next")
     check(split[0].continueRow = true and split[1].continueRow = true, "Continue Watching and Up Next can be removed from")
+    looks = resolveHomeRows({ split_up_next: true, home: [{ id: "continue", style: "arc" }, { id: "next-up", style: "poster" }] }, [], invalid)
+    eq(looks[0].style + " " + looks[1].style, "backdrop poster", "the web's Backdrops (arc) and Posters looks for carrying on watching")
+    slot = cardSize("poster")
+    eq(slot[1], 410, "posters leave room for their two lines")
+    slot = cardSize("backdrop")
+    eq(slot[0].ToStr() + "x" + slot[1].ToStr(), "428x380", "Backdrops are 4:3 with their lines")
     check(rows[0].continueRow = true and rows[1].continueRow <> true and rows[2].continueRow <> true, "only the Continue Watching row can be removed from")
     dt = CreateObject("roDateTime")
     dt.FromISO8601String("2026-10-15T12:00:00Z")
@@ -318,10 +324,12 @@ sub testRecommended()
     data = { rows: [
         { type: "continue", items: [{ id: "e1", kind: "episode" }] },
         { type: "rediscover", items: [] },
-        { type: "because_you_watched", name: "Heat", items: [{ id: "m1", kind: "movie" }, { id: "m2", kind: "movie" }] }
+        { type: "because_you_watched", name: "Heat", items: [{ id: "m1", kind: "movie" }, { id: "m2", kind: "movie" }] },
+        { type: "top_rated", style: "arc", items: [{ id: "m3", kind: "movie" }] }
     ] }
     rows = recommendedRows(data, "TV", "shows")
-    eq(rows.Count(), 2, "recommended: empty rows are left out")
+    eq(rows.Count(), 3, "recommended: empty rows are left out")
+    eq(rows[2].style, "backdrop", "recommended: Arc's Backdrops look")
     eq(rows[0].style, "thumb", "recommended: a row of episodes is 16:9")
     eq(rows[1].title, "Because you watched Heat", "recommended: because you watched")
     eq(rows[1].cards.Count(), 2, "recommended: every title is a card")

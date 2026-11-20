@@ -78,8 +78,8 @@ sub showRows(rows as object)
             node.addFields(cardFields())
             fillCard(node, card, r.style)
         end for
-        if r.style = "thumb" then sizes.Push(cardSlot(400, 330)) else sizes.Push(cardSlot(220, 330))
-        heights.Push(420)
+        sizes.Push(cardSize(r.style))
+        heights.Push(cardRowHeight(r.style))
     end for
     m.results.rowItemSize = sizes
     m.results.rowHeights = heights

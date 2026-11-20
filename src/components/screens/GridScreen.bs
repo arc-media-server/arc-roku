@@ -65,12 +65,12 @@ sub reload()
     m.style = browseStyle(m.source)
     if m.style = "thumb"
         m.grid.numColumns = 4
-        m.grid.itemSize = cardSlot(400, 330)
+        m.grid.itemSize = cardSize("thumb")
         m.grid.itemSpacing = [0, 36]
         m.grid.numRows = 3
     else
         m.grid.numColumns = 7
-        m.grid.itemSize = cardSlot(220, 330)
+        m.grid.itemSize = cardSize("poster")
         m.grid.itemSpacing = [0, 40]
         m.grid.numRows = 3
     end if
