@@ -22,8 +22,8 @@
         <Rectangle width="1920" height="1080" color="0x0B1214FF" />
         <Label id="heading" translation="[80, 70]" width="600" font="font:LargeBoldSystemFont" color="0xF0F4F4FF" />
         <MiniKeyboard id="keyboard" translation="[60, 170]" />
-        <RowList id="results" translation="[680, 120]" itemComponentName="CardItem" numRows="2" itemSize="[1200, 420]"
-            rowItemSpacing="[[28, 0]]" itemSpacing="[0, 40]" showRowLabel="[true]" rowLabelOffset="[[0, 16]]"
+        <RowList id="results" translation="[666, 120]" itemComponentName="CardItem" numRows="2" itemSize="[1200, 420]"
+            rowItemSpacing="[[0, 0]]" itemSpacing="[0, 40]" showRowLabel="[true]" rowLabelOffset="[[14, 16]]"
             rowLabelColor="0xF0F4F4FF" rowLabelFont="font:MediumBoldSystemFont" drawFocusFeedback="false"
             rowFocusAnimationStyle="floatingFocus" vertFocusAnimationStyle="fixedFocus" />
         <Label id="note" translation="[680, 180]" width="1160" wrap="true" font="font:MediumSystemFont" color="0x9AA7A7FF" />

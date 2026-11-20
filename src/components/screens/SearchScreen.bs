@@ -78,7 +78,7 @@ sub showRows(rows as object)
             node.addFields(cardFields())
             fillCard(node, card, r.style)
         end for
-        if r.style = "thumb" then sizes.Push([400, 330]) else sizes.Push([220, 330])
+        if r.style = "thumb" then sizes.Push(cardSlot(400, 330)) else sizes.Push(cardSlot(220, 330))
         heights.Push(420)
     end for
     m.results.rowItemSize = sizes

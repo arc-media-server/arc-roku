@@ -117,10 +117,10 @@ sub showTabs()
     m.tabs.selected = m.seasonTab
     m.tabs.visible = labels.Count() > 0
     if m.tabs.visible
-        m.episodes.translation = [170, 840]
+        m.episodes.translation = [156, 840]
         m.episodes.showRowLabel = [false, true]
     else
-        m.episodes.translation = [170, 740]
+        m.episodes.translation = [156, 740]
         m.episodes.showRowLabel = [true]
     end if
 end sub
@@ -526,11 +526,11 @@ sub buildRows()
             end if
         end for
         if spec.style = "thumb"
-            sizes.Push([400, 330])
+            sizes.Push(cardSlot(400, 330))
         else if spec.style = "named"
-            sizes.Push([220, 330])
+            sizes.Push(cardSlot(220, 330))
         else
-            sizes.Push([220, 330])
+            sizes.Push(cardSlot(220, 330))
         end if
         heights.Push(420)
     end for

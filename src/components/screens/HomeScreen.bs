@@ -157,10 +157,10 @@ sub placeRows()
                 node.inContinue = spec.continueRow = true
             end for
             if spec.style = "thumb"
-                m.newSizes.Push([400, 330])
+                m.newSizes.Push(cardSlot(400, 330))
                 m.newHeights.Push(400)
             else
-                m.newSizes.Push([220, 330])
+                m.newSizes.Push(cardSlot(220, 330))
                 m.newHeights.Push(400)
             end if
             added = true

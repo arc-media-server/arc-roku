@@ -30,8 +30,8 @@
         <Label id="heroTitle" translation="[170, 180]" width="1100" font="font:LargeBoldSystemFont" color="0xF0F4F4FF" />
         <Label id="heroMeta" translation="[170, 340]" width="1100" font="font:SmallSystemFont" color="0xC6D0D0FF" />
         <Label id="heroOverview" translation="[170, 390]" width="900" height="130" wrap="true" maxLines="3" font="font:SmallSystemFont" color="0xC6D0D0FF" />
-        <RowList id="rows" translation="[170, 560]" itemComponentName="CardItem" numRows="2" itemSize="[1750, 400]"
-            rowItemSpacing="[[28, 0]]" itemSpacing="[0, 48]" showRowLabel="[true]" rowLabelOffset="[[0, 16]]"
+        <RowList id="rows" translation="[156, 560]" itemComponentName="CardItem" numRows="2" itemSize="[1750, 400]"
+            rowItemSpacing="[[0, 0]]" itemSpacing="[0, 48]" showRowLabel="[true]" rowLabelOffset="[[14, 16]]"
             rowLabelColor="0xF0F4F4FF" rowLabelFont="font:MediumBoldSystemFont" drawFocusFeedback="false"
             rowFocusAnimationStyle="floatingFocus" vertFocusAnimationStyle="fixedFocus" />
         <Label id="empty" translation="[170, 620]" width="1400" wrap="true" font="font:MediumSystemFont" color="0x9AA7A7FF" visible="false" /> 

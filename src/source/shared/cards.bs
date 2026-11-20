@@ -2,6 +2,17 @@
 ' PosterCard and EpisodeCard do.
 
 ' cardFields: what a card carries besides its picture and title.
+' cardPad: the room left on either side of a card in its row or grid slot, so the card can zoom
+' and show its focus ring without the list clipping it (CardItem draws inside it).
+function cardPad() as integer
+    return 14
+end function
+
+' cardSlot: the slot a card of w x h takes in a row list or grid.
+function cardSlot(w as integer, h as integer) as object
+    return [w + 2 * cardPad(), h]
+end function
+
 function cardFields() as object
     return { available: true, spoilerEligible: false, safeArt: "", safeBackdrop: "", itemId: "", kind: "", parentId: "", line2: "", progress: 0.0, style: "poster", backdrop: "", logo: "", meta: "", overview: "", resumeMs: 0, played: false, path: "", watchlisted: false, leftMin: 0, inContinue: false }
 end function

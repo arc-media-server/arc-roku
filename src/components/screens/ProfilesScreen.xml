@@ -11,6 +11,8 @@
     <script type="text/brightscript" uri="pkg:/source/shared/http.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/api.bs" />
     <children>
+        <!-- The main logo above "Who's watching?", as arc-tv's and Android's. -->
+        <Poster uri="pkg:/images/logo-main.png" width="211" height="56" translation="[854, 124]" />
         <Label id="title" width="1920" horizAlign="center" translation="[0, 220]" font="font:LargeBoldSystemFont" color="0xF0F4F4FF" />
         <MarkupGrid id="grid" itemComponentName="ProfileItem" itemSize="[280, 380]" itemSpacing="[40, 0]" numRows="1" numColumns="5"
             drawFocusFeedback="false" translation="[0, 380]" />
