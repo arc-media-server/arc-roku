@@ -17,9 +17,7 @@
         <Label id="title" width="1920" horizAlign="center" translation="[0, 200]" font="font:LargeBoldSystemFont" color="0xF0F4F4FF" />
         <Label id="steps" width="1200" horizAlign="center" wrap="true" translation="[360, 290]" font="font:MediumSystemFont" color="0x9AA7A7FF" />
         <Label id="link" width="1920" horizAlign="center" translation="[0, 420]" font="font:MediumBoldSystemFont" color="0xF5F5F7FF" />
-        <Label id="code" width="1920" horizAlign="center" translation="[0, 500]" color="0xF0F4F4FF">
-            <Font role="font" uri="font:SystemFontFile" size="140" />
-        </Label>
+        <Label id="code" width="1920" horizAlign="center" translation="[0, 500]" font="font:LargeSystemFont" color="0xF0F4F4FF" />
         <Label id="note" width="1920" horizAlign="center" translation="[0, 700]" font="font:SmallSystemFont" color="0x9AA7A7FF" />
         <ButtonGroup id="buttons" iconUri="" focusedIconUri="" translation="[760, 800]" minWidth="400" />
         <Timer id="poll" repeat="false" duration="3" />
