@@ -27,8 +27,8 @@
         <Label id="name" translation="[460, 190]" width="1340" font="font:LargeBoldSystemFont" color="0xF5F5F7FF" />
         <Label id="summary" translation="[460, 278]" width="1340" font="font:SmallBoldSystemFont" color="0xE6E9E9FF" />
         <Label id="part" translation="[460, 326]" width="1340" font="font:SmallSystemFont" color="0xC6D0D0FF" />
-        <RowList id="rows" translation="[156, 470]" itemComponentName="CardItem" numRows="2" itemSize="[1750, 400]"
-            rowItemSize="[[248, 330]]" rowItemSpacing="[[0, 0]]" itemSpacing="[0, 48]" showRowLabel="[true]" rowLabelOffset="[[14, 16]]"
+        <RowList id="rows" translation="[156, 470]" itemComponentName="CardItem" numRows="2" itemSize="[1750, 480]"
+            rowItemSize="[[248, 410]]" rowItemSpacing="[[0, 0]]" itemSpacing="[0, 48]" showRowLabel="[true]" rowLabelOffset="[[14, 16]]"
             rowLabelColor="0xF0F4F4FF" rowLabelFont="font:MediumBoldSystemFont" drawFocusFeedback="false"
             rowFocusAnimationStyle="floatingFocus" vertFocusAnimationStyle="fixedFocus" />
         <Label id="empty" translation="[170, 520]" width="1500" wrap="true" font="font:MediumSystemFont" color="0x9AA7A7FF" visible="false" />

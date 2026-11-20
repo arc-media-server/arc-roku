@@ -525,14 +525,8 @@ sub buildRows()
                 node.subtitleLine = episodeLine(e)
             end if
         end for
-        if spec.style = "thumb"
-            sizes.Push(cardSlot(400, 330))
-        else if spec.style = "named"
-            sizes.Push(cardSlot(220, 330))
-        else
-            sizes.Push(cardSlot(220, 330))
-        end if
-        heights.Push(420)
+        sizes.Push(cardSize(spec.style))
+        heights.Push(cardRowHeight(spec.style))
     end for
     m.episodes.rowItemSize = sizes
     m.episodes.rowHeights = heights

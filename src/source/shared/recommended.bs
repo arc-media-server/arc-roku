@@ -42,7 +42,7 @@ function recommendedTitle(row as object, libraryName as string, libraryKind as s
 end function
 
 ' recommendedRows: Arc's answer as rows for Home's row list ({ title, style, cards, continueRow }), leaving out
-' empty rows. A row's style is Arc's (poster or thumb); automatic is a poster, and a row of
+' empty rows. A row's style is Arc's (poster, thumb, or arc shown as backdrop); automatic is a poster, and a row of
 ' episodes (Continue Watching in a shows library) is 16:9.
 function recommendedRows(data as dynamic, libraryName as string, libraryKind as string) as object
     out = []
@@ -51,7 +51,9 @@ function recommendedRows(data as dynamic, libraryName as string, libraryKind as 
         items = row.items
         if items <> invalid and items.Count() > 0
             style = valueString(row.style)
-            if style <> "thumb"
+            if style = "arc"
+                style = "backdrop"
+            else if style <> "thumb"
                 style = "poster"
                 if items[0].kind = "episode" then style = "thumb"
             end if
