@@ -8,9 +8,7 @@
     <children>
         <Poster id="ring" uri="pkg:/images/ring.png" width="272" height="272" translation="[4, 4]" opacity="0" />
         <Poster id="avatar" width="240" height="240" translation="[20, 20]" />
-        <Label id="letter" width="240" height="240" translation="[20, 20]" horizAlign="center" vertAlign="center" color="0xFFFFFFFF">
-            <Font role="font" uri="font:BoldSystemFontFile" size="96" />
-        </Label>
+        <Label id="letter" width="240" height="240" translation="[20, 20]" horizAlign="center" vertAlign="center" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" />
         <Label id="name" width="280" horizAlign="center" translation="[0, 296]" font="font:MediumSystemFont" color="0x9AA7A7FF" />
         <Label id="lock" width="280" horizAlign="center" translation="[0, 344]" font="font:SmallestSystemFont" color="0x9AA7A7FF" />
     </children>
