@@ -10,6 +10,8 @@
         <field id="selected" type="integer" value="0" onChange="paint" />
         <field id="picked" type="integer" alwaysNotify="true" />
         <field id="leave" type="boolean" alwaysNotify="true" />
+        <!-- Choose a pill as soon as it has the focus (a show's season tabs, as arc-tv's). -->
+        <field id="followFocus" type="boolean" value="false" />
     </interface>
     <children>
         <Capsule id="back" height="84" color="0x1E2224E6" />

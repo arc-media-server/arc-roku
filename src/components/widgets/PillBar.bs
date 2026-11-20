@@ -47,6 +47,11 @@ sub paint()
             it.cap.visible = true
             it.cap.color = "0xFFFFFFFF"
             it.label.color = "0x000000FF"
+        else if chosen and m.top.followFocus
+            ' Season tabs, as arc-tv's: the chosen tab is a faint capsule until the bar has the focus.
+            it.cap.visible = true
+            it.cap.color = "0xFFFFFF2E"
+            it.label.color = "0xF5F5F7FF"
         else if chosen
             it.cap.visible = true
             if focused then it.cap.color = "0xB8BCBEFF" else it.cap.color = "0xFFFFFFFF"
@@ -63,10 +68,12 @@ function onKeyEvent(key as string, press as boolean) as boolean
     if key = "right" and m.focus < m.items.Count() - 1
         m.focus = m.focus + 1
         paint()
+        if m.top.followFocus then m.top.picked = m.focus
         return true
     else if key = "left" and m.focus > 0
         m.focus = m.focus - 1
         paint()
+        if m.top.followFocus then m.top.picked = m.focus
         return true
     else if key = "OK"
         m.top.picked = m.focus
