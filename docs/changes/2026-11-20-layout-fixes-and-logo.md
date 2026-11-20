@@ -18,6 +18,9 @@ from the owner's first look at a sideloaded build. Next: season tabs, then the p
   Extras, as arc-tv. It was Extras, More Like This, Cast, collections.
 - **Focus in the library grid.** Cards also show their white edge when their grid reports focus
   as `itemHasFocus` alone. The simulator's grid only reports focus that way, so nothing showed.
+- **Focus edge not clipped.** The white edge was drawn 5 px outside the card, and rows clip
+  what's left of their start, so the first card's left edge was missing (owner's screenshot).
+  It's now drawn 5 px inside the picture, on top of it.
 - **The new logo** (arc-media-server `docs/brand`, chosen 13 November). The brand SVGs are
   copied unchanged into `brand/`, and `scripts/make-logos.mjs` (as arc-tv's) draws them with
   Chromium into:
