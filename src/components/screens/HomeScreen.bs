@@ -36,9 +36,9 @@ sub onParams()
     if p <> invalid then m.library = p.library
     if m.library <> invalid
         ' Under the library's pills: the hero sits lower and has no overview.
-        m.logo.translation = [192, 165]
+        m.logo.translation = [170, 165]
         m.logo.height = 150
-        m.heroTitle.translation = [192, 210]
+        m.heroTitle.translation = [170, 210]
         m.heroOverview.visible = false
     end if
     load()

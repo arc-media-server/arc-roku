@@ -22,16 +22,16 @@
         <Poster id="backdrop" width="1920" height="1080" opacity="0.7" loadDisplayMode="scaleToZoom" loadWidth="1920" loadHeight="1080" />
         <Poster uri="pkg:/images/shade.png" width="1920" height="1080" />
         <Rectangle width="1920" height="1080" color="0x0B121466" />
-        <Poster id="photo" translation="[192, 150]" width="240" height="240" loadDisplayMode="scaleToZoom" maskUri="pkg:/images/circle-mask.png" />
-        <Label id="initials" translation="[192, 150]" width="240" height="240" horizAlign="center" vertAlign="center" font="font:LargeBoldSystemFont" color="0xF5F5F7FF" visible="false" />
-        <Label id="name" translation="[482, 190]" width="1318" font="font:LargeBoldSystemFont" color="0xF5F5F7FF" />
-        <Label id="summary" translation="[482, 278]" width="1318" font="font:SmallBoldSystemFont" color="0xE6E9E9FF" />
-        <Label id="part" translation="[482, 326]" width="1318" font="font:SmallSystemFont" color="0xC6D0D0FF" />
-        <RowList id="rows" translation="[192, 470]" itemComponentName="CardItem" numRows="2" itemSize="[1728, 400]"
+        <Poster id="photo" translation="[170, 150]" width="240" height="240" loadDisplayMode="scaleToZoom" maskUri="pkg:/images/circle-mask.png" />
+        <Label id="initials" translation="[170, 150]" width="240" height="240" horizAlign="center" vertAlign="center" font="font:LargeBoldSystemFont" color="0xF5F5F7FF" visible="false" />
+        <Label id="name" translation="[460, 190]" width="1340" font="font:LargeBoldSystemFont" color="0xF5F5F7FF" />
+        <Label id="summary" translation="[460, 278]" width="1340" font="font:SmallBoldSystemFont" color="0xE6E9E9FF" />
+        <Label id="part" translation="[460, 326]" width="1340" font="font:SmallSystemFont" color="0xC6D0D0FF" />
+        <RowList id="rows" translation="[170, 470]" itemComponentName="CardItem" numRows="2" itemSize="[1750, 400]"
             rowItemSize="[[220, 330]]" rowItemSpacing="[[28, 0]]" itemSpacing="[0, 48]" showRowLabel="[true]" rowLabelOffset="[[0, 16]]"
             rowLabelColor="0xF0F4F4FF" rowLabelFont="font:MediumBoldSystemFont" drawFocusFeedback="false"
             rowFocusAnimationStyle="floatingFocus" vertFocusAnimationStyle="fixedFocus" />
-        <Label id="empty" translation="[192, 520]" width="1500" wrap="true" font="font:MediumSystemFont" color="0x9AA7A7FF" visible="false" />
+        <Label id="empty" translation="[170, 520]" width="1500" wrap="true" font="font:MediumSystemFont" color="0x9AA7A7FF" visible="false" />
         <BusySpinner id="spinner" translation="[912, 640]" />
     </children>
 </component>
