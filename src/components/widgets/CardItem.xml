@@ -8,6 +8,8 @@
         <field id="width" type="float" onChange="layout" />
         <field id="height" type="float" onChange="layout" />
         <field id="focusPercent" type="float" onChange="onFocus" />
+        <!-- Grids can report focus as itemHasFocus alone (the simulator's MarkupGrid does). -->
+        <field id="itemHasFocus" type="boolean" onChange="onFocus" />
         <field id="rowFocusPercent" type="float" />
     </interface>
     <script type="text/brightscript" uri="pkg:/source/shared/spoilers.bs" />
