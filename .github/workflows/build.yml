@@ -1,18 +1,33 @@
 # Checks, tests and packages the Roku app as a sideload zip. To save Actions minutes it runs only
-# when asked: from the Actions tab (Run workflow, on any branch), or for a push whose commit
-# message contains [build]. The zip is attached to the run (Summary > Artifacts); install it from
-# the Roku's developer page (http://<roku-ip>, Development Application Installer).
+# when asked:
+#   - Actions > Build > Run workflow. On main this also publishes a pre-release
+#     (roku-build-<run number>) on the Releases page; on another branch, a run artifact only.
+#   - A pushed v* tag: a normal release with that version.
+#   - A push whose commit message contains [build]: a run artifact only, never a release.
+# A release is made only after the checks pass. Install the zip from the Roku's developer page
+# (http://<roku-ip>, Development Application Installer).
 name: Build
 
 on:
   workflow_dispatch:
   push:
+    tags: ['v*']
+    branches: ['**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build:
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[build]')
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') || contains(github.event.head_commit.message, '[build]')
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,13 +39,56 @@ jobs:
         run: npm run check
       - name: Unit tests
         run: npm test
-      - name: Stamp the build number
-        # The Roku shows major.minor.build; the run number tells builds apart.
-        run: sed -i "s/^build_version=.*/build_version=${{ github.run_number }}/" src/manifest
+      - name: Version
+        id: version
+        # The Roku shows major.minor.build. A v* tag gives all three (v0.2.0); any other build
+        # keeps the manifest's major.minor with the run number as build (0.1.57). Raise the
+        # manifest's minor_version when a release starts a new minor.
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            IFS=. read -r major minor build <<< "${GITHUB_REF_NAME#v}"
+            sed -i -e "s/^major_version=.*/major_version=$major/" -e "s/^minor_version=.*/minor_version=$minor/" src/manifest
+          else
+            build=${{ github.run_number }}
+          fi
+          sed -i "s/^build_version=.*/build_version=${build:-0}/" src/manifest
+          v="$(sed -n 's/^major_version=//p' src/manifest).$(sed -n 's/^minor_version=//p' src/manifest).${build:-0}"
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "Version $v"
       - name: Package
-        run: npm run build
+        run: |
+          npm run build
+          mkdir -p release
+          cp out/arc-roku.zip "release/arc-roku-${{ steps.version.outputs.version }}.zip"
+          cd release && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: arc-roku-${{ github.run_number }}
-          path: out/arc-roku.zip
+          name: arc-roku-${{ steps.version.outputs.version }}
+          path: release/
           retention-days: 30
+
+  release:
+    needs: build
+    if: (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: arc-roku-${{ needs.build.outputs.version }}
+          path: release
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            gh release create "$GITHUB_REF_NAME" release/* --repo "$GITHUB_REPOSITORY" \
+              --title "Arc for Roku $VERSION" --generate-notes --verify-tag
+          else
+            gh release create "roku-build-${{ github.run_number }}" release/* --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" --prerelease \
+              --title "Arc for Roku $VERSION (build ${{ github.run_number }})" --generate-notes
+          fi
