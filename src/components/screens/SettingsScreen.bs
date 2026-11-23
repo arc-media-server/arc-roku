@@ -4,13 +4,15 @@
 sub init()
     m.rows = m.top.findNode("rows")
     m.rows.observeField("itemSelected", "onRow")
+    m.rows.observeField("itemFocused", "onRowFocus")
     m.options = m.top.findNode("options")
     m.options.observeField("picked", "onPicked")
     m.options.observeField("closed", "onClosed")
     ' Live updates
     m.options.observeField("visible", "onLiveOptionsVisibility")
     m.top.findNode("heading").text = tr("Settings")
-    m.top.findNode("note").text = tr("Playback and subtitle choices follow your profile, on every device. Choosing a track in the player updates them too.")
+    m.note = m.top.findNode("note")
+    onRowFocus()
     profile = m.global.profile
     color = "teal"
     name = ""
@@ -22,9 +24,11 @@ sub init()
     m.top.findNode("letter").text = UCase(Left(name, 1))
     m.top.findNode("profileName").text = name
     m.top.findNode("serverLine").text = m.global.serverName
+    m.deviceProfile = profile
     m.prefs = invalid
     m.rowKeys = []
     callApi("GET", "/me/prefs", invalid, "onPrefs")
+    callApi("GET", "/auth/status", invalid, "onDeviceProfile")
 end sub
 
 sub takeFocus(_ = invalid as dynamic)
@@ -35,6 +39,31 @@ sub leaving(_ = invalid as dynamic)
 end sub
 
 sub returned(_ = invalid as dynamic)
+end sub
+
+sub onDeviceProfile(event as object)
+    res = event.getData()
+    if res.ok and res.data <> invalid
+        m.deviceProfile = res.data.profile
+        if m.prefs <> invalid then draw()
+    end if
+end sub
+
+sub onRowFocus()
+    if m.rows = invalid or m.note = invalid then return
+    profile = m.deviceProfile
+    i = m.rows.itemFocused
+    if profile <> invalid and m.rowKeys <> invalid and i >= 0 and i < m.rowKeys.Count()
+        if m.rowKeys[i] = "automaticProfile"
+            if profile.has_pin = true
+                m.note.text = tr("Not available for a profile with a PIN: it's asked for each time.")
+            else
+                m.note.text = tr("Open as %1 on this device, without asking who's watching.").Replace("%1", profile.name)
+            end if
+            return
+        end if
+    end if
+    m.note.text = tr("Playback and subtitle choices follow your profile, on every device. Choosing a track in the player updates them too.")
 end sub
 
 sub onPrefs(event as object)
@@ -52,6 +81,7 @@ sub liveRefresh(_ = invalid as dynamic)
     end if
     m.liveDirty = false
     callApi("GET", "/me/prefs", invalid, "onPrefs")
+    callApi("GET", "/auth/status", invalid, "onDeviceProfile")
 end sub
 
 sub onLiveOptionsVisibility()
@@ -123,6 +153,11 @@ sub draw()
     profile = m.global.profile
     name = ""
     if profile <> invalid and profile.name <> invalid then name = profile.name
+    deviceProfile = m.deviceProfile
+    if deviceProfile <> invalid and deviceProfile.id <> invalid
+        automatic = deviceProfile.has_pin <> true and readSetting("automaticProfile") = deviceProfile.id
+        rows.Push(["automaticProfile", tr("Sign in automatically"), onOff(automatic)])
+    end if
     rows.Push(["profiles", tr("Switch Profile"), name])
     rows.Push(["server", tr("Server"), m.global.serverName])
     rows.Push(["signOut", tr("Sign Out of This Roku"), ""])
@@ -137,6 +172,7 @@ sub draw()
     focused = m.rows.itemFocused
     m.rows.content = content
     if focused > 0 then m.rows.jumpToItem = focused
+    onRowFocus()
 end sub
 
 function choiceLabel(key as string) as string
@@ -145,7 +181,9 @@ function choiceLabel(key as string) as string
 end function
 
 sub onRow()
-    key = m.rowKeys[m.rows.itemSelected]
+    index = m.rows.itemSelected
+    if index < 0 or index >= m.rowKeys.Count() then return
+    key = m.rowKeys[index]
     if key = "auto_play"
         save("auto_play", pref("auto_play", true) = false)
     else if key = "hide_spoilers"
@@ -154,6 +192,15 @@ sub onRow()
         save("auto_skip", pref("auto_skip", false) <> true)
     else if key = "theme_music"
         save("theme_music", pref("theme_music", true) = false)
+    else if key = "automaticProfile"
+        profile = m.deviceProfile
+        if profile = invalid or profile.has_pin = true then return
+        if readSetting("automaticProfile") = profile.id
+            clearSetting("automaticProfile")
+        else
+            writeSetting("automaticProfile", profile.id)
+        end if
+        draw()
     else if key = "profiles"
         m.top.action = { go: "profiles" }
     else if key = "server"
@@ -238,7 +285,8 @@ sub onSpoilersSaved(event as object)
     if res.ok and res.data <> invalid
         m.prefs = res.data
         m.global.hideSpoilers = res.data.hide_spoilers = true
-        m.top.findNode("note").text = tr("Playback and subtitle choices follow your profile, on every device. Choosing a track in the player updates them too.")
+        m.note = m.top.findNode("note")
+    onRowFocus()
         draw()
     else
         ' The API Task logs the failed route once; don't print provider bodies or URLs here.

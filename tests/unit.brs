@@ -3,6 +3,7 @@
 
 sub Main()
     m.failures = 0
+    testLaunchProfile()
     testHttp()
     testFormat()
     testCaps()
