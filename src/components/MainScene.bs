@@ -59,13 +59,66 @@ sub onStatus(event as object)
     s = res.data
     if s.signed_in <> true
         signOutLocally()
-    else if s.profile = invalid
-        replaceAll("ProfilesScreen", {})
-    else
-        m.global.profile = s.profile
-        replaceAll("HomeScreen", {})
-        openPendingLink()
+        return
     end if
+    automaticId = readSetting("automaticProfile")
+    selected = launchProfile(s, automaticId, true)
+    m.hadLaunchProfile = s.profile <> invalid and s.friend <> true
+    if selected = invalid
+        openLaunchPicker()
+    else if s.profile = invalid or selected.id <> s.profile.id
+        showSpinner(true)
+        callApi("POST", "/auth/profile", { id: selected.id }, "onLaunchProfile")
+    else
+        if s.friend <> true and selected.id = automaticId then print "Arc: signing in automatically as the saved profile"
+        openLaunchHome(selected)
+    end if
+end sub
+
+sub onLaunchProfile(event as object)
+    res = event.getData()
+    if res.ok and res.data <> invalid
+        print "Arc: signing in automatically as the saved profile"
+        openLaunchHome(res.data)
+    else if res.status = 0 or res.status >= 500
+        showSpinner(false)
+        replaceAll("ProblemScreen", { message: res.error })
+    else if res.status <> 401 or (res.data <> invalid and res.data.needs <> invalid)
+        openLaunchPicker()
+    end if
+end sub
+
+sub openLaunchPicker()
+    if m.hadLaunchProfile
+        showSpinner(true)
+        callApi("DELETE", "/auth/profile", invalid, "onLeftLaunchProfile")
+    else
+        showLaunchPicker()
+    end if
+end sub
+
+sub onLeftLaunchProfile(event as object)
+    res = event.getData()
+    if res.ok
+        showLaunchPicker()
+    else if res.status <> 401
+        showSpinner(false)
+        replaceAll("ProblemScreen", { message: res.error })
+    end if
+end sub
+
+sub showLaunchPicker()
+    showSpinner(false)
+    m.global.profile = {}
+    print "Arc: starting at Who's watching"
+    replaceAll("ProfilesScreen", {})
+end sub
+
+sub openLaunchHome(profile as object)
+    showSpinner(false)
+    m.global.profile = profile
+    replaceAll("HomeScreen", {})
+    openPendingLink()
 end sub
 
 sub setToken(token as string)
@@ -83,6 +136,8 @@ end sub
 
 sub signOutLocally()
     clearSetting("token")
+    clearSetting("automaticProfile")
+    showSpinner(false)
     setToken("")
     m.global.profile = {}
     replaceAll("SignInScreen", {})
@@ -165,6 +220,7 @@ sub onAction(event as object)
         writeSetting("serverName", a.name)
         replaceAll("SignInScreen", {})
     else if go = "otherServer"
+        clearSetting("automaticProfile")
         clearSetting("token")
         setToken("")
         replaceAll("ServerScreen", {})

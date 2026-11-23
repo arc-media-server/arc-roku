@@ -1,5 +1,5 @@
 ' The few things the app remembers between launches, in the device registry: the server's
-' address and the sign-in token Arc gave this Roku. Nothing else is stored.
+' address, the sign-in token Arc gave this Roku, and the optional automatic profile.
 
 function settingsSection() as object
     return CreateObject("roRegistrySection", "arc")

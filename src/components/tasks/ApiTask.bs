@@ -21,7 +21,11 @@ sub work()
         if req.method <> invalid then method = UCase(req.method)
         print "Arc: "; method; " "; path; " failed: "; res.status; " "; res.error
     end if
-    if res.status = 401 and m.global.token <> ""
+    profileChallenge = false
+    if req.path = "/auth/profile" and res.data <> invalid and Type(res.data) = "roAssociativeArray"
+        profileChallenge = res.data.needs <> invalid
+    end if
+    if res.status = 401 and m.global.token <> "" and not profileChallenge
         ' The sign-in was revoked (signed out from Arc's Devices): the scene goes back to sign-in.
         m.global.unauthorized = true
     end if

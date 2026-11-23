@@ -485,6 +485,10 @@
   <translation>None</translation>
 </message>
 <message>
+  <source>Not available for a profile with a PIN: it's asked for each time.</source>
+  <translation>Not available for a profile with a PIN: it's asked for each time.</translation>
+</message>
+<message>
   <source>Not in This Order</source>
   <translation>Not in This Order</translation>
 </message>
@@ -543,6 +547,10 @@
 <message>
   <source>Only when I choose them</source>
   <translation>Only when I choose them</translation>
+</message>
+<message>
+  <source>Open as %1 on this device, without asking who's watching.</source>
+  <translation>Open as %1 on this device, without asking who's watching.</translation>
 </message>
 <message>
   <source>Open Source Licences</source>
@@ -755,6 +763,10 @@
 <message>
   <source>Shuffle Season</source>
   <translation>Shuffle Season</translation>
+</message>
+<message>
+  <source>Sign in automatically</source>
+  <translation>Sign in automatically</translation>
 </message>
 <message>
   <source>Sign in to %1</source>
