@@ -15,6 +15,7 @@
     <script type="text/brightscript" uri="pkg:/source/shared/http.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/api.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/tracks.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/settings.bs" />
     <children>
         <Rectangle width="1920" height="1080" color="0x0B1214FF" />
         <Label id="heading" translation="[170, 70]" width="1000" font="font:LargeBoldSystemFont" color="0xF0F4F4FF" />

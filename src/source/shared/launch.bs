@@ -1,0 +1,17 @@
+' A cold launch may open only a current unlocked singleton, a friend's own profile, or a valid opt-in.
+function launchProfile(status as object, automaticId as string, fresh as boolean) as dynamic
+    if not fresh or status.friend = true then return status.profile
+    profiles = status.profiles
+    if profiles = invalid then return invalid
+    if automaticId <> ""
+        for each profile in profiles
+            if profile.id = automaticId and profile.has_pin <> true then return profile
+        end for
+        return invalid
+    end if
+    if profiles.Count() = 1 and status.profile <> invalid
+        only = profiles[0]
+        if only.id = status.profile.id and only.has_pin <> true then return only
+    end if
+    return invalid
+end function
