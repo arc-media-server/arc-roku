@@ -51,7 +51,7 @@ between Arc apps.
 
 <sub>Artwork and details from TMDB. Films and shows belong to their owners; Arc doesn't include any media.</sub>
 
-These captures are from the brs-engine simulator, where fonts may fall back and horizontal buttons may stack vertically. Posters and backdrops are blank because the capture environment blocked TMDB's image CDN.
+These captures are from the brs-engine simulator, where fonts may fall back and horizontal buttons may stack vertically.
 
 ## What it does
 
@@ -125,6 +125,8 @@ rendering on a real Roku.
 To retake the README pictures, start the
 [shared screenshot library](https://github.com/arc-media-server/arc-media-server/blob/main/docs/SCREENSHOTS.md)
 from the server repository's `web/` directory with `node tools/screenshots.mjs --serve`.
+The README uses `AMS_TVDB_API_KEY= node tools/screenshots.mjs --serve` so that episode stills
+come from TMDB too.
 On a machine with Python, `pexpect` and FFmpeg, run `python3 scripts/screenshots.py` here.
 Enter the scratch address (`127.0.0.1:18299` by default) and approve its code using
 `node tools/screenshots.mjs --approve <code>` from the server's `web/` directory. Follow the
