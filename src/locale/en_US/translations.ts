@@ -221,6 +221,10 @@
   <translation>Continue Watching</translation>
 </message>
 <message>
+  <source>Could not send logs. Try again.</source>
+  <translation>Could not send logs. Try again.</translation>
+</message>
+<message>
   <source>Couldn't change what's watched.</source>
   <translation>Couldn't change what's watched.</translation>
 </message>
@@ -287,6 +291,14 @@
 <message>
   <source>Deleted scene</source>
   <translation>Deleted scene</translation>
+</message>
+<message>
+  <source>Detailed logging</source>
+  <translation>Detailed logging</translation>
+</message>
+<message>
+  <source>Detailed logging turns off after two hours. Sending shares recent app events with this server’s admin.</source>
+  <translation>Detailed logging turns off after two hours. Sending shares recent app events with this server’s admin.</translation>
 </message>
 <message>
   <source>Director</source>
@@ -403,6 +415,10 @@
 <message>
   <source>Local network</source>
   <translation>Local network</translation>
+</message>
+<message>
+  <source>Logs sent.</source>
+  <translation>Logs sent.</translation>
 </message>
 <message>
   <source>Longest first</source>
@@ -725,6 +741,10 @@
   <translation>Season %1</translation>
 </message>
 <message>
+  <source>Send logs</source>
+  <translation>Send logs</translation>
+</message>
+<message>
   <source>Server</source>
   <translation>Server</translation>
 </message>
@@ -877,6 +897,10 @@
   <translation>Theme Music</translation>
 </message>
 <message>
+  <source>There are no app logs to send.</source>
+  <translation>There are no app logs to send.</translation>
+</message>
+<message>
   <source>This Roku couldn't play this title.</source>
   <translation>This Roku couldn't play this title.</translation>
 </message>
@@ -963,6 +987,10 @@
 <message>
   <source>Up Next</source>
   <translation>Up Next</translation>
+</message>
+<message>
+  <source>Update your Arc server to send logs.</source>
+  <translation>Update your Arc server to send logs.</translation>
 </message>
 <message>
   <source>Use another server</source>

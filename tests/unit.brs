@@ -2,6 +2,7 @@
 ' scripts/test.mjs. Each check prints "ok" or "FAIL <what>"; the script fails on any FAIL.
 
 sub Main()
+    testDeviceLogs()
     m.failures = 0
     testLaunchProfile()
     testHttp()

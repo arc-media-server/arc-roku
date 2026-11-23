@@ -8,6 +8,16 @@
 sub init()
     m.global.addFields({ hideSpoilers: true, spoilerRevision: 0, server: "", token: "", serverName: "", profile: {}, caps: {}, unauthorized: false })
     m.global.observeField("unauthorized", "onUnauthorized")
+    m.global.addField("deviceLogEvent", "string", true)
+    m.global.observeField("deviceLogEvent", "onDeviceLogEvent")
+    m.deviceLogFile = "cachefs:/arc-device-logs.json"
+    m.logTimer = CreateObject("roSGNode", "Timer")
+    m.logTimer.duration = 5
+    m.logTimer.observeField("fire", "flushDeviceLogs")
+    raw = ReadAsciiFile(m.deviceLogFile)
+    m.deviceLogs = []
+    if raw <> "" then m.deviceLogs = projectDeviceLogs(ParseJson(raw))
+    recordDeviceLog("info", "app_started")
     ' Live updates
     m.global.addField("liveTopics", "assocarray", true)
     m.global.liveTopics = {}
@@ -70,7 +80,10 @@ sub onStatus(event as object)
         showSpinner(true)
         callApi("POST", "/auth/profile", { id: selected.id }, "onLaunchProfile")
     else
-        if s.friend <> true and selected.id = automaticId then print "Arc: signing in automatically as the saved profile"
+        if s.friend <> true and selected.id = automaticId
+            print "Arc: signing in automatically as the saved profile"
+            recordDeviceLog("info", "automatic_sign_in")
+        end if
         openLaunchHome(selected)
     end if
 end sub
@@ -79,6 +92,7 @@ sub onLaunchProfile(event as object)
     res = event.getData()
     if res.ok and res.data <> invalid
         print "Arc: signing in automatically as the saved profile"
+        recordDeviceLog("info", "automatic_sign_in")
         openLaunchHome(res.data)
     else if res.status = 0 or res.status >= 500
         showSpinner(false)
@@ -111,6 +125,7 @@ sub showLaunchPicker()
     showSpinner(false)
     m.global.profile = {}
     print "Arc: starting at Who's watching"
+    recordDeviceLog("info", "profile_picker")
     replaceAll("ProfilesScreen", {})
 end sub
 
@@ -135,6 +150,7 @@ sub setToken(token as string)
 end sub
 
 sub signOutLocally()
+    clearDeviceLogs()
     clearSetting("token")
     clearSetting("automaticProfile")
     showSpinner(false)
@@ -220,6 +236,7 @@ sub onAction(event as object)
         writeSetting("serverName", a.name)
         replaceAll("SignInScreen", {})
     else if go = "otherServer"
+        clearDeviceLogs()
         clearSetting("automaticProfile")
         clearSetting("token")
         setToken("")
@@ -257,6 +274,19 @@ sub onAction(event as object)
         push("SearchScreen", {})
     else if go = "settings"
         push("SettingsScreen", {})
+    else if go = "sendLogs"
+        sendDeviceLogs()
+    else if go = "detailedLogs"
+        sec = CreateObject("roDateTime").AsSeconds()
+        if Val(readSetting("detailedLogsUntil")) > sec
+            clearSetting("detailedLogsUntil")
+        else
+            until = sec + 7200
+            writeSetting("detailedLogsUntil", until.ToStr())
+            recordDeviceLog("info", "detailed_logging_enabled")
+        end if
+        topScreen = m.stack.Peek()
+        if topScreen <> invalid then topScreen.callFunc("diagnosticsChanged")
     else if go = "about"
         push("AboutScreen", {})
     else if go = "home"
@@ -441,4 +471,77 @@ sub onSpoilerPrefs(event as object)
     if res.tag = invalid or m.global.profile = invalid then return
     if res.tag.profile <> m.global.profile.id or res.tag.revision <> m.global.spoilerRevision then return
     if res.ok and res.data <> invalid then m.global.hideSpoilers = res.data.hide_spoilers = true
+end sub
+
+
+sub onDeviceLogEvent()
+    pair = m.global.deviceLogEvent.Split(" ")
+    if pair.Count() = 2 then recordDeviceLog(pair[0], pair[1])
+end sub
+
+sub recordDeviceLog(level as string, eventName as string)
+    stamp = CreateObject("roDateTime").AsSeconds()
+    until = Val(readSetting("detailedLogsUntil"))
+    if until > 0 and stamp >= until
+        clearSetting("detailedLogsUntil")
+        recordDeviceLog("info", "detailed_logging_expired")
+    end if
+    if level = "debug" and stamp >= until then return
+    entry = deviceLogEntry(level, eventName, stamp * 1000&)
+    if entry = invalid then return
+    if m.deviceLogs.Count() >= 1200 then m.deviceLogs.Shift()
+    m.deviceLogs.Push(entry)
+    ' Coalesce write-heavy failure bursts. The in-memory buffer is always current.
+    if m.logWritePending <> true
+        m.logWritePending = true
+        m.logTimer.control = "start"
+    end if
+end sub
+
+sub flushDeviceLogs()
+    m.logWritePending = false
+    if m.deviceLogs.Count() > 0 then WriteAsciiFile(m.deviceLogFile, FormatJson(m.deviceLogs))
+end sub
+
+sub clearDeviceLogs()
+    m.deviceLogs = []
+    m.logTimer.control = "stop"
+    m.logWritePending = false
+    DeleteFile(m.deviceLogFile)
+    clearSetting("detailedLogsUntil")
+end sub
+
+sub sendDeviceLogs()
+    if m.sendingLogs = true then return
+    if m.deviceLogs.Count() = 0
+        showDeviceLogResult(tr("There are no app logs to send."))
+        return
+    end if
+    m.sendingLogs = true
+    callApi("POST", "/client-logs", { platform: "roku", entries: projectDeviceLogs(m.deviceLogs) }, "onLogsSent")
+end sub
+
+sub onLogsSent(event as object)
+    m.sendingLogs = false
+    result = event.getData()
+    if result.ok
+        showDeviceLogResult(tr("Logs sent."))
+    else if result.status = 404
+        showDeviceLogResult(tr("Update your Arc server to send logs."))
+    else
+        showDeviceLogResult(tr("Could not send logs. Try again."))
+    end if
+end sub
+
+sub showDeviceLogResult(message as string)
+    dialog = CreateObject("roSGNode", "StandardMessageDialog")
+    dialog.title = tr("Send logs")
+    dialog.message = [message]
+    dialog.buttons = [tr("OK")]
+    m.top.dialog = dialog
+    dialog.observeField("buttonSelected", "closeDeviceLogResult")
+end sub
+
+sub closeDeviceLogResult()
+    m.top.dialog = invalid
 end sub

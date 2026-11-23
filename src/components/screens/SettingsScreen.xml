@@ -4,6 +4,7 @@
      app follows them), this Roku's profile, server and sign-in, then About. -->
 <component name="SettingsScreen" extends="Group">
     <interface>
+        <function name="diagnosticsChanged" />
         <field id="params" type="assocarray" />
         <field id="action" type="assocarray" alwaysNotify="true" />
         <function name="takeFocus" />

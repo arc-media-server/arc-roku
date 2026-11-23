@@ -421,6 +421,8 @@ sub onVideoState()
     end if
     if m.prerollWaiting then return
     if s = "playing"
+        if m.loggedPlaying <> true and m.global.hasField("deviceLogEvent") then m.global.deviceLogEvent = "debug playback_started"
+        m.loggedPlaying = true
         m.spinner.visible = false
         m.spinner.control = "stop"
         m.errorLabel.visible = false
@@ -438,6 +440,7 @@ sub onVideoState()
             m.top.action = { go: "back" }
         end if
     else if s = "error"
+        if m.global.hasField("deviceLogEvent") then m.global.deviceLogEvent = "error playback_failed"
         print "Arc: player error "; m.video.errorCode; " "; m.video.errorMsg; " ("; m.attempt; ")"
         if m.isExtra = true
             fail(tr("This Roku couldn't play this title.") + " " + m.video.errorMsg)
