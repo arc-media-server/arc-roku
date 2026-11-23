@@ -2,6 +2,9 @@
 ' nears the end; everything else loads at once. OK opens a title (an episode opens its show at that
 ' episode), a collection, playlist or folder opens another grid; Play plays a movie or episode.
 
+' A focused poster grows 6% around its centre, extending about 10 px above its slot.
+const GRID_CARD_TOP_INSET = 12
+
 sub init()
     m.grid = m.top.findNode("grid")
     m.titleLabel = m.top.findNode("title")
@@ -74,6 +77,8 @@ sub reload()
         m.grid.itemSpacing = [0, 40]
         m.grid.numRows = 3
     end if
+    size = m.grid.itemSize
+    m.grid.itemSize = [size[0], size[1] + GRID_CARD_TOP_INSET]
     m.content = CreateObject("roSGNode", "ContentNode")
     m.loaded = 0
     ' Where the loaded titles start in the whole list: 0, or a letter's place after a jump.
@@ -114,6 +119,7 @@ sub onPage(event as object)
     for each card in page.cards
         node = m.content.createChild("ContentNode")
         node.addFields(cardFields())
+        node.topInset = GRID_CARD_TOP_INSET
         fillCard(node, card, m.style)
     end for
     m.loaded = m.loaded + page.cards.Count()
