@@ -13,6 +13,7 @@ sub init()
     m.heroMeta = m.top.findNode("heroMeta")
     m.heroOverview = m.top.findNode("heroOverview")
     shareSignIn([m.backdrop, m.logo])
+    m.logo.observeField("loadStatus", "updateTitleVisibility")
     m.empty = m.top.findNode("empty")
     m.cardPanel = m.top.findNode("cardPanel")
     m.cardPanel.observeField("picked", "onCardPicked")
@@ -216,7 +217,7 @@ sub showHero()
     end if
     m.backdrop.uri = art
     m.logo.uri = c.logo
-    m.heroTitle.visible = c.logo = ""
+    updateTitleVisibility()
     m.heroTitle.text = c.title
     meta = c.meta
     m.heroMeta.text = meta
@@ -286,4 +287,9 @@ end sub
 ' A card's watched or Watchlist change is saved: Home loads again (rows may change).
 sub onCardChanged(event as object)
     load()
+end sub
+
+' Keep the title readable when the server's logo image is slow or unavailable.
+sub updateTitleVisibility()
+    m.heroTitle.visible = m.logo.uri = "" or m.logo.loadStatus <> "ready"
 end sub

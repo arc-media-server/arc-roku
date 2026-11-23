@@ -18,6 +18,7 @@ sub init()
     m.tabLabels = ""
     m.error = m.top.findNode("error")
     shareSignIn([m.backdrop, m.logo])
+    m.logo.observeField("loadStatus", "updateTitleVisibility")
     m.buttons.observeField("picked", "onButton")
     m.page = m.top.findNode("page")
     m.slide = m.top.findNode("slide")
@@ -765,8 +766,13 @@ sub renderSummary()
     logo = img.logo
     if ep then logo = img.series_logo
     m.logo.uri = imageUrl(logo)
-    m.titleLabel.visible = logo = invalid
+    updateTitleVisibility()
     if ep and it.series_title <> invalid then m.titleLabel.text = it.series_title else m.titleLabel.text = it.title
     showHeroLines(it)
     m.overview.text = valueOr(it.overview, "")
+end sub
+
+' Keep the title readable when the server's logo image is slow or unavailable.
+sub updateTitleVisibility()
+    m.titleLabel.visible = m.logo.uri = "" or m.logo.loadStatus <> "ready"
 end sub
