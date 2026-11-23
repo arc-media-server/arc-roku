@@ -2,6 +2,9 @@
 
 The Roku client for Arc Media Server (BrightScript/SceneGraph). Read `README.md`.
 
+Arc for Roku is a public project. Treat commits, pull requests, issues, Actions output
+and release files as public. Use scratch examples for addresses and settings.
+
 **Shared rules:** arc-media-server's `docs/AGENT-RULES.md` applies here (workflow, decisions, Arc's
 design, API, logging). Read it at the start of a session: `../arc-media-server/docs/AGENT-RULES.md`
 when the server is checked out beside this one, otherwise from GitHub. The essentials:
