@@ -43,7 +43,7 @@ function cardRowHeight(style as string) as integer
 end function
 
 function cardFields() as object
-    return { available: true, spoilerEligible: false, safeArt: "", safeBackdrop: "", itemId: "", kind: "", parentId: "", line2: "", progress: 0.0, style: "poster", backdrop: "", logo: "", meta: "", overview: "", resumeMs: 0, played: false, path: "", watchlisted: false, leftMin: 0, inContinue: false }
+    return { available: true, spoilerEligible: false, safeArt: "", safeBackdrop: "", itemId: "", kind: "", parentId: "", line2: "", progress: 0.0, style: "poster", backdrop: "", logo: "", meta: "", overview: "", showOverview: false, topInset: 0, resumeMs: 0, played: false, path: "", watchlisted: false, leftMin: 0, inContinue: false }
 end function
 
 ' fillCard sets a ContentNode (with cardFields) for an item shown as "poster", "thumb" or

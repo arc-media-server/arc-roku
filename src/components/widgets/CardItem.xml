@@ -49,6 +49,7 @@
             <Poster id="edge" uri="pkg:/images/focus-ring.9.png" opacity="0" />
             <Label id="line1" font="font:SmallBoldSystemFont" color="0xF0F4F4FF" horizAlign="center" />
             <Label id="line2" font="font:SmallestSystemFont" color="0x9AA7A7FF" horizAlign="center" />
+            <Label id="overview" font="font:SmallestSystemFont" color="0xC6D0D0FF" wrap="true" maxLines="3" visible="false" />
         </Group>
     </children>
 </component>

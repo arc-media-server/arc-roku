@@ -1,3 +1,7 @@
+' At rest a movie fills the upper screen with art and keeps the first related row below it.
+const MOVIE_REST_Y = 350
+const EPISODE_OVERVIEW_SPACE = 112
+
 sub init()
     m.global.observeField("hideSpoilers", "renderSummary")
     initThemeMusic()
@@ -67,7 +71,9 @@ sub focusButtons()
     m.tabsFocused = false
     m.buttons.opacity = 1
     m.buttons.setFocus(true)
-    slideTo(0)
+    y = 0
+    if m.item <> invalid and m.item.kind = "movie" then y = MOVIE_REST_Y
+    slideTo(y)
 end sub
 
 ' The buttons fade while the rows have the focus: they'd show their focused one otherwise.
@@ -173,6 +179,7 @@ sub onItem(event as object)
         return
     end if
     if res.tag <> m.top.params.id then return
+    firstLoad = m.item = invalid
     m.item = res.data
     loadThemeMusic()
     renderSummary()
@@ -196,6 +203,7 @@ sub onItem(event as object)
     end if
     showButtons()
     buildRows()
+    if firstLoad and it.kind = "movie" and m.rowsFocused <> true then m.page.translation = [0, MOVIE_REST_Y]
 end sub
 
 ' The rating box and genres; the year, length and quality badges; Starring and Director.
@@ -212,7 +220,7 @@ sub showHeroLines(it as object)
     end for
     stars = joinNames(creditNames(it, "actor", 3))
     m.starring.text = ""
-    if stars <> "" then m.starring.text = tr("Starring %1").Replace("%1", stars)
+    if it.kind <> "movie" and stars <> "" then m.starring.text = tr("Starring %1").Replace("%1", stars)
     directors = joinNames(creditNames(it, "director", 2))
     m.director.text = ""
     if directors <> "" then m.director.text = tr("Director %1").Replace("%1", directors)
@@ -524,10 +532,17 @@ sub buildRows()
                 node.line2 = seasonCardLine(e, spec.unplaced = true)
                 node.addField("subtitleLine", "string", false)
                 node.subtitleLine = episodeLine(e)
+                node.showOverview = true
             end if
         end for
-        sizes.Push(cardSize(spec.style))
-        heights.Push(cardRowHeight(spec.style))
+        size = cardSize(spec.style)
+        height = cardRowHeight(spec.style)
+        if spec.kind = "season"
+            size[1] = size[1] + EPISODE_OVERVIEW_SPACE
+            height = height + EPISODE_OVERVIEW_SPACE
+        end if
+        sizes.Push(size)
+        heights.Push(height)
     end for
     m.episodes.rowItemSize = sizes
     m.episodes.rowHeights = heights

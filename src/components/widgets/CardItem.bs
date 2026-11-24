@@ -13,6 +13,7 @@ sub init()
     m.tick = m.top.findNode("tick")
     m.line1 = m.top.findNode("line1")
     m.line2 = m.top.findNode("line2")
+    m.overview = m.top.findNode("overview")
     m.shade = m.top.findNode("shade")
     m.logo = m.top.findNode("logo")
     m.logoTitle = m.top.findNode("logoTitle")
@@ -27,9 +28,15 @@ end sub
 
 sub onContent()
     c = m.top.itemContent
-    if c = invalid then return
+    if c = invalid
+        m.overview.visible = false
+        return
+    end if
     art = c.HDPosterUrl
-    if c.spoilerEligible = true and hideSpoilers() then art = c.safeArt
+    spoilersHidden = c.spoilerEligible = true and hideSpoilers()
+    if spoilersHidden then art = c.safeArt
+    m.overview.visible = c.showOverview = true and not spoilersHidden and c.overview <> ""
+    if m.overview.visible then m.overview.text = c.overview else m.overview.text = ""
     if c.style = "named" then m.face.uri = art else m.picture.uri = art
     m.picture.opacity = 1
     m.blank.opacity = 1
@@ -57,7 +64,9 @@ sub layout()
     w = m.top.width - 2 * PAD
     h = m.top.height
     if w <= 0 or h <= 0 then return
-    m.card.translation = [PAD, 0]
+    topInset = 0
+    if c <> invalid and c.topInset <> invalid then topInset = c.topInset
+    m.card.translation = [PAD, topInset]
     ' "named" (people): a poster with the name and role under it.
     named = c <> invalid and c.style = "named"
     thumb = c <> invalid and (c.style = "thumb" or named)
@@ -128,6 +137,8 @@ sub layout()
     m.line1.width = w
     m.line2.translation = [0, ph + 50]
     m.line2.width = w
+    m.overview.translation = [0, ph + 86]
+    m.overview.width = w
     progress = 0.0
     if c <> invalid then progress = c.progress
     m.track.visible = progress > 0
