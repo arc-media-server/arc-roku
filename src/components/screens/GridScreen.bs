@@ -81,6 +81,7 @@ sub reload()
     m.grid.itemSize = [size[0], size[1] + GRID_CARD_TOP_INSET]
     m.content = CreateObject("roSGNode", "ContentNode")
     m.loaded = 0
+    m.letters = []
     ' Where the loaded titles start in the whole list: 0, or a letter's place after a jump.
     m.base = 0
     m.total = -1
@@ -134,7 +135,13 @@ sub onPage(event as object)
     if m.source.kind = "playlist" and res.data <> invalid and res.data.playlist <> invalid then m.titleLabel.text = res.data.playlist.title
     if first
         m.grid.content = m.content
-        if m.loaded = 0 then showEmpty(tr("Nothing here."))
+        if m.loaded = 0
+            if m.source.kind = "library" and libraryFilterParams(m.query).Count() > 0
+                showEmpty(tr("No titles match these filters."))
+            else
+                showEmpty(tr("Nothing here."))
+            end if
+        end if
         if m.keepFocus <> invalid and m.keepFocus > 0 and m.keepFocus < m.loaded then m.grid.jumpToItem = m.keepFocus
         m.keepFocus = invalid
     end if
@@ -143,7 +150,10 @@ end sub
 
 sub onFacets(event as object)
     res = event.getData()
-    if res.ok then m.facets = res.data
+    if res.ok
+        m.facets = res.data
+        if m.options.visible and m.menu = "filters" then openMenu("filters")
+    end if
 end sub
 
 sub showSummary()
@@ -222,7 +232,7 @@ end function
 
 ' --- a library's view, sort and filters (* button) ---
 
-sub openMenu(section as string)
+sub openMenu(section as string, focus = "" as string)
     m.menu = section
     entries = []
     values = []
@@ -260,16 +270,21 @@ sub openMenu(section as string)
                 entries.Push({ label: tr("Order"), detail: detail })
                 values.Push("order")
             end if
-            detail = tr("All")
-            if q.unwatched then detail = tr("Unwatched")
-            entries.Push({ label: tr("Watched"), detail: detail })
-            values.Push("unwatched")
-            for each f in facetSections()
-                detail = tr("Any")
-                if q[f.key] <> "" then detail = f.name(q[f.key])
-                entries.Push({ label: f.label, detail: detail })
-                values.Push(f.key)
-            end for
+            detail = ""
+            count = libraryFilterParams(q).Count()
+            if count > 0 then detail = "(" + count.ToStr() + ")"
+            entries.Push({ label: tr("Filters"), detail: detail })
+            values.Push("filters")
+        end if
+    else if section = "filters"
+        m.options.title = tr("Filters")
+        for each f in libraryFilterSections(q, m.facets)
+            entries.Push({ label: f.label, detail: libraryFilterName(f.key, libraryFilterValue(q, f.key)) })
+            values.Push(f.key)
+        end for
+        if libraryFilterParams(q).Count() > 0
+            entries.Push({ label: tr("Clear Filters"), detail: "" })
+            values.Push("clear_filters")
         end if
     else if section = "view"
         m.options.title = tr("Show")
@@ -305,54 +320,36 @@ sub openMenu(section as string)
         values = [false, true]
         selected = 0
         if q.reverse then selected = 1
-    else if section = "unwatched"
-        m.options.title = tr("Watched")
-        entries = [{ label: tr("All"), detail: "" }, { label: tr("Unwatched"), detail: "" }]
-        values = [false, true]
-        selected = 0
-        if q.unwatched then selected = 1
     else
-        for each f in facetSections()
+        for each f in libraryFilterSections(q, m.facets)
             if f.key = section
                 m.options.title = f.label
                 entries.Push({ label: tr("Any"), detail: "" })
                 values.Push("")
                 selected = 0
-                i = 1
+                chosen = libraryFilterValue(q, section)
                 for each v in f.values
-                    if v.value = q[section] then selected = i
-                    entries.Push({ label: f.name(v.value), detail: countLine(v.count) })
+                    if v.value = chosen then selected = values.Count()
+                    entries.Push({ label: libraryFilterName(f.key, v.value), detail: countLine(v.count) })
                     values.Push(v.value)
-                    i = i + 1
                 end for
+                exit for
             end if
+        end for
+    end if
+    focusIndex = 0
+    if focus <> ""
+        for i = 0 to values.Count() - 1
+            if valueString(values[i]) = focus then focusIndex = i
         end for
     end if
     m.menuValues = values
     m.options.entries = entries
     m.options.selected = selected
+    m.options.focusIndex = focusIndex
     m.options.visible = true
     m.options.show = true
 end sub
-
-' facetSections: the filters this library has values for (from /libraries/{id}/facets).
-function facetSections() as object
-    out = []
-    f = m.facets
-    if f = invalid then return out
-    if f.genres <> invalid and f.genres.Count() > 0 then out.Push({ key: "genre", label: tr("Genre"), values: f.genres, name: plainName })
-    if f.decades <> invalid and f.decades.Count() > 0 then out.Push({ key: "decade", label: tr("Decade"), values: f.decades, name: decadeName })
-    if f.resolutions <> invalid and f.resolutions.Count() > 0 then out.Push({ key: "resolution", label: tr("Resolution"), values: f.resolutions, name: resolutionName })
-    return out
-end function
-
-function plainName(v as dynamic) as string
-    return valueString(v)
-end function
-
-function decadeName(v as dynamic) as string
-    return tr("%1s").Replace("%1", valueString(v))
-end function
 
 function viewName(v as string) as string
     if v = "collections" then return tr("Collections")
@@ -373,8 +370,14 @@ sub onOptionPicked()
         if go <> invalid then m.top.action = go
         return
     end if
-    if section = ""
+    if section = "" or (section = "filters" and v <> "clear_filters")
         openMenu(v)
+        return
+    end if
+    if section = "filters"
+        m.query = clearLibraryFilters(m.query)
+        reload()
+        openMenu("filters")
         return
     end if
     if section = "view"
@@ -390,13 +393,11 @@ sub onOptionPicked()
         m.query.sort = v
     else if section = "order"
         m.query.reverse = v
-    else if section = "unwatched"
-        m.query.unwatched = v
-        m.query.letter = ""
     else
-        m.query[section] = valueString(v)
-        ' Another filter changes which letters have titles: the list starts again from the top.
-        m.query.letter = ""
+        chooseLibraryFilter(m.query, section, v)
+        reload()
+        openMenu("filters", section)
+        return
     end if
     reload()
     if section = "view" or section = "jump"
@@ -417,8 +418,14 @@ sub onCardChanged(event as object)
 end sub
 
 sub onOptionsClosed()
-    if m.menu <> ""
-        openMenu("")
+    if m.menu = "filters"
+        openMenu("", "filters")
+    else if m.menu <> ""
+        if m.menu = "view" or m.menu = "sort" or m.menu = "order" or m.menu = "jump"
+            openMenu("", m.menu)
+        else
+            openMenu("filters", m.menu)
+        end if
     else
         m.menu = ""
         m.options.visible = false

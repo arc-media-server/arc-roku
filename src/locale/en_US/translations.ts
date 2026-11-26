@@ -93,10 +93,6 @@
   <translation>Address</translation>
 </message>
 <message>
-  <source>All</source>
-  <translation>All</translation>
-</message>
-<message>
   <source>All titles</source>
   <translation>All titles</translation>
 </message>
@@ -139,6 +135,14 @@
 <message>
   <source>Audio</source>
   <translation>Audio</translation>
+</message>
+<message>
+  <source>Audio Channels</source>
+  <translation>Audio Channels</translation>
+</message>
+<message>
+  <source>Audio Format</source>
+  <translation>Audio Format</translation>
 </message>
 <message>
   <source>Auto-Play Next Episode</source>
@@ -195,6 +199,10 @@
 <message>
   <source>Christmas Films</source>
   <translation>Christmas Films</translation>
+</message>
+<message>
+  <source>Clear Filters</source>
+  <translation>Clear Filters</translation>
 </message>
 <message>
   <source>Clear Rating</source>
@@ -313,6 +321,10 @@
   <translation>Featurette</translation>
 </message>
 <message>
+  <source>Filters</source>
+  <translation>Filters</translation>
+</message>
+<message>
   <source>Find your Arc server</source>
   <translation>Find your Arc server</translation>
 </message>
@@ -343,6 +355,10 @@
 <message>
   <source>Go to show</source>
   <translation>Go to show</translation>
+</message>
+<message>
+  <source>HDR</source>
+  <translation>HDR</translation>
 </message>
 <message>
   <source>Hide Missing Episodes</source>
@@ -481,6 +497,10 @@
   <translation>No Arc servers answered. Check Arc is running, or type its address.</translation>
 </message>
 <message>
+  <source>No titles match these filters.</source>
+  <translation>No titles match these filters.</translation>
+</message>
+<message>
   <source>None</source>
   <translation>None</translation>
 </message>
@@ -493,8 +513,16 @@
   <translation>Not in This Order</translation>
 </message>
 <message>
+  <source>Not known yet</source>
+  <translation>Not known yet</translation>
+</message>
+<message>
   <source>Not on disk</source>
   <translation>Not on disk</translation>
+</message>
+<message>
+  <source>Not Started</source>
+  <translation>Not Started</translation>
 </message>
 <message>
   <source>Nothing here yet. Add a library in Arc's settings on the web.</source>
@@ -687,10 +715,6 @@
 <message>
   <source>Remove from Watchlist</source>
   <translation>Remove from Watchlist</translation>
-</message>
-<message>
-  <source>Resolution</source>
-  <translation>Resolution</translation>
 </message>
 <message>
   <source>Resume</source>
@@ -977,8 +1001,16 @@
   <translation>Version %1</translation>
 </message>
 <message>
+  <source>Video Format</source>
+  <translation>Video Format</translation>
+</message>
+<message>
   <source>Waiting for the code to be approved…</source>
   <translation>Waiting for the code to be approved…</translation>
+</message>
+<message>
+  <source>Watch Status</source>
+  <translation>Watch Status</translation>
 </message>
 <message>
   <source>Watched</source>

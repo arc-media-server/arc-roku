@@ -18,6 +18,8 @@
     <script type="text/brightscript" uri="pkg:/source/shared/home.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/cards.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/browse.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/tracks.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/libraryfilters.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/cardmenu.bs" />
     <children>
         <Rectangle width="1920" height="1080" color="0x0B1214FF" />
