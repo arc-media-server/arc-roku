@@ -57,7 +57,8 @@ end sub
 sub askPin(p as object)
     d = CreateObject("roSGNode", "StandardPinPadDialog")
     d.title = tr("%1's PIN").Replace("%1", p.name)
-    d.pinPad.pinLength = 4
+    d.textEditBox.maxTextLength = 4
+    d.textEditBox.secureMode = true
     d.buttons = [tr("OK"), tr("Cancel")]
     d.observeField("buttonSelected", "onPinButton")
     m.pinFor = p
