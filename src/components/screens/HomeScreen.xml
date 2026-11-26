@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- Home, as the Apple TV app's and Arc's other TV apps': the focused title's artwork fills the
-     screen with its logo, details and overview, and the profile's rows sit below. With params
+<!-- Home shows a hero for the focused title in Continue Watching. Other shelves start near
+     the top. With params
      { library: { id, name, kind } } it's that library's Recommended page instead (inside
      LibraryScreen, under its pills): recommended rows without the Home hero. -->
 <component name="HomeScreen" extends="Group">
@@ -23,7 +23,7 @@
     <script type="text/brightscript" uri="pkg:/source/shared/places.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/recommended.bs" />
     <children>
-        <Group id="hero">
+        <Group id="hero" visible="false">
             <Poster id="backdrop" width="1920" height="1080" loadDisplayMode="scaleToZoom" loadWidth="1920" loadHeight="1080" />
             <Poster uri="pkg:/images/shade.png" width="1920" height="1080" />
             <Poster id="logo" translation="[170, 110]" width="640" height="200" loadDisplayMode="scaleToFit" />
@@ -31,11 +31,11 @@
             <Label id="heroMeta" translation="[170, 340]" width="1100" font="font:SmallSystemFont" color="0xC6D0D0FF" />
             <Label id="heroOverview" translation="[170, 390]" width="900" height="130" wrap="true" maxLines="3" font="font:SmallSystemFont" color="0xC6D0D0FF" />
         </Group>
-        <RowList id="rows" translation="[156, 560]" itemComponentName="CardItem" numRows="2" itemSize="[1750, 400]"
+        <RowList id="rows" translation="[156, 64]" itemComponentName="CardItem" numRows="2" itemSize="[1750, 400]"
             rowItemSpacing="[[0, 0]]" itemSpacing="[0, 48]" showRowLabel="[true]" rowLabelOffset="[[14, 16]]"
             rowLabelColor="0xF0F4F4FF" rowLabelFont="font:MediumBoldSystemFont" drawFocusFeedback="false"
             rowFocusAnimationStyle="floatingFocus" vertFocusAnimationStyle="fixedFocus" />
-        <Label id="empty" translation="[170, 620]" width="1400" wrap="true" font="font:MediumSystemFont" color="0x9AA7A7FF" visible="false" /> 
+        <Label id="empty" translation="[170, 170]" width="1400" wrap="true" font="font:MediumSystemFont" color="0x9AA7A7FF" visible="false" />
         <OptionsPanel id="cardPanel" visible="false" />
         <Timer id="heroDelay" repeat="false" duration="0.3" />
     </children>

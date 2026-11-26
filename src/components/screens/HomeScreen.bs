@@ -37,9 +37,7 @@ sub onParams()
     p = m.top.params
     if p <> invalid then m.library = p.library
     if m.library <> invalid
-        m.hero.visible = false
         m.rows.translation = [156, 152]
-        m.empty.translation = [170, 170]
     end if
     load()
 end sub
@@ -152,6 +150,7 @@ sub placeRows()
         if cards.Count() > 0
             row = m.newContent.createChild("ContentNode")
             row.title = spec.title
+            row.addFields({ showsHero: m.library = invalid and spec.id = "continue" })
             for each card in cards
                 node = row.createChild("ContentNode")
                 node.addFields(cardFields())
@@ -174,6 +173,7 @@ sub swapIn()
     m.rows.content = m.newContent
     m.content = m.newContent
     if m.newContent.getChildCount() = 0
+        onFocusMoved()
         if m.placed = m.specs.Count() then showEmpty(tr("Nothing to show yet. Titles appear here once Arc has scanned your libraries."))
         return
     end if
@@ -193,24 +193,32 @@ sub showEmpty(text as string)
     m.empty.visible = true
 end sub
 
-function focusedCard() as dynamic
+function focusedRow() as dynamic
     f = m.rows.rowItemFocused
     if f = invalid or f.Count() < 2 or m.content = invalid then return invalid
-    row = m.content.getChild(f[0])
-    if row = invalid then return invalid
-    return row.getChild(f[1])
+    return m.content.getChild(f[0])
 end function
 
-' The hero follows focus after a moment's rest, so scrolling along a row stays smooth.
+function focusedCard() as dynamic
+    row = focusedRow()
+    if row = invalid then return invalid
+    return row.getChild(m.rows.rowItemFocused[1])
+end function
+
+' The Home hero belongs to Continue Watching. Debounce changes within the shelf.
 sub onFocusMoved()
     if m.library <> invalid then return
-    y = 560
-    c = focusedCard()
-    ' Leave the full card and its caption on screen, using the profile's card style.
-    if c <> invalid and c.inContinue then y = 1080 - cardRowHeight(c.style)
+    row = focusedRow()
+    card = focusedCard()
+    wasVisible = m.hero.visible
+    m.hero.visible = card <> invalid and row.showsHero = true
+    y = 64
+    if m.hero.visible then y = 1080 - cardRowHeight(card.style)
     if m.rows.translation[1] <> y then m.rows.translation = [156, y]
     m.heroDelay.control = "stop"
-    m.heroDelay.control = "start"
+    if m.hero.visible
+        if wasVisible then m.heroDelay.control = "start" else showHero()
+    end if
 end sub
 
 sub showHero()

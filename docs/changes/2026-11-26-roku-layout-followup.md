@@ -7,6 +7,8 @@
 - Draw the cast focus ring inside the portrait to keep the full circle inside the card slot.
 - Preserve the source aspect ratio in the 4:3 Backdrops style, with a centred crop.
 - Start Recommended with its first shelf directly below the library tabs, as on Android TV.
+- On Home, show the hero while browsing Continue Watching. Other shelves, including a
+  separate Up Next, move up to use that space.
 
 ## Decisions
 
