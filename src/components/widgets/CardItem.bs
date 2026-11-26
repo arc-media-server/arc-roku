@@ -86,8 +86,7 @@ sub layout()
             n.width = w
             n.height = w
         end for
-        m.face.loadWidth = w
-        m.face.loadHeight = w
+        ' Let scaleToZoom crop the original portrait into the circle.
         ' Draw the ring inside the portrait so the focused card fits within its row.
         m.ring.width = w
         m.ring.height = w

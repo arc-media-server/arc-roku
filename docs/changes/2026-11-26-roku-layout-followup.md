@@ -2,9 +2,11 @@
 
 - Centre the Settings avatar and its initial over the profile name and server.
 - Keep the sidebar’s Arc mark anchored when the rail expands and reveal the lettering beside it.
-- Lower the series overview so the season bar peeks in at the bottom. Down reveals
-  the episode row. Up returns to the overview.
-- Draw the cast focus ring inside the portrait to keep the full circle inside the card slot.
+- Lower the series overview so the season bar is fully visible at the bottom. Down
+  frames the season bar and episodes before revealing cast. Returning Up restores
+  the same overview position.
+- Centre-crop cast portraits without stretching them. Keep the focus ring inside
+  the portrait and bring names into view when the cast shelf takes focus.
 - Preserve the source aspect ratio in the 4:3 Backdrops style, with a centred crop.
 - Start Recommended with its first shelf directly below the library tabs, as on Android TV.
 - On Home, show the hero while browsing Continue Watching. Other shelves, including a
