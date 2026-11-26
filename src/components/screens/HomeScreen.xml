@@ -2,8 +2,7 @@
 <!-- Home, as the Apple TV app's and Arc's other TV apps': the focused title's artwork fills the
      screen with its logo, details and overview, and the profile's rows sit below. With params
      { library: { id, name, kind } } it's that library's Recommended page instead (inside
-     LibraryScreen, under its pills): the same hero, without the overview, over Arc's
-     recommended rows. -->
+     LibraryScreen, under its pills): a hero without the overview while the first recommended row has focus. -->
 <component name="HomeScreen" extends="Group">
     <interface>
         <field id="params" type="assocarray" onChange="onParams" alwaysNotify="true" />
@@ -24,12 +23,14 @@
     <script type="text/brightscript" uri="pkg:/source/shared/places.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/recommended.bs" />
     <children>
-        <Poster id="backdrop" width="1920" height="1080" loadDisplayMode="scaleToZoom" loadWidth="1920" loadHeight="1080" />
-        <Poster uri="pkg:/images/shade.png" width="1920" height="1080" />
-        <Poster id="logo" translation="[170, 110]" width="640" height="200" loadDisplayMode="scaleToFit" />
-        <Label id="heroTitle" translation="[170, 180]" width="1100" font="font:LargeBoldSystemFont" color="0xF0F4F4FF" />
-        <Label id="heroMeta" translation="[170, 340]" width="1100" font="font:SmallSystemFont" color="0xC6D0D0FF" />
-        <Label id="heroOverview" translation="[170, 390]" width="900" height="130" wrap="true" maxLines="3" font="font:SmallSystemFont" color="0xC6D0D0FF" />
+        <Group id="hero">
+            <Poster id="backdrop" width="1920" height="1080" loadDisplayMode="scaleToZoom" loadWidth="1920" loadHeight="1080" />
+            <Poster uri="pkg:/images/shade.png" width="1920" height="1080" />
+            <Poster id="logo" translation="[170, 110]" width="640" height="200" loadDisplayMode="scaleToFit" />
+            <Label id="heroTitle" translation="[170, 180]" width="1100" font="font:LargeBoldSystemFont" color="0xF0F4F4FF" />
+            <Label id="heroMeta" translation="[170, 340]" width="1100" font="font:SmallSystemFont" color="0xC6D0D0FF" />
+            <Label id="heroOverview" translation="[170, 390]" width="900" height="130" wrap="true" maxLines="3" font="font:SmallSystemFont" color="0xC6D0D0FF" />
+        </Group>
         <RowList id="rows" translation="[156, 560]" itemComponentName="CardItem" numRows="2" itemSize="[1750, 400]"
             rowItemSpacing="[[0, 0]]" itemSpacing="[0, 48]" showRowLabel="[true]" rowLabelOffset="[[14, 16]]"
             rowLabelColor="0xF0F4F4FF" rowLabelFont="font:MediumBoldSystemFont" drawFocusFeedback="false"

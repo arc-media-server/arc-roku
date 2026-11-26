@@ -1,5 +1,7 @@
 ' At rest a movie fills the upper screen with art and keeps the first related row below it.
 const MOVIE_REST_Y = 350
+' At rest the season pills peek in at the bottom, with the episodes below the viewport.
+const SERIES_REST_Y = 255
 const EPISODE_OVERVIEW_SPACE = 112
 
 sub init()
@@ -71,10 +73,15 @@ sub focusButtons()
     m.tabsFocused = false
     m.buttons.opacity = 1
     m.buttons.setFocus(true)
-    y = 0
-    if m.item <> invalid and m.item.kind = "movie" then y = MOVIE_REST_Y
-    slideTo(y)
+    slideTo(overviewRestY())
 end sub
+
+function overviewRestY() as integer
+    if m.item = invalid then return 0
+    if m.item.kind = "movie" then return MOVIE_REST_Y
+    if m.item.kind = "series" then return SERIES_REST_Y
+    return 0
+end function
 
 ' The buttons fade while the rows have the focus: they'd show their focused one otherwise.
 sub focusRows()
@@ -203,7 +210,7 @@ sub onItem(event as object)
     end if
     showButtons()
     buildRows()
-    if firstLoad and it.kind = "movie" and m.rowsFocused <> true then m.page.translation = [0, MOVIE_REST_Y]
+    if firstLoad and m.rowsFocused <> true and m.tabsFocused <> true then m.page.translation = [0, overviewRestY()]
 end sub
 
 ' The rating box and genres; the year, length and quality badges; Starring and Director.
