@@ -1,46 +1,141 @@
 sub init()
-    m.top.findNode("title").text = tr("Sign in to %1").Replace("%1", serverLabel())
-    m.top.findNode("steps").text = tr("On your phone or computer, open Arc, choose Link a Device from your profile menu, and type this code.")
-    m.top.findNode("link").text = m.global.server.Replace("http://", "").Replace("https://", "") + "/link"
-    m.code = m.top.findNode("code")
-    ' A system font at a custom size: Roku's "font:SystemFontFile" URI isn't drawn by the simulator.
-    m.code.font.size = 140
+    title = m.top.findNode("title")
+    title.text = tr("Sign in to Arc")
+    title.font.size = 64
+    address = m.global.server
+    link = address.Replace("http://", "").Replace("https://", "") + "/link"
+    m.top.findNode("server").text = tr("Server: %1").Replace("%1", address)
+    buildSteps([
+        tr("On your phone or computer, open Arc and choose Link a Device in the profile menu."),
+        tr("Or go to %1").Replace("%1", link),
+        tr("Enter this code:"),
+    ])
+    buildCodeTiles()
     m.note = m.top.findNode("note")
-    m.buttons = m.top.findNode("buttons")
-    m.buttons.buttons = [tr("New code"), tr("Use another server")]
-    m.buttons.observeField("buttonSelected", "onButton")
+    m.spinner = m.top.findNode("linkSpinner")
+    m.spin = m.top.findNode("linkSpin")
+    m.buttonBacks = [m.top.findNode("newCodeBack"), m.top.findNode("otherBack")]
+    m.buttonLabels = [m.top.findNode("newCodeLabel"), m.top.findNode("otherLabel")]
+    for each label in m.buttonLabels
+        label.font.size = 30
+    end for
+    m.buttonLabels[0].text = tr("Get a New Code")
+    m.buttonLabels[1].text = tr("Use Another Server")
+    m.selected = 0
+    paintButtons()
     m.timer = m.top.findNode("poll")
     m.timer.observeField("fire", "onPoll")
-    m.poll = ""
+    m.generation = 0
     m.live = true
     newCode()
 end sub
 
-function serverLabel() as string
-    if m.global.serverName <> "" then return m.global.serverName
-    return "Arc"
-end function
+sub buildSteps(lines as object)
+    steps = m.top.findNode("steps")
+    tops = [0, 118, 204]
+    for i = 0 to lines.Count() - 1
+        disc = steps.createChild("Poster")
+        disc.uri = "pkg:/images/nav/disc.png"
+        disc.blendColor = "0x292930FF"
+        disc.translation = [0, tops[i]]
+        disc.width = 54
+        disc.height = 54
+        number = steps.createChild("Label")
+        number.translation = disc.translation
+        number.width = 54
+        number.height = 54
+        number.horizAlign = "center"
+        number.vertAlign = "center"
+        number.font = "font:SmallBoldSystemFont"
+        number.text = (i + 1).ToStr()
+        label = steps.createChild("Label")
+        label.translation = [82, tops[i] + 4]
+        label.width = 630
+        label.wrap = true
+        label.maxLines = 2
+        label.font = "font:SmallSystemFont"
+        label.font.size = 32
+        label.color = "0xE6E6EBFF"
+        label.text = lines[i]
+    end for
+end sub
+
+sub buildCodeTiles()
+    group = m.top.findNode("tiles")
+    m.digits = []
+    for i = 0 to 3
+        tile = group.createChild("Group")
+        tile.translation = [i * 190, 0]
+        fill = tile.createChild("Poster")
+        fill.uri = "pkg:/images/auth/code.png"
+        fill.width = 166
+        fill.height = 216
+        fill.blendColor = "0x15151CFF"
+        ring = tile.createChild("Poster")
+        ring.uri = "pkg:/images/auth/code-border.png"
+        ring.width = 166
+        ring.height = 216
+        ring.blendColor = "0x32323CFF"
+        digit = tile.createChild("Label")
+        digit.width = 166
+        digit.height = 216
+        digit.horizAlign = "center"
+        digit.vertAlign = "center"
+        digit.font = "font:LargeBoldSystemFont"
+        digit.font.size = 108
+        m.digits.Push(digit)
+    end for
+end sub
+
+sub paintButtons()
+    for i = 0 to 1
+        if i = m.selected
+            m.buttonBacks[i].color = "0xF5F5F7FF"
+            m.buttonLabels[i].color = "0x111116FF"
+        else
+            m.buttonBacks[i].color = "0xF5F5F726"
+            m.buttonLabels[i].color = "0xF5F5F7FF"
+        end if
+    end for
+end sub
 
 sub takeFocus(_ = invalid as dynamic)
-    m.buttons.setFocus(true)
+    m.top.setFocus(true)
 end sub
 
 sub leaving(_ = invalid as dynamic)
     m.live = false
     m.timer.control = "stop"
+    m.spin.control = "stop"
 end sub
 
 sub returned(_ = invalid as dynamic)
 end sub
 
-sub newCode()
-    m.timer.control = "stop"
-    m.code.text = "· · · ·"
-    m.note.text = ""
-    callApi("POST", "/auth/link", { device: deviceName() }, "onLink")
+sub showCode(code as string)
+    for i = 0 to 3
+        if i < Len(code) then m.digits[i].text = Mid(code, i + 1, 1) else m.digits[i].text = "·"
+    end for
 end sub
 
-' deviceName is how this Roku shows in Arc's Settings > Devices, e.g. "Roku Ultra (Living room)".
+sub status(message as string, waiting = false as boolean)
+    m.note.text = message
+    m.spinner.visible = waiting
+    if waiting then m.spin.control = "start" else m.spin.control = "stop"
+end sub
+
+sub newCode()
+    if m.fetching = true then return
+    m.fetching = true
+    m.generation++
+    m.timer.control = "stop"
+    m.poll = ""
+    showCode("")
+    status(tr("Getting a code…"))
+    callApi("POST", "/auth/link", { device: deviceName() }, "onLink", m.generation)
+end sub
+
+' This name appears in Arc's Settings > Devices.
 function deviceName() as string
     di = CreateObject("roDeviceInfo")
     name = di.GetFriendlyName()
@@ -49,49 +144,57 @@ function deviceName() as string
 end function
 
 sub onLink(event as object)
-    if not m.live then return
     res = event.getData()
-    if not res.ok or res.data = invalid
-        m.code.text = ""
-        m.note.text = tr("Couldn't get a code from Arc.") + " " + res.error
+    if not m.live or res.tag <> m.generation then return
+    m.fetching = false
+    if not res.ok or res.data = invalid or res.data.code = invalid or res.data.poll = invalid
+        status(tr("Couldn't get a code from Arc."))
         return
     end if
-    m.code.text = res.data.code
+    showCode(res.data.code)
     m.poll = res.data.poll
-    m.note.text = tr("Waiting for the code to be approved…")
+    status(tr("Waiting for you to enter the code…"), true)
+    m.timer.duration = 3
     m.timer.control = "start"
 end sub
 
 sub onPoll()
     if not m.live or m.poll = "" then return
     t = CreateObject("roUrlTransfer")
-    callApi("GET", "/auth/link/" + t.Escape(m.poll), invalid, "onPollAnswer")
+    callApi("GET", "/auth/link/" + t.Escape(m.poll), invalid, "onPollAnswer", m.generation)
 end sub
 
 sub onPollAnswer(event as object)
-    if not m.live then return
     res = event.getData()
+    if not m.live or res.tag <> m.generation then return
     if res.ok and res.data <> invalid and res.data.token <> invalid
-        m.live = false
+        leaving()
         m.top.action = { go: "token", token: res.data.token }
         return
     end if
     if res.status = 404
-        m.code.text = ""
-        m.note.text = tr("The code ran out. Choose New code for another.")
+        m.poll = ""
+        showCode("")
+        status(tr("The code ran out. Choose Get a New Code for another."))
         return
     end if
-    ' 202 (still waiting) or a hiccup: ask again, a little later after a failure.
     if res.ok then m.timer.duration = 3 else m.timer.duration = 5
     m.timer.control = "start"
 end sub
 
-sub onButton()
-    if m.buttons.buttonSelected = 0
+function onKeyEvent(key as string, press as boolean) as boolean
+    if not press then return false
+    if key = "left" or key = "right"
+        if key = "left" then m.selected = 0 else m.selected = 1
+        paintButtons()
+        return true
+    end if
+    if key <> "OK" then return false
+    if m.selected = 0
         newCode()
     else
-        m.live = false
-        m.timer.control = "stop"
+        leaving()
         m.top.action = { go: "otherServer" }
     end if
-end sub
+    return true
+end function

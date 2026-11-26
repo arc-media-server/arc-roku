@@ -7,20 +7,33 @@ sub init()
     m.buttons.observeField("buttonSelected", "onSignOut")
     m.grid.observeField("itemSelected", "onChosen")
     m.profiles = []
+    m.live = true
+    m.pending = false
+    m.picker = m.top.findNode("picker")
+    m.pin = m.top.findNode("pinEntry")
+    m.pin.observeField("entry", "onPinEntry")
     callApi("GET", "/auth/status", invalid, "onStatus")
 end sub
 
 sub takeFocus(_ = invalid as dynamic)
-    if m.profiles.Count() > 0 then m.grid.setFocus(true) else m.buttons.setFocus(true)
+    if m.pin.visible
+        m.pin.callFunc("takeFocus", invalid)
+    else if m.profiles.Count() > 0
+        m.grid.setFocus(true)
+    else
+        m.buttons.setFocus(true)
+    end if
 end sub
 
 sub leaving(_ = invalid as dynamic)
+    m.live = false
 end sub
 
 sub returned(_ = invalid as dynamic)
 end sub
 
 sub onStatus(event as object)
+    if not m.live then return
     res = event.getData()
     if not res.ok
         m.error.text = res.error
@@ -45,7 +58,9 @@ sub onStatus(event as object)
 end sub
 
 sub onChosen()
-    p = m.profiles[m.grid.itemSelected]
+    index = m.grid.itemSelected
+    if m.pending or index < 0 or index >= m.profiles.Count() then return
+    p = m.profiles[index]
     m.error.text = ""
     if p.has_pin = true
         askPin(p)
@@ -55,42 +70,55 @@ sub onChosen()
 end sub
 
 sub askPin(p as object)
-    d = CreateObject("roSGNode", "StandardPinPadDialog")
-    d.title = tr("%1's PIN").Replace("%1", p.name)
-    d.pinPad.pinLength = 4
-    d.buttons = [tr("OK"), tr("Cancel")]
-    d.observeField("buttonSelected", "onPinButton")
     m.pinFor = p
-    m.dialog = d
-    m.top.getScene().dialog = d
+    m.pin.profile = p
+    m.picker.visible = false
+    m.pin.visible = true
+    takeFocus()
 end sub
 
-sub onPinButton()
-    d = m.dialog
-    pin = d.pin
-    d.close = true
-    if d.buttonSelected = 0 then choose(m.pinFor, pin)
+sub onPinEntry(event as object)
+    entry = event.getData()
+    if not m.live or m.pending or not m.pin.visible then return
+    if entry.cancel = true
+        m.pin.visible = false
+        m.picker.visible = true
+        m.pinFor = invalid
+        takeFocus()
+    else if entry.pin <> invalid
+        choose(m.pinFor, entry.pin)
+    end if
 end sub
 
 sub choose(p as object, pin as string)
+    m.pending = true
     body = { id: p.id }
     if pin <> "" then body.pin = pin
     callApi("POST", "/auth/profile", body, "onProfile", p)
 end sub
 
 sub onProfile(event as object)
+    if not m.live then return
     res = event.getData()
+    m.pending = false
     if res.ok
         profile = res.data
         if profile = invalid then profile = res.tag
         m.top.action = { go: "profile", profile: profile }
-    else if res.status = 401 or res.status = 403
-        m.error.text = tr("That PIN isn't right.")
+    else if Type(res.data) = "roAssociativeArray" and res.data.needs = "pin"
+        if m.pin.visible
+            m.pin.callFunc("failed", { wrong: true, message: tr("That PIN isn't right. Try again.") })
+        else
+            askPin(res.tag)
+        end if
+    else if m.pin.visible
+        m.pin.callFunc("failed", { wrong: false, message: res.error })
     else
         m.error.text = res.error
     end if
 end sub
 
 sub onSignOut()
+    if m.pending then return
     m.top.action = { go: "signOut" }
 end sub
