@@ -1,5 +1,11 @@
 ' At rest a movie fills the upper screen with art and keeps the first related row below it.
 const MOVIE_REST_Y = 350
+' At rest the season pills peek in at the bottom, with the episodes below the viewport.
+const SERIES_REST_Y = 240
+const SERIES_EPISODES_Y = -300
+const RELATED_ROWS_Y = -560
+' Leave a peek of the fifth episode in the season shelf, like Android TV.
+const EPISODE_CARD_WIDTH = 388
 const EPISODE_OVERVIEW_SPACE = 112
 
 sub init()
@@ -70,11 +76,17 @@ sub focusButtons()
     m.rowsFocused = false
     m.tabsFocused = false
     m.buttons.opacity = 1
+    m.tabs.opacity = 1
     m.buttons.setFocus(true)
-    y = 0
-    if m.item <> invalid and m.item.kind = "movie" then y = MOVIE_REST_Y
-    slideTo(y)
+    slideTo(overviewRestY())
 end sub
+
+function overviewRestY() as integer
+    if m.item = invalid then return 0
+    if m.item.kind = "movie" then return MOVIE_REST_Y
+    if m.item.kind = "series" then return SERIES_REST_Y
+    return 0
+end function
 
 ' The buttons fade while the rows have the focus: they'd show their focused one otherwise.
 sub focusRows()
@@ -82,7 +94,7 @@ sub focusRows()
     m.tabsFocused = false
     m.buttons.opacity = 0
     m.episodes.setFocus(true)
-    slideTo(-560)
+    positionRows()
 end sub
 
 ' A show's season tabs sit at the top with the chosen season's episodes under them.
@@ -92,7 +104,22 @@ sub focusTabs()
     m.buttons.opacity = 0
     m.tabs.opacity = 1
     m.tabs.setFocus(true)
-    slideTo(-560)
+    slideTo(SERIES_EPISODES_Y)
+end sub
+
+sub positionRows()
+    y = RELATED_ROWS_Y
+    if m.tabs.visible
+        f = m.episodes.rowItemFocused
+        season = f = invalid or f.Count() = 0 or f[0] = 0
+        if season
+            m.tabs.opacity = 1
+            y = SERIES_EPISODES_Y
+        else
+            m.tabs.opacity = 0
+        end if
+    end if
+    slideTo(y)
 end sub
 
 ' Moving along the tabs (or OK on one) shows that season's episodes.
@@ -133,9 +160,15 @@ sub showTabs()
 end sub
 
 sub slideTo(y as integer)
-    if m.page.translation[1] = y then return
+    if m.slideTarget = y then return
+    m.slideTarget = y
+    origin = m.page.translation
     m.slide.control = "stop"
-    m.slideTo.keyValue = [m.page.translation, [0, y]]
+    if origin[1] = y
+        m.page.translation = [0, y]
+        return
+    end if
+    m.slideTo.keyValue = [origin, [0, y]]
     m.slide.control = "start"
 end sub
 
@@ -203,7 +236,7 @@ sub onItem(event as object)
     end if
     showButtons()
     buildRows()
-    if firstLoad and it.kind = "movie" and m.rowsFocused <> true then m.page.translation = [0, MOVIE_REST_Y]
+    if firstLoad and m.rowsFocused <> true and m.tabsFocused <> true then m.page.translation = [0, overviewRestY()]
 end sub
 
 ' The rating box and genres; the year, length and quality badges; Starring and Director.
@@ -538,7 +571,7 @@ sub buildRows()
         size = cardSize(spec.style)
         height = cardRowHeight(spec.style)
         if spec.kind = "season"
-            size[1] = size[1] + EPISODE_OVERVIEW_SPACE
+            size = cardSlot(EPISODE_CARD_WIDTH, size[1] + EPISODE_OVERVIEW_SPACE)
             height = height + EPISODE_OVERVIEW_SPACE
         end if
         sizes.Push(size)
@@ -600,10 +633,7 @@ sub onRowFocus()
     if f = invalid or f.Count() < 2 or m.episodes.content = invalid then return
     row = m.episodes.content.getChild(f[0])
     if row = invalid then return
-    ' The tabs belong to the season row: they fade while a row below it has the focus.
-    if m.tabs.visible
-        if f[0] = 0 then m.tabs.opacity = 1 else m.tabs.opacity = 0
-    end if
+    if m.rowsFocused = true then positionRows()
     m.focusRow = row.title
     m.focusCol = f[1]
     m.focusItemId = row.getChild(f[1]).itemId

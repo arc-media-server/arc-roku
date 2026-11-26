@@ -6,6 +6,8 @@ sub Main()
     m.cardPanel = {}
     m.error = { text: "" }
     m.page = { translation: [0, 0] }
+    m.tabs = {}
+    m.slide = {}
     m.buttons = { setFocus: function(on as boolean)
         m.focused = on
     end function }

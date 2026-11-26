@@ -65,14 +65,12 @@ sub onOpen()
         m.focus = m.top.current + 1
         m.top.findNode("dimFade").reverse = false
         m.top.findNode("panelFade").reverse = false
-        m.top.findNode("markFade").reverse = false
         m.top.findNode("wordmarkFade").reverse = false
         m.anim.control = "start"
         m.top.setFocus(true)
     else
         m.top.findNode("dimFade").reverse = true
         m.top.findNode("panelFade").reverse = true
-        m.top.findNode("markFade").reverse = true
         m.top.findNode("wordmarkFade").reverse = true
         m.anim.control = "start"
     end if

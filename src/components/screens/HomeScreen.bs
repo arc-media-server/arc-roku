@@ -7,6 +7,7 @@
 sub init()
     m.global.observeField("hideSpoilers", "showHero")
     m.rows = m.top.findNode("rows")
+    m.hero = m.top.findNode("hero")
     m.backdrop = m.top.findNode("backdrop")
     m.logo = m.top.findNode("logo")
     m.heroTitle = m.top.findNode("heroTitle")
@@ -36,11 +37,7 @@ sub onParams()
     p = m.top.params
     if p <> invalid then m.library = p.library
     if m.library <> invalid
-        ' Under the library's pills: the hero sits lower and has no overview.
-        m.logo.translation = [170, 165]
-        m.logo.height = 150
-        m.heroTitle.translation = [170, 210]
-        m.heroOverview.visible = false
+        m.rows.translation = [156, 152]
     end if
     load()
 end sub
@@ -127,6 +124,8 @@ sub onRecommended(event as object)
     m.newSizes = []
     m.newHeights = []
     if rows.Count() = 0
+        m.content = m.newContent
+        m.rows.content = m.content
         showEmpty(tr("Nothing to recommend yet. Recommendations appear here once this library has titles you can watch."))
         return
     end if
@@ -151,6 +150,7 @@ sub placeRows()
         if cards.Count() > 0
             row = m.newContent.createChild("ContentNode")
             row.title = spec.title
+            row.addFields({ showsHero: m.library = invalid and spec.id = "continue" })
             for each card in cards
                 node = row.createChild("ContentNode")
                 node.addFields(cardFields())
@@ -173,6 +173,7 @@ sub swapIn()
     m.rows.content = m.newContent
     m.content = m.newContent
     if m.newContent.getChildCount() = 0
+        onFocusMoved()
         if m.placed = m.specs.Count() then showEmpty(tr("Nothing to show yet. Titles appear here once Arc has scanned your libraries."))
         return
     end if
@@ -192,28 +193,36 @@ sub showEmpty(text as string)
     m.empty.visible = true
 end sub
 
-function focusedCard() as dynamic
+function focusedRow() as dynamic
     f = m.rows.rowItemFocused
     if f = invalid or f.Count() < 2 or m.content = invalid then return invalid
-    row = m.content.getChild(f[0])
-    if row = invalid then return invalid
-    return row.getChild(f[1])
+    return m.content.getChild(f[0])
 end function
 
-' The hero follows focus after a moment's rest, so scrolling along a row stays smooth.
+function focusedCard() as dynamic
+    row = focusedRow()
+    if row = invalid then return invalid
+    return row.getChild(m.rows.rowItemFocused[1])
+end function
+
+' The Home hero belongs to Continue Watching. Debounce changes within the shelf.
 sub onFocusMoved()
-    if m.library = invalid
-        y = 560
-        c = focusedCard()
-        ' Leave the full card and its caption on screen, using the profile's card style.
-        if c <> invalid and c.inContinue then y = 1080 - cardRowHeight(c.style)
-        if m.rows.translation[1] <> y then m.rows.translation = [156, y]
-    end if
+    if m.library <> invalid then return
+    row = focusedRow()
+    card = focusedCard()
+    wasVisible = m.hero.visible
+    m.hero.visible = card <> invalid and row.showsHero = true
+    y = 64
+    if m.hero.visible then y = 1080 - cardRowHeight(card.style)
+    if m.rows.translation[1] <> y then m.rows.translation = [156, y]
     m.heroDelay.control = "stop"
-    m.heroDelay.control = "start"
+    if m.hero.visible
+        if wasVisible then m.heroDelay.control = "start" else showHero()
+    end if
 end sub
 
 sub showHero()
+    if not m.hero.visible then return
     c = focusedCard()
     if c = invalid then return
     art = c.backdrop
