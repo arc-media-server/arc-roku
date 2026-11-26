@@ -128,6 +128,10 @@ npm run build
 npx brs-cli --registry --snapshot out/arc-roku.zip
 ```
 
+If the simulator reports **missing manifest**, load the built ZIP (`out/arc-roku.zip` or the
+release's `arc-roku-*.zip`). For a GitHub Actions artifact, extract the artifact and load
+the app ZIP inside it. GitHub's **Source code (zip)** archive is the unbuilt repository.
+
 Use the arrow keys and Enter for OK, Delete or Esc for Back, Insert for `*`, and Ctrl+S to
 save a PNG. Use the simulator to walk screens against a scratch Arc. Check playback and TV
 rendering on a real Roku.
