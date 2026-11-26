@@ -6,15 +6,12 @@
   the episode row. Up returns to the overview.
 - Draw the cast focus ring inside the portrait to keep the full circle inside the card slot.
 - Preserve the source aspect ratio in the 4:3 Backdrops style, with a centred crop.
-- Keep the Recommended hero on the first row. Scrolling down gives the shelves
-  the space below the library tabs, and returning to the first row restores the hero.
+- Start Recommended with its first shelf directly below the library tabs, as on Android TV.
 
 ## Decisions
 
-The season-bar peek follows Android TV and Apple TV. Android TV’s Recommended tab
-uses shelves only. Roku retains its opening hero and matches [Kodi’s first-row
-behaviour](https://github.com/arc-media-server/arc-kodi/pull/53). The existing tabs
-and remote navigation remain the way to browse the library.
+The season-bar peek follows Android TV and Apple TV. Both Roku and Kodi follow
+Android TV’s rows-only Recommended layout.
 
 ## Checks
 

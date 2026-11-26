@@ -37,12 +37,8 @@ sub onParams()
     p = m.top.params
     if p <> invalid then m.library = p.library
     if m.library <> invalid
-        ' Under the library's pills: the hero sits lower and has no overview.
-        m.logo.translation = [170, 165]
-        m.logo.height = 150
-        m.heroTitle.translation = [170, 210]
-        m.heroOverview.visible = false
         m.hero.visible = false
+        m.rows.translation = [156, 152]
         m.empty.translation = [170, 170]
     end if
     load()
@@ -132,7 +128,6 @@ sub onRecommended(event as object)
     if rows.Count() = 0
         m.content = m.newContent
         m.rows.content = m.content
-        m.hero.visible = false
         showEmpty(tr("Nothing to recommend yet. Recommendations appear here once this library has titles you can watch."))
         return
     end if
@@ -208,22 +203,14 @@ end function
 
 ' The hero follows focus after a moment's rest, so scrolling along a row stays smooth.
 sub onFocusMoved()
+    if m.library <> invalid then return
     y = 560
-    m.heroDelay.control = "stop"
-    if m.library = invalid
-        c = focusedCard()
-        ' Leave the full card and its caption on screen, using the profile's card style.
-        if c <> invalid and c.inContinue then y = 1080 - cardRowHeight(c.style)
-    else
-        f = m.rows.rowItemFocused
-        wasVisible = m.hero.visible
-        atTop = f = invalid or f.Count() < 2 or f[0] = 0
-        m.hero.visible = atTop and m.content.getChildCount() > 0
-        if not m.hero.visible then y = 152
-        if m.hero.visible and not wasVisible then showHero()
-    end if
+    c = focusedCard()
+    ' Leave the full card and its caption on screen, using the profile's card style.
+    if c <> invalid and c.inContinue then y = 1080 - cardRowHeight(c.style)
     if m.rows.translation[1] <> y then m.rows.translation = [156, y]
-    if m.hero.visible then m.heroDelay.control = "start"
+    m.heroDelay.control = "stop"
+    m.heroDelay.control = "start"
 end sub
 
 sub showHero()

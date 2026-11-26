@@ -2,7 +2,7 @@
 <!-- Home, as the Apple TV app's and Arc's other TV apps': the focused title's artwork fills the
      screen with its logo, details and overview, and the profile's rows sit below. With params
      { library: { id, name, kind } } it's that library's Recommended page instead (inside
-     LibraryScreen, under its pills): a hero without the overview while the first recommended row has focus. -->
+     LibraryScreen, under its pills): recommended rows without the Home hero. -->
 <component name="HomeScreen" extends="Group">
     <interface>
         <field id="params" type="assocarray" onChange="onParams" alwaysNotify="true" />
