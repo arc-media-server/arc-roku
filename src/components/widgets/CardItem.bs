@@ -137,6 +137,10 @@ sub layout()
     caption = h >= ph + 60
     m.line1.visible = caption
     m.line2.visible = caption and m.line2.text <> ""
+    captionAlign = "center"
+    if c <> invalid and c.showOverview = true then captionAlign = "left"
+    m.line1.horizAlign = captionAlign
+    m.line2.horizAlign = captionAlign
     m.line1.translation = [0, ph + 14]
     m.line1.width = w
     m.line2.translation = [0, ph + 50]
