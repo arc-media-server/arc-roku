@@ -4,6 +4,8 @@ const MOVIE_REST_Y = 350
 const SERIES_REST_Y = 240
 const SERIES_EPISODES_Y = -300
 const RELATED_ROWS_Y = -560
+' Leave a peek of the fifth episode in the season shelf, like Android TV.
+const EPISODE_CARD_WIDTH = 388
 const EPISODE_OVERVIEW_SPACE = 112
 
 sub init()
@@ -569,7 +571,7 @@ sub buildRows()
         size = cardSize(spec.style)
         height = cardRowHeight(spec.style)
         if spec.kind = "season"
-            size[1] = size[1] + EPISODE_OVERVIEW_SPACE
+            size = cardSlot(EPISODE_CARD_WIDTH, size[1] + EPISODE_OVERVIEW_SPACE)
             height = height + EPISODE_OVERVIEW_SPACE
         end if
         sizes.Push(size)

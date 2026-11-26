@@ -4,7 +4,8 @@
 - Keep the sidebar’s Arc mark anchored when the rail expands and reveal the lettering beside it.
 - Lower the series overview so the season bar is fully visible at the bottom. Down
   frames the season bar and episodes before revealing cast. Returning Up restores
-  the same overview position.
+  the same overview position. The episode shelf shows four full cards and a
+  sliver of the fifth, following Android TV.
 - Centre-crop cast portraits without stretching them. Keep the focus ring inside
   the portrait and bring names into view when the cast shelf takes focus.
 - Preserve the source aspect ratio in the 4:3 Backdrops style, with a centred crop.
