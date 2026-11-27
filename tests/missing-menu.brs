@@ -3,29 +3,22 @@ sub Main()
     m.requests = []
     m.item = { id: "show", kind: "series", title: "Synthetic Series" }
     m.top = { action: invalid }
-    m.showMissing = false
-    m.seasonsRequest = 0
+    m.seasonsRequest = 2
     m.error = {text: ""}
     m.cardPanel = {}
     m.buttons = {focusIndex: 0}
     m.draws = 0
+    tag = { id: "show", request: 2 }
+    onSeasonPrefs(eventFor({ok:true,tag:{id:"show",request:1},data:{show_missing_episodes:true}}))
+    check(m.requests.Count() = 0, "stale preference response ignored")
+    onSeasonPrefs(eventFor({ok:true,tag:tag,data:{}}))
+    check(m.requests[0].path = "/series/show/seasons", "older prefs hide missing episodes")
+    onSeasonPrefs(eventFor({ok:true,tag:tag,data:{show_missing_episodes:true}}))
+    check(m.requests[1].path = "/series/show/seasons?missing=1", "saved preference shows missing episodes")
+    onSeasons(eventFor({ok:true,tag:tag,data:{seasons:[{season_number:1,episodes:[{available:false,title:"Missing",episode_number:1}]}]}}))
+    check(m.error.text = "" and m.draws = 1, "missing episode received")
     showTitleMenu()
-    check(m.cardPanel.entries[1].label = "Show Missing Episodes", "title menu reaches toggle without episodes")
-    m.cardPanel.picked = 1
-    onRatingPicked()
-    check(m.requests[0].path = "/series/show/seasons?missing=1", "title toggle fetches missing")
-    check(not m.showMissing, "choice committed only on success")
-    first = m.requests[0].tag
-    onSeasons(eventFor({ok:false,tag:first}))
-    check(not m.showMissing and m.error.text <> "", "failed toggle retains previous choice")
-    toggleMissingEpisodes()
-    newest = m.requests[1].tag
-    onSeasons(eventFor({ok:true,tag:first,data:{seasons:[]}}))
-    check(m.draws = 0, "stale response ignored")
-    onSeasons(eventFor({ok:true,tag:newest,data:{seasons:[{season_number:1,episodes:[{available:false,title:"Missing",episode_number:1}]}]}}))
-    check(m.showMissing and m.error.text = "" and m.draws = 1, "successful toggle commits and clears error")
-    showTitleMenu()
-    check(m.cardPanel.entries[1].label = "Hide Missing Episodes", "title menu follows choice")
+    check(m.cardPanel.entries.Count() = 1, "title menu only offers rating")
     closeCardPanel()
     node = {itemId:"",available:false,title:"Missing",kind:"episode",resumeMs:0}
     row = { rowKind:"season", seasonIndex:0, child:node, getChild:function(i as integer) as object
@@ -35,13 +28,11 @@ sub Main()
         return m.child
     end function}}
     showSeasonMenu()
-    check(m.menuEntries.Count() = 1 and m.menuEntries[0].act = "hideMissing", "missing-only season offers visibility only")
+    check(not m.cardPanel.visible, "missing-only season has no actions")
     onEpisode()
     check(m.top.action = invalid, "missing episode OK cannot play")
-    m.cardPanel.picked = 0
-    onCardPicked()
-    check(m.requests[2].path = "/series/show/seasons", "hide missing from season menu")
     ' Defence against a stale Play menu from before an availability update.
+    m.menuAt = {node:node}
     m.menuEntries = [{act:"play"}]
     m.cardPanel.picked = 0
     onCardPicked()
