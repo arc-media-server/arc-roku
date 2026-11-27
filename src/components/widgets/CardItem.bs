@@ -37,7 +37,6 @@ sub onContent()
     if spoilersHidden then art = c.safeArt
     m.overview.visible = c.showOverview = true and not spoilersHidden and c.overview <> ""
     if m.overview.visible then m.overview.text = c.overview else m.overview.text = ""
-    if c.style = "named" then m.face.uri = art else m.picture.uri = art
     m.picture.opacity = 1
     m.blank.opacity = 1
     if c.available = false
@@ -50,6 +49,7 @@ sub onContent()
     if backdrop then m.logo.uri = c.logo else m.logo.uri = ""
     m.logoTitle.text = c.title
     layout()
+    if c.style = "named" then m.face.uri = art else m.picture.uri = art
 end sub
 
 ' The picture's height comes from its style (cardPicture in cards.bs); the two lines go under it
@@ -86,20 +86,24 @@ sub layout()
             n.width = w
             n.height = w
         end for
-        m.face.loadWidth = w
-        m.face.loadHeight = w
-        ' ring.png is a 272 px ring around a 240 px circle.
-        r = w * 272 / 240
-        m.ring.width = r
-        m.ring.height = r
-        m.ring.translation = [(w - r) / 2, (w - r) / 2]
+        ' Let scaleToZoom crop the original portrait into the circle.
+        ' Draw the ring inside the portrait so the focused card fits within its row.
+        m.ring.width = w
+        m.ring.height = w
     end if
     for each n in [m.blank, m.picture]
         n.width = w
         n.height = ph
     end for
-    m.picture.loadWidth = w
-    m.picture.loadHeight = ph
+    if backdrop
+        ' Keep the source ratio. The simulator stretches to loadWidth and loadHeight before
+        ' scaleToZoom can crop, which squashes wide artwork in this 4:3 frame.
+        m.picture.loadWidth = 0
+        m.picture.loadHeight = 0
+    else
+        m.picture.loadWidth = w
+        m.picture.loadHeight = ph
+    end if
     m.frame.maskSize = [w, ph]
     if ph > w
         m.frame.maskUri = "pkg:/images/mask-poster.png"
@@ -133,6 +137,10 @@ sub layout()
     caption = h >= ph + 60
     m.line1.visible = caption
     m.line2.visible = caption and m.line2.text <> ""
+    captionAlign = "center"
+    if c <> invalid and c.showOverview = true then captionAlign = "left"
+    m.line1.horizAlign = captionAlign
+    m.line2.horizAlign = captionAlign
     m.line1.translation = [0, ph + 14]
     m.line1.width = w
     m.line2.translation = [0, ph + 50]

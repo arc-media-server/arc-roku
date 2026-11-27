@@ -282,6 +282,32 @@ sub testBrowse()
     eq(browsePath({ kind: "person", id: "369" }, invalid, 0, 60), "/people/369", "browsePath person")
     eq(querySummary(q), "Date added · Oldest first · Unwatched · Drama", "querySummary")
 
+    q = libraryQueryDefaults()
+    q.letter = "s"
+    chooseLibraryFilter(q, "watch_state", "unwatched")
+    chooseLibraryFilter(q, "watch_state", "unstarted")
+    chooseLibraryFilter(q, "dynamic_range", "dolby_vision")
+    chooseLibraryFilter(q, "video_codec", "hevc")
+    chooseLibraryFilter(q, "audio_codec", "eac3")
+    chooseLibraryFilter(q, "audio_channels", "6")
+    enc = "audio_channels=6&audio_codec=eac3&dynamic_range=dolby_vision"
+    eq(browsePath(lib, q, 0, 60), "/items?" + enc + "&kind=series&letters=1&library_id=2&limit=60&sort=title&video_codec=hevc&watch_state=unstarted", "rich filters replace Unwatched and reset the jump")
+    eq(browsePath(lib, q, 60, 60), "/items?" + enc + "&kind=series&library_id=2&limit=60&offset=60&sort=title&video_codec=hevc&watch_state=unstarted", "rich filters carry on to later pages")
+    eq(querySummary(q), "Title · A to Z · Not Started · Dolby Vision · HEVC · Dolby Digital Plus · 5.1", "rich filter summary uses readable names")
+    chooseLibraryFilter(q, "watch_state", "unwatched")
+    check(not libraryFilterParams(q).DoesExist("watch_state"), "Unwatched clears the explicit watch state")
+    eq(libraryFilterSections(q, { audio_codecs: [{ value: "aac", count: 2 }] })[3].values.Count(), 2, "a selected codec stays available after it disappears from facets")
+    q.sort = "year"
+    q.reverse = true
+    q = clearLibraryFilters(q)
+    eq(querySummary(q), "Year · Oldest first", "clearing filters keeps the sort and direction")
+    eq(libraryFilterParams(q).Count(), 0, "clearing filters removes all filter parameters")
+    facets = { audio_channels: [{ value: "2", count: 8 }, { value: "8", count: 1 }, { value: "6", count: 4 }], video_codecs: [{ value: "h264", count: 8 }] }
+    sections = libraryFilterSections(q, facets)
+    eq(sections.Count(), 2, "a technical facet with just one value is hidden")
+    eq(sections[1].values[0].value, "8", "audio channels sort by highest channel count first")
+    eq(libraryFilterSections(q, invalid).Count(), 1, "watch status stays available without facets")
+
     page = browseCards(lib, { total: 130, items: [{ id: "a", kind: "series" }] })
     eq(page.total, 130, "browseCards keeps the library total")
     eq(page.cards[0].item.id, "a", "browseCards library items")

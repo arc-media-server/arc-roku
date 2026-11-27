@@ -1,0 +1,94 @@
+' Filter options come from the signed-in profile's library facets. As on Android TV, a
+' technical facet is offered when it has more than one choice or is already selected.
+function libraryFilterSections(q as object, facets as dynamic) as object
+    out = [{
+        key: "watch_state", label: tr("Watch Status")
+        values: [{ value: "unwatched" }, { value: "played" }, { value: "unstarted" }]
+    }]
+    facets = valueOr(facets, {})
+    for each f in [
+        { key: "genre", label: tr("Genre"), facet: "genres", minChoices: 1 }
+        { key: "decade", label: tr("Decade"), facet: "decades", minChoices: 1 }
+        { key: "resolution", label: tr("Quality"), facet: "resolutions", minChoices: 1 }
+        { key: "dynamic_range", label: tr("HDR"), facet: "dynamic_ranges", minChoices: 2 }
+        { key: "video_codec", label: tr("Video Format"), facet: "video_codecs", minChoices: 2 }
+        { key: "audio_codec", label: tr("Audio Format"), facet: "audio_codecs", minChoices: 2 }
+        { key: "audio_channels", label: tr("Audio Channels"), facet: "audio_channels", minChoices: 2 }
+    ]
+        values = []
+        chosen = false
+        for each entry in valueOr(facets[f.facet], [])
+            value = valueString(entry.value)
+            if value <> ""
+                ' Decades and channel counts appear in descending numeric order, as on Android TV.
+                values.Push({ value: value, count: entry.count, number: Val(value) })
+                if value = q[f.key] then chosen = true
+            end if
+        end for
+        if q[f.key] <> "" and not chosen
+            values.Push({ value: q[f.key], number: Val(q[f.key]) })
+        end if
+        if f.key = "decade" or f.key = "audio_channels" then values.SortBy("number", "r")
+        if values.Count() >= f.minChoices or q[f.key] <> ""
+            out.Push({ key: f.key, label: f.label, values: values })
+        end if
+    end for
+    return out
+end function
+
+function libraryFilterValue(q as object, key as string) as string
+    if key = "watch_state" and q.unwatched then return "unwatched"
+    return q[key]
+end function
+
+sub chooseLibraryFilter(q as object, key as string, value as string)
+    if key = "watch_state"
+        q.unwatched = value = "unwatched"
+        if q.unwatched then value = ""
+    end if
+    q[key] = value
+    ' A different filter changes the list of letters; start at the beginning.
+    q.letter = ""
+end sub
+
+function clearLibraryFilters(q as object) as object
+    cleared = libraryQueryDefaults()
+    cleared.sort = q.sort
+    cleared.reverse = q.reverse
+    return cleared
+end function
+
+function libraryFilterName(key as string, value as string) as string
+    if value = "" then return tr("Any")
+    if key = "watch_state"
+        names = { unwatched: tr("Unwatched"), played: tr("Watched"), unstarted: tr("Not Started") }
+        return valueOr(names[value], value)
+    end if
+    if key = "decade" then return tr("%1s").Replace("%1", value)
+    if key = "resolution" then return resolutionName(value)
+    if key = "dynamic_range"
+        names = { dolby_vision: "Dolby Vision", hdr10_plus: "HDR10+", hlg: "HLG", hdr10: "HDR10", sdr: "SDR", unknown: tr("Not known yet") }
+        return valueOr(names[value], value)
+    end if
+    if key = "video_codec"
+        names = { h264: "H.264", h265: "HEVC", mpeg2video: "MPEG-2", mpeg4: "MPEG-4" }
+        return valueOr(names[value], UCase(value))
+    end if
+    if key = "audio_codec" then return audioCodecName(value)
+    if key = "audio_channels" then return channelsName(value.ToInt())
+    return value
+end function
+
+function querySummary(q as object) as string
+    parts = [sortName(q.sort)]
+    if q.sort <> "shuffle"
+        directions = sortDirections(q.sort)
+        if q.reverse then parts.Push(directions[1]) else parts.Push(directions[0])
+    end if
+    for each key in ["watch_state", "genre", "decade", "resolution", "dynamic_range", "video_codec", "audio_codec", "audio_channels"]
+        value = libraryFilterValue(q, key)
+        if value <> "" then parts.Push(libraryFilterName(key, value))
+    end for
+    if q.sort = "title" and q.letter <> "" then parts.Push(tr("From %1").Replace("%1", UCase(q.letter)))
+    return joinWith(parts, " · ")
+end function
