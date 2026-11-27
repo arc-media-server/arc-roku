@@ -101,8 +101,8 @@ sub fillCard(node as object, card as object, style as string)
     else if card.season <> invalid
         subText = tr("Season %1").Replace("%1", card.season.ToStr())
         if card.episodes <> invalid and card.episodes > 1 then subText = subText + " · " + tr("%1 new episodes").Replace("%1", card.episodes.ToStr())
-    else if it.year <> invalid and it.year > 0
-        subText = it.year.ToStr()
+    else
+        subText = yearAndEdition(it)
     end if
     if card.line2 <> invalid then subText = card.line2
     node.title = title
