@@ -17,8 +17,9 @@ function heroFacts(item as object) as string
     parts = []
     if episodeCode(item) <> ""
         parts.Push(episodeTitled(item))
-    else if item.year <> invalid and item.year > 0
-        parts.Push(item.year.ToStr())
+    else
+        caption = yearAndEdition(item)
+        if caption <> "" then parts.Push(caption)
     end if
     if item.runtime_min <> invalid and item.runtime_min > 0 then parts.Push(formatRuntime(item.runtime_min))
     return parts.Join(" · ")

@@ -90,6 +90,9 @@ sub testFormat()
     movie.user_data.position_ms = 754000
     eq(playLabel(movie), "Resume from 12:34", "playLabel resumes a movie")
     eq(metaLine(movie), "1999 · 15 · 2h 16m · Action · Science Fiction", "metaLine")
+    eq(yearAndEdition({ kind: "movie", year: 2008, edition: "IMAX" }), "2008 · IMAX", "named movie cut")
+    eq(yearAndEdition({ kind: "movie", edition: "IMAX" }), "IMAX", "named movie cut without a year")
+    eq(yearAndEdition({ kind: "movie", year: 2008 }), "2008", "movie without an edition")
     movie.user_data.played = true
     eq(resumeMs(movie), 0, "a watched title doesn't resume")
     eq(minutesLeft(754000, 8160000), 124, "minutesLeft rounds up")
