@@ -327,6 +327,10 @@ sub showTitleMenu()
     current = 0
     if m.item.user_data <> invalid and m.item.user_data.rating <> invalid then current = m.item.user_data.rating
     entries = [{ label: tr("Rate…"), detail: ratingStars(current) }]
+    if m.item.kind = "movie" or m.item.kind = "series" or m.item.kind = "episode"
+        entries.Push({ label: tr("Add to Playlist"), act: "addToPlaylist" })
+    end if
+    m.titleMenuEntries = entries
     m.cardPanel.entries = entries
     m.cardPanel.selected = -1
     m.cardPanel.visible = true
@@ -336,6 +340,11 @@ end sub
 sub onRatingPicked()
     i = m.cardPanel.picked
     if m.ratingPanel = "more"
+        if i >= 0 and i < m.titleMenuEntries.Count() and m.titleMenuEntries[i].act = "addToPlaylist"
+            closeCardPanel()
+            m.top.action = { go: "playlistPicker", id: m.item.id, title: m.item.title }
+            return
+        end if
         if i <> 0 then return
         current = 0
         if m.item.user_data <> invalid and m.item.user_data.rating <> invalid then current = m.item.user_data.rating

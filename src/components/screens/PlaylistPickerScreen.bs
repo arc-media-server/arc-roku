@@ -1,0 +1,90 @@
+sub init()
+    m.note = m.top.findNode("note")
+    m.panel = m.top.findNode("options")
+    m.panel.title = tr("Add to Playlist")
+    m.panel.observeField("picked", "onPick")
+    m.panel.observeField("closed", "closePicker")
+end sub
+
+sub onParams()
+    m.top.findNode("heading").text = m.top.params.title
+    loadPlaylists()
+end sub
+
+sub takeFocus(_ = invalid as dynamic)
+    if m.list <> invalid then m.panel.show = true
+end sub
+
+sub leaving(_ = invalid as dynamic)
+    m.closed = true
+end sub
+
+sub returned(_ = invalid as dynamic)
+end sub
+
+sub closePicker()
+    m.top.action = { go: "back" }
+end sub
+
+sub loadPlaylists()
+    m.list = invalid
+    m.note.text = tr("Loading…")
+    callApi("GET", "/playlists", invalid, "onPlaylists")
+end sub
+
+sub onPlaylists(event as object)
+    if m.closed = true then return
+    res = event.getData()
+    m.list = []
+    m.loadFailed = not res.ok
+    if res.ok and res.data <> invalid
+        for each playlist in res.data
+            if playlist.smart_filter = invalid then m.list.Push(playlist)
+        end for
+    end if
+    m.note.text = ""
+    entries = []
+    for each playlist in m.list
+        entries.Push({ label: playlist.title })
+    end for
+    if m.loadFailed
+        m.note.text = tr("Couldn't load playlists. Try again.")
+        entries.Push({ label: tr("Retry") })
+    else if entries.Count() = 0
+        m.note.text = tr("No editable playlists yet. Create a playlist in Arc on the web.")
+        entries.Push({ label: tr("Back") })
+    end if
+    m.panel.entries = entries
+    m.panel.show = true
+end sub
+
+sub onPick()
+    if m.list = invalid or m.saving = true or m.closed = true then return
+    i = m.panel.picked
+    if i < 0 then return
+    if m.loadFailed
+        loadPlaylists()
+    else if m.list.Count() = 0
+        closePicker()
+    else if i < m.list.Count()
+        playlist = m.list[i]
+        m.saving = true
+        m.note.text = tr("Saving…")
+        path = "/playlists/" + CreateObject("roUrlTransfer").Escape(playlist.id) + "/items"
+        callApi("POST", path, { item_ids: [m.top.params.id] }, "onSaved", playlist.title)
+    end if
+end sub
+
+sub onSaved(event as object)
+    m.saving = false
+    if m.closed = true then return
+    res = event.getData()
+    if res.ok
+        m.list = []
+        m.panel.entries = [{ label: tr("Back") }]
+        m.panel.show = true
+        m.note.text = tr("Added to %1.").Replace("%1", res.tag)
+    else
+        m.note.text = tr("Couldn't add this title. Try again.")
+    end if
+end sub
