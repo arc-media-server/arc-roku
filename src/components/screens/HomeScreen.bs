@@ -154,7 +154,7 @@ sub placeRows()
             for each card in cards
                 node = row.createChild("ContentNode")
                 node.addFields(cardFields())
-                fillCard(node, card, spec.style)
+                fillCard(node, card, spec.style, spec.seasonPosters)
                 node.inContinue = spec.continueRow = true
             end for
             m.newSizes.Push(cardSize(spec.style))

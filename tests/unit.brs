@@ -147,6 +147,14 @@ sub testHome()
     check(split[0].continueRow = true and split[1].continueRow = true, "Continue Watching and Up Next can be removed from")
     looks = resolveHomeRows({ split_up_next: true, home: [{ id: "continue", style: "arc" }, { id: "next-up", style: "poster" }] }, [], invalid)
     eq(looks[0].style + " " + looks[1].style, "backdrop poster", "the web's Backdrops (arc) and Posters looks for carrying on watching")
+    seasonRows = resolveHomeRows({ split_up_next: true, home: [
+        { id: "continue", style: "poster", posters: "season" },
+        { id: "next-up", style: "poster", posters: "series" },
+        { id: "playlist:one", style: "thumb", posters: "season" }
+    ] }, [{ id: 2, name: "TV", kind: "shows" }], invalid)
+    check(seasonRows[0].seasonPosters = true and seasonRows[1].seasonPosters = false, "each carry-on shelf reads its own poster preference")
+    check(seasonRows[3].id = "recent:2" and seasonRows[3].seasonPosters = true, "Recently Added defaults to season posters")
+    check(seasonRows[4].id = "playlist:one" and seasonRows[4].style = "thumb" and seasonRows[4].seasonPosters = true, "playlist keeps its width and poster preferences")
     slot = cardSize("poster")
     eq(slot[1], 410, "posters leave room for their two lines")
     slot = cardSize("backdrop")

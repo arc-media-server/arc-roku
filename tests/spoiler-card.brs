@@ -26,5 +26,38 @@ sub Main()
     m.top.itemContent.showOverview = false
     onContent()
     if m.overview.visible or m.overview.text <> "" then stop
+    testSeasonArt()
     print "SPOILER CARD PASSED"
 end sub
+
+sub testSeasonArt()
+    ep = { id: "e2", title: "Episode Two", kind: "episode", images: { primary: "/still", series_primary: "/series", season_primary: "/season", series_backdrop: "/wide" } }
+    card = { item: ep }
+    node = cardFields()
+    fillCard(node, card, "poster", true)
+    if node.HDPosterUrl <> "/season" or node.safeBackdrop <> "/wide?size=full" then stop
+    m.top.itemContent = node
+    onContent()
+    if m.picture.uri <> "/season" then stop
+
+    fillCard(node, card, "poster", false)
+    if node.HDPosterUrl <> "/series" then stop
+    fillCard(node, card, "thumb", true)
+    if node.HDPosterUrl <> "/still" or node.safeArt <> "/wide" then stop
+    fillCard(node, card, "backdrop", true)
+    if node.HDPosterUrl <> "/wide" then stop
+    ep.images.Delete("season_primary")
+    fillCard(node, card, "poster", true)
+    if node.HDPosterUrl <> "/series" or node.safeArt <> "/series" then stop
+
+    group = { item: { id: "s", title: "Series", kind: "series", images: { primary: "/series" } }, season: 2, seasonPoster: "/season" }
+    fillCard(node, group, "poster", true)
+    if node.HDPosterUrl <> "/season" then stop
+    fillCard(node, group, "poster", false)
+    if node.HDPosterUrl <> "/series" then stop
+end sub
+
+function imageUrl(path as dynamic) as string
+    if path = invalid then return ""
+    return path
+end function
