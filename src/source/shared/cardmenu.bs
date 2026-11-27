@@ -27,6 +27,7 @@ function cardMenu(node as dynamic) as object
     if node.inContinue = true then out.Push({ label: tr("Remove from Continue Watching"), act: "uncontinue" })
     if kind = "episode" and node.parentId <> "" then out.Push({ label: tr("Go to show"), act: "show" })
     if kind <> "episode" then out.Push({ label: tr("Go to details"), act: "open" })
+    out.Push({ label: tr("Add to Playlist"), act: "addToPlaylist" })
     return out
 end function
 
@@ -37,6 +38,7 @@ function runCardAction(node as object, act as string) as dynamic
     if act = "restart" then return { go: "play", id: node.itemId, startMs: 0, title: node.title, subtitle: node.line2 }
     if act = "show" then return { go: "open", id: node.parentId, episodeId: node.itemId }
     if act = "open" then return { go: "open", id: node.itemId }
+    if act = "addToPlaylist" then return { go: "playlistPicker", id: node.itemId, title: node.title }
     if act = "watched" or act = "unwatched" then callApi("PUT", "/items/" + id + "/played", { played: act = "watched" }, "onCardChanged")
     if act = "list" or act = "unlist" then callApi("PUT", "/items/" + id + "/watchlist", { on: act = "list" }, "onCardChanged")
     if act = "uncontinue" then callApi("DELETE", "/home/continue/" + id, invalid, "onCardChanged")

@@ -472,12 +472,12 @@ end sub
 
 sub testCardMenu()
     ep = { kind: "episode", itemId: "e", parentId: "s", resumeMs: 60000, played: false, watchlisted: false, inContinue: true }
-    eq(menuActs(cardMenu(ep)), "play,restart,watched,uncontinue,show", "card menu: an episode in Continue Watching")
+    eq(menuActs(cardMenu(ep)), "play,restart,watched,uncontinue,show,addToPlaylist", "card menu: an episode in Continue Watching")
     movie = { kind: "movie", itemId: "m", parentId: "", resumeMs: 0, played: false, watchlisted: false, inContinue: true }
-    eq(menuActs(cardMenu(movie)), "play,watched,list,uncontinue,open", "card menu: a film in Up Next or Continue Watching")
+    eq(menuActs(cardMenu(movie)), "play,watched,list,uncontinue,open,addToPlaylist", "card menu: a film in Up Next or Continue Watching")
     eq(cardMenu(movie)[3].label, "Remove from Continue Watching", "card menu: the remove entry's name")
     movie.inContinue = false
-    eq(menuActs(cardMenu(movie)), "play,watched,list,open", "card menu: elsewhere there's no remove entry")
+    eq(menuActs(cardMenu(movie)), "play,watched,list,open,addToPlaylist", "card menu: elsewhere there's no remove entry")
     eq(cardMenu({ kind: "collection" }).Count(), 0, "card menu: not on a collection")
 end sub
 

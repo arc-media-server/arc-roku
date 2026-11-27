@@ -85,8 +85,16 @@
   <translation>Actor</translation>
 </message>
 <message>
+  <source>Add to Playlist</source>
+  <translation>Add to Playlist</translation>
+</message>
+<message>
   <source>Add to Watchlist</source>
   <translation>Add to Watchlist</translation>
+</message>
+<message>
+  <source>Added to %1.</source>
+  <translation>Added to %1.</translation>
 </message>
 <message>
   <source>Address</source>
@@ -151,6 +159,10 @@
 <message>
   <source>Automatic</source>
   <translation>Automatic</translation>
+</message>
+<message>
+  <source>Back</source>
+  <translation>Back</translation>
 </message>
 <message>
   <source>Because you watched %1</source>
@@ -229,6 +241,10 @@
   <translation>Continue Watching</translation>
 </message>
 <message>
+  <source>Couldn't add this title. Try again.</source>
+  <translation>Couldn't add this title. Try again.</translation>
+</message>
+<message>
   <source>Couldn't change what's watched.</source>
   <translation>Couldn't change what's watched.</translation>
 </message>
@@ -247,6 +263,10 @@
 <message>
   <source>Couldn't load Home.</source>
   <translation>Couldn't load Home.</translation>
+</message>
+<message>
+  <source>Couldn't load playlists. Try again.</source>
+  <translation>Couldn't load playlists. Try again.</translation>
 </message>
 <message>
   <source>Couldn't load Recommended.</source>
@@ -417,6 +437,10 @@
   <translation>Length</translation>
 </message>
 <message>
+  <source>Loading…</source>
+  <translation>Loading…</translation>
+</message>
+<message>
   <source>Local network</source>
   <translation>Local network</translation>
 </message>
@@ -495,6 +519,10 @@
 <message>
   <source>No Arc servers answered. Check Arc is running, or type its address.</source>
   <translation>No Arc servers answered. Check Arc is running, or type its address.</translation>
+</message>
+<message>
+  <source>No editable playlists yet. Create a playlist in Arc on the web.</source>
+  <translation>No editable playlists yet. Create a playlist in Arc on the web.</translation>
 </message>
 <message>
   <source>No titles match these filters.</source>
@@ -729,8 +757,16 @@
   <translation>Resume from %1</translation>
 </message>
 <message>
+  <source>Retry</source>
+  <translation>Retry</translation>
+</message>
+<message>
   <source>Romance for Valentine's Day</source>
   <translation>Romance for Valentine's Day</translation>
+</message>
+<message>
+  <source>Saving…</source>
+  <translation>Saving…</translation>
 </message>
 <message>
   <source>Scene</source>
