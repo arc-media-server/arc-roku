@@ -357,6 +357,10 @@
   <translation>Genre</translation>
 </message>
 <message>
+  <source>Genres</source>
+  <translation>Genres</translation>
+</message>
+<message>
   <source>Get a New Code</source>
   <translation>Get a New Code</translation>
 </message>
@@ -753,8 +757,8 @@
   <translation>Search</translation>
 </message>
 <message>
-  <source>Search for films, shows, episodes, collections and people.</source>
-  <translation>Search for films, shows, episodes, collections and people.</translation>
+  <source>Search for films, shows, genres and more.</source>
+  <translation>Search for films, shows, genres and more.</translation>
 </message>
 <message>
   <source>Season %1</source>
