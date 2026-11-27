@@ -13,7 +13,7 @@ function queuePlayAction(q as object, entry as object) as object
     return { go: "play", id: it.id, startMs: resumeMs(it), title: title, subtitle: subtitle, queue: q }
 end function
 
-' Only the current entry and its successors can be opened from the Queue screen.
+' The current entry and its successors, in queue order.
 function visibleQueueEntries(q as dynamic) as object
     out = []
     if q = invalid or q.entries = invalid then return out
@@ -23,6 +23,16 @@ function visibleQueueEntries(q as dynamic) as object
         if visible then out.Push(entry)
     end for
     return out
+end function
+
+function homeQueueCards(q as dynamic) as object
+    cards = []
+    for each entry in visibleQueueEntries(q)
+        if entry.available = true and entry.item <> invalid
+            cards.Push({ item: entry.item, queueEntry: entry.id, queueId: q.id })
+        end if
+    end for
+    return cards
 end function
 
 ' Send every entry ID and keep the current and previously played entries in place.
