@@ -170,10 +170,13 @@ sub showLetterRail()
     m.grid.itemSpacing = spacing
     if not show then return
 
-    m.railLetters = orderedLetters(m.letters, m.query.reverse)
+    m.railLetters = [""]
+    m.railLetters.Append(orderedLetters(m.letters, m.query.reverse))
     content = CreateObject("roSGNode", "ContentNode")
     for each letter in m.railLetters
-        content.createChild("ContentNode").title = UCase(letter)
+        label = UCase(letter)
+        if letter = "" then label = tr("All")
+        content.createChild("ContentNode").title = label
     end for
     m.letterRail.content = content
 end sub
@@ -199,8 +202,6 @@ end sub
 sub jumpToLetter(letter as string)
     m.query.letter = letter
     m.keepFocus = 0
-    m.menu = ""
-    m.options.visible = false
     reload()
     m.grid.setFocus(true)
 end sub
@@ -331,13 +332,6 @@ sub openMenu(section as string, focus = "" as string)
         if m.top.params.source.kind = "library" and m.libraryView = "library"
             entries.Push({ label: tr("Sort by"), detail: sortName(q.sort) })
             values.Push("sort")
-            ' Sorted by title, the grid can start at a letter (as the web's A–Z rail).
-            if q.sort = "title" and m.letters <> invalid and m.letters.Count() > 0
-                detail = tr("All titles")
-                if q.letter <> "" then detail = UCase(q.letter)
-                entries.Push({ label: tr("Jump to"), detail: detail })
-                values.Push("jump")
-            end if
             if q.sort <> "shuffle"
                 d = sortDirections(q.sort)
                 detail = d[0]
@@ -377,16 +371,6 @@ sub openMenu(section as string, focus = "" as string)
             if choices[i] = q.sort then selected = i
             entries.Push({ label: sortName(choices[i]), detail: "" })
             values.Push(choices[i])
-        end for
-    else if section = "jump"
-        m.options.title = tr("Jump to")
-        entries.Push({ label: tr("All titles"), detail: "" })
-        values.Push("")
-        selected = 0
-        for each l in orderedLetters(m.letters, q.reverse)
-            if l = q.letter then selected = values.Count()
-            entries.Push({ label: UCase(l), detail: "" })
-            values.Push(l)
         end for
     else if section = "order"
         m.options.title = tr("Order")
@@ -458,9 +442,6 @@ sub onOptionPicked()
     if section = "view"
         m.libraryView = v
         m.source = { kind: v, id: m.top.params.source.id, libraryKind: m.top.params.source.libraryKind }
-    else if section = "jump"
-        jumpToLetter(v)
-        return
     else if section = "sort"
         if v <> m.query.sort
             m.query.reverse = false
@@ -497,7 +478,7 @@ sub onOptionsClosed()
     if m.menu = "filters"
         openMenu("", "filters")
     else if m.menu <> ""
-        if m.menu = "view" or m.menu = "sort" or m.menu = "order" or m.menu = "jump"
+        if m.menu = "view" or m.menu = "sort" or m.menu = "order"
             openMenu("", m.menu)
         else
             openMenu("filters", m.menu)
