@@ -103,3 +103,31 @@ function qualityObjectAudio(audio as object) as string
     if p.Instr("dts:x") >= 0 then return "DTS:X"
     return ""
 end function
+
+' Exclude missing copies and continuation parts of split files.
+function filesForVersion(item as dynamic) as object
+    files = []
+    if item = invalid or item.available = false or item.files = invalid then return files
+    for each file in item.files
+        if file.id <> invalid and file.id > 0 and file.missing <> true
+            if file.part = invalid or file.part <= 1 then files.Push(file)
+        end if
+    end for
+    return files
+end function
+
+function versionFileInfo(file as object) as object
+    info = { edition: file.edition, size: file.size }
+    if file.streams <> invalid
+        for each stream in file.streams
+            if stream.kind = "video"
+                info.width = stream.width
+                info.height = stream.height
+                info.video_codec = stream.codec
+                info.hdr = qualityHdr(stream)
+                exit for
+            end if
+        end for
+    end if
+    return info
+end function

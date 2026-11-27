@@ -276,7 +276,7 @@ sub onItem(event as object)
     if it.kind = "episode" and m.top.params.subtitle <> invalid and m.top.params.subtitle <> "" then sub2 = m.top.params.subtitle
     m.top.findNode("title").text = title
     m.top.findNode("subtitle").text = sub2
-    load(valueOr(m.top.params.startMs, 0), {})
+    load(valueOr(m.top.params.startMs, 0), { fileId: m.top.params.fileId })
     loadCastAndEpisodes(it)
     if m.top.params.queue <> invalid
         n = queueNext(m.top.params.queue)

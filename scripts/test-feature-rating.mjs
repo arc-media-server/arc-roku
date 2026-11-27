@@ -30,7 +30,7 @@ try {
 // Exercise the production title-menu callbacks without pretending to render SceneGraph.
 const menu = execFileSync(process.execPath, [
   'node_modules/brs-node/bin/brs.cli.js', '--no-sg',
-  'out/staging/source/shared/http.brs', 'out/staging/source/shared/ratings.brs',
+  'out/staging/source/shared/http.brs', 'out/staging/source/shared/format.brs', 'out/staging/source/shared/ratings.brs', 'out/staging/source/shared/quality.brs', 'out/staging/source/shared/tracks.brs',
   'out/staging/components/screens/DetailsScreen.brs', 'tests/rating-menu.brs'
 ], { encoding: 'utf8', timeout: 30000 });
 assert.ok(menu.includes('RATING MENU PASSED'), menu);
