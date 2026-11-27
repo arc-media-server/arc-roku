@@ -11,9 +11,10 @@ sub init()
     m.typing.observeField("fire", "search")
     m.keyboard.observeField("text", "onText")
     m.results.observeField("rowItemSelected", "onSelected")
-    m.note.text = tr("Search for films, shows, episodes, collections and people.")
+    m.note.text = tr("Search for films, shows, genres and more.")
     m.query = ""
     m.generation = 0
+    m.genreRequest = 0
     m.content = invalid
     m.cardPanel = m.top.findNode("cardPanel")
     m.cardPanel.observeField("picked", "onCardPicked")
@@ -30,6 +31,7 @@ sub takeFocus(_ = invalid as dynamic)
 end sub
 
 sub leaving(_ = invalid as dynamic)
+    m.genreRequest++
 end sub
 
 sub returned(_ = invalid as dynamic)
@@ -47,7 +49,7 @@ sub search()
     m.generation = m.generation + 1
     if q = ""
         showRows([])
-        m.note.text = tr("Search for films, shows, episodes, collections and people.")
+        m.note.text = tr("Search for films, shows, genres and more.")
         return
     end if
     callApi("GET", "/search" + queryString({ q: q }), invalid, "onResults", m.generation)
@@ -103,7 +105,11 @@ end function
 sub onSelected()
     c = focusedCard()
     if c = invalid then return
-    if c.kind = "episode" and c.parentId <> ""
+    m.genreRequest++
+    if c.kind = "genre"
+        tag = { request: m.genreRequest, generation: m.generation, libraryId: c.itemId, genre: c.title }
+        callApi("GET", "/libraries", invalid, "onGenreLibraries", tag)
+    else if c.kind = "episode" and c.parentId <> ""
         m.top.action = { go: "open", id: c.parentId, episodeId: c.itemId }
     else if c.kind = "collection"
         m.top.action = { go: "grid", title: c.title, source: { kind: "collection", id: c.itemId } }
@@ -112,6 +118,21 @@ sub onSelected()
     else
         m.top.action = { go: "open", id: c.itemId }
     end if
+end sub
+
+sub onGenreLibraries(event as object)
+    res = event.getData()
+    if res.tag.request <> m.genreRequest or res.tag.generation <> m.generation then return
+    if res.ok and res.data <> invalid
+        for each library in res.data
+            if valueString(library.id) = res.tag.libraryId
+                source = { kind: "library", id: library.id, libraryKind: library.kind, genre: res.tag.genre }
+                m.top.action = { go: "grid", title: library.name, source: source }
+                return
+            end if
+        end for
+    end if
+    m.note.text = tr("Couldn't load this.")
 end sub
 
 function onKeyEvent(key as string, press as boolean) as boolean
