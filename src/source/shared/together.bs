@@ -1,0 +1,49 @@
+const TOGETHER_PATH = "/watch-together"
+
+function roomCode(input as string) as string
+    code = ""
+    alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    input = UCase(input)
+    for i = 1 to Len(input)
+        char = Mid(input, i, 1)
+        if char <> " " and char <> "-"
+            if Instr(1, alphabet, char) = 0 then return ""
+            code += char
+        end if
+    end for
+    if Len(code) <> 8 then return ""
+    return code
+end function
+
+function roomPosition(room as object, serverNow as double) as double
+    at = room.position_ms
+    if room.state = "playing" and serverNow > room.at_ms then at += (serverNow - room.at_ms) * room.rate
+    return at
+end function
+
+function newerRoom(previous as dynamic, nextRoom as dynamic) as boolean
+    if nextRoom = invalid or nextRoom.id = invalid then return false
+    if previous = invalid then return true
+    if nextRoom.id <> previous.id then return false
+    if nextRoom.revision <> previous.revision then return nextRoom.revision > previous.revision
+    return nextRoom.server_time_ms >= previous.server_time_ms
+end function
+
+function estimatedServerAtReceipt(sent as double, received as double, elapsed as integer) as double
+    roundTrip = elapsed - (sent - received)
+    if roundTrip < 0 then roundTrip = 0
+    return sent + roundTrip / 2
+end function
+
+function roomHeartbeat(room as object, playerReport as object) as object
+    beat = { generation: room.generation, position_ms: room.position_ms, state: "waiting", ready: false }
+    if playerReport = invalid then return beat
+    if playerReport.itemId = room.item_id and playerReport.position <> invalid
+        beat.position_ms = Int(playerReport.position)
+        if playerReport.generation = room.generation and playerReport.ready = true
+            beat.ready = true
+            beat.state = playerReport.state
+        end if
+    end if
+    return beat
+end function

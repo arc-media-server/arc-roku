@@ -12,7 +12,7 @@ function liveTouches(topics as object, wanted as object) as boolean
 end function
 
 sub liveAdd(state as object, topic as string, now as integer)
-    known = ["resync", "catalog", "library", "profile", "playback", "artwork", "optimized", "previews", "markers"]
+    known = ["resync", "catalog", "library", "profile", "playback", "artwork", "optimized", "previews", "markers", "watch_together"]
     found = false
     for each key in known
         if topic = key then found = true

@@ -1,0 +1,48 @@
+sub init()
+    m.top.functionName = "work"
+end sub
+
+sub work()
+    port = CreateObject("roMessagePort")
+    clock = CreateObject("roTimespan")
+    delay = 2000
+    while not m.top.stopRequested
+        t = CreateObject("roUrlTransfer")
+        t.SetUrl(m.top.url)
+        t.SetMessagePort(port)
+        t.SetCertificatesFile("common:/certs/ca-bundle.crt")
+        t.InitClientCertificates()
+        t.AddHeader("Accept", "text/event-stream")
+        t.AddHeader("Authorization", "Bearer " + m.top.token)
+        t.SetMinimumTransferRate(1, 20)
+        retry = delay
+        running = t.AsyncGetSSEvents()
+        while running and not m.top.stopRequested
+            msg = wait(100, port)
+            if type(msg) = "roUrlEvent" and msg.GetSourceIdentity() = t.GetIdentity()
+                if msg.GetInt() <> 2
+                    status = msg.GetResponseCode()
+                    if status = 401 or status = 404
+                        t.AsyncCancel()
+                        return
+                    end if
+                    retry = liveRetry(msg.GetResponseHeaders(), delay)
+                    running = false
+                end if
+            else if type(msg) = "roSSEvent" and msg.GetSourceIdentity() = t.GetIdentity()
+                if msg.GetEvent() = "room"
+                    room = ParseJson(msg.GetData())
+                    if type(room) = "roAssociativeArray" then m.top.room = room
+                    delay = 2000
+                end if
+            end if
+        end while
+        t.AsyncCancel()
+        delay = delay * 2
+        if delay > 30000 then delay = 30000
+        deadline = clock.TotalMilliseconds() + retry
+        while not m.top.stopRequested and clock.TotalMilliseconds() < deadline
+            wait(100, port)
+        end while
+    end while
+end sub

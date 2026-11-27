@@ -1,0 +1,94 @@
+' The room is authoritative. Roku has seek/pause/resume but no normal playback-rate control.
+sub prepareRoomPlayback()
+    m.together = m.top.params.together
+    if m.together = invalid then return
+    m.roomNotice = m.top.findNode("roomNotice")
+    m.roomClock = CreateObject("roTimespan")
+    m.roomSeekClock = CreateObject("roTimespan")
+    m.appliedGeneration = -1
+    m.roomSeek = -1
+    m.together.observeField("snapshot", "onRoomSnapshot")
+    onRoomSnapshot()
+end sub
+
+sub onRoomSnapshot()
+    if m.closed then return
+    m.roomSnapshot = m.together.snapshot
+    m.roomClock.Mark()
+    syncRoomPlayback()
+end sub
+
+sub syncRoomPlayback()
+    snap = m.roomSnapshot
+    if snap = invalid or m.closed or m.finishedRoom = true then return
+    room = snap.room
+    if room.state = "ended" or room.item_id <> m.top.params.id or room.available <> true
+        m.finishedRoom = true
+        m.top.action = { go: "back" }
+        return
+    end if
+    label = ""
+    if snap.offline = true
+        label = tr("Reconnecting to the room…")
+    else if room.state = "waiting"
+        label = tr("Waiting for everyone…")
+    else if room.state = "paused"
+        label = tr("Watch Together · Paused")
+        for each p in room.participants
+            if p.id = room.changed_by and room.started = true then label = tr("Paused by %1").Replace("%1", p.name)
+        end for
+    end if
+    if snap.message <> invalid and snap.message <> "" then label = snap.message
+    m.roomNotice.visible = label <> ""
+    m.roomNotice.getChild(1).text = label
+
+    state = m.video.state
+    prepared = (state = "playing" or state = "paused") and m.roomLoading <> true and not m.errorLabel.visible
+    playerReport = { itemId: room.item_id, generation: m.appliedGeneration, position: positionMs(), state: "waiting", ready: false }
+    if prepared
+        now = snap.serverNow + m.roomClock.TotalMilliseconds()
+        target = roomPosition(room, now)
+        d = durationOf()
+        if d > 0 and target > d - 1000 then target = d - 1000
+        if target < 0 then target = 0
+        actual = positionMs()
+        if m.roomSeek >= 0 and (Abs(actual - m.roomSeek) < 1900 or m.roomSeekClock.TotalMilliseconds() >= 5000)
+            m.roomSeek = -1
+        end if
+        if snap.offline = true or room.state <> "playing"
+            if state = "playing" then m.video.control = "pause"
+        else if state = "paused" and m.roomSeek < 0
+            m.video.control = "resume"
+        end if
+        newGeneration = m.appliedGeneration <> room.generation
+        drift = Abs(target - actual)
+        ' A new generation must be acknowledged only after its seek has actually landed.
+        if snap.offline <> true and m.roomSeek < 0
+            if (newGeneration and drift >= 1900) or (drift > 3500 and m.roomSeekClock.TotalMilliseconds() >= 4000)
+                m.roomSeek = target
+                m.roomSeekClock.Mark()
+                seekTo(target)
+            else if newGeneration
+                m.appliedGeneration = room.generation
+            end if
+        end if
+        playerReport.generation = m.appliedGeneration
+        playerReport.ready = m.roomSeek < 0 and m.appliedGeneration = room.generation and snap.offline <> true
+        if playerReport.ready then playerReport.state = state
+    end if
+    prior = m.together.report
+    m.together.report = playerReport
+    if prior = invalid or prior.ready <> playerReport.ready then m.together.command = { action: "heartbeat" }
+end sub
+
+sub roomCommand(action as string, at = invalid as dynamic, itemId = invalid as dynamic)
+    if m.together = invalid then return
+    cmd = { action: action }
+    if at <> invalid then cmd.position_ms = Int(at)
+    if itemId <> invalid then cmd.item_id = itemId
+    m.together.command = cmd
+end sub
+
+sub userSeek(ms as double)
+    if m.together = invalid then seekTo(ms) else roomCommand("seek", ms)
+end sub

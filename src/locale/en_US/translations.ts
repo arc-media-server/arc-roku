@@ -109,6 +109,10 @@
   <translation>API</translation>
 </message>
 <message>
+  <source>Arc couldn't complete the room request. Try again.</source>
+  <translation>Arc couldn't complete the room request. Try again.</translation>
+</message>
+<message>
   <source>Arc couldn't start this title.</source>
   <translation>Arc couldn't start this title.</translation>
 </message>
@@ -131,6 +135,10 @@
 <message>
   <source>as %1</source>
   <translation>as %1</translation>
+</message>
+<message>
+  <source>Ask the host for the eight-character code.</source>
+  <translation>Ask the host for the eight-character code.</translation>
 </message>
 <message>
   <source>Audio</source>
@@ -179,6 +187,10 @@
 <message>
   <source>Cancel</source>
   <translation>Cancel</translation>
+</message>
+<message>
+  <source>Cancel room</source>
+  <translation>Cancel room</translation>
 </message>
 <message>
   <source>Cast</source>
@@ -293,6 +305,10 @@
   <translation>Decade</translation>
 </message>
 <message>
+  <source>Decline invitation</source>
+  <translation>Decline invitation</translation>
+</message>
+<message>
   <source>Deleted scene</source>
   <translation>Deleted scene</translation>
 </message>
@@ -305,12 +321,32 @@
   <translation>Director %1</translation>
 </message>
 <message>
+  <source>End for everyone</source>
+  <translation>End for everyone</translation>
+</message>
+<message>
+  <source>End room</source>
+  <translation>End room</translation>
+</message>
+<message>
+  <source>Enter a room code</source>
+  <translation>Enter a room code</translation>
+</message>
+<message>
   <source>Enter an address</source>
   <translation>Enter an address</translation>
 </message>
 <message>
+  <source>Enter the eight-character room code.</source>
+  <translation>Enter the eight-character room code.</translation>
+</message>
+<message>
   <source>Episodes</source>
   <translation>Episodes</translation>
+</message>
+<message>
+  <source>Everyone will leave synchronized playback.</source>
+  <translation>Everyone will leave synchronized playback.</translation>
 </message>
 <message>
   <source>Extra</source>
@@ -349,6 +385,14 @@
   <translation>Genre</translation>
 </message>
 <message>
+  <source>Get a new room code</source>
+  <translation>Get a new room code</translation>
+</message>
+<message>
+  <source>Getting ready</source>
+  <translation>Getting ready</translation>
+</message>
+<message>
   <source>Go to details</source>
   <translation>Go to details</translation>
 </message>
@@ -381,6 +425,14 @@
   <translation>Horror for Halloween</translation>
 </message>
 <message>
+  <source>Host</source>
+  <translation>Host</translation>
+</message>
+<message>
+  <source>Hosted by %1</source>
+  <translation>Hosted by %1</translation>
+</message>
+<message>
   <source>Huge</source>
   <translation>Huge</translation>
 </message>
@@ -397,6 +449,22 @@
   <translation>Interview</translation>
 </message>
 <message>
+  <source>Invite people…</source>
+  <translation>Invite people…</translation>
+</message>
+<message>
+  <source>Invited</source>
+  <translation>Invited</translation>
+</message>
+<message>
+  <source>Join</source>
+  <translation>Join</translation>
+</message>
+<message>
+  <source>Joining room…</source>
+  <translation>Joining room…</translation>
+</message>
+<message>
   <source>Jump to</source>
   <translation>Jump to</translation>
 </message>
@@ -411,6 +479,10 @@
 <message>
   <source>Least recent first</source>
   <translation>Least recent first</translation>
+</message>
+<message>
+  <source>Leave room</source>
+  <translation>Leave room</translation>
 </message>
 <message>
   <source>Length</source>
@@ -581,6 +653,14 @@
   <translation>Open as %1 on this device, without asking who's watching.</translation>
 </message>
 <message>
+  <source>Open player</source>
+  <translation>Open player</translation>
+</message>
+<message>
+  <source>Open room</source>
+  <translation>Open room</translation>
+</message>
+<message>
   <source>Open Source Licences</source>
   <translation>Open Source Licences</translation>
 </message>
@@ -603,6 +683,10 @@
 <message>
   <source>Paused</source>
   <translation>Paused</translation>
+</message>
+<message>
+  <source>Paused by %1</source>
+  <translation>Paused by %1</translation>
 </message>
 <message>
   <source>People</source>
@@ -631,6 +715,10 @@
 <message>
   <source>Play Next</source>
   <translation>Play Next</translation>
+</message>
+<message>
+  <source>Play together</source>
+  <translation>Play together</translation>
 </message>
 <message>
   <source>Playback</source>
@@ -677,6 +765,10 @@
   <translation>Rating</translation>
 </message>
 <message>
+  <source>Ready</source>
+  <translation>Ready</translation>
+</message>
+<message>
   <source>Recently Added in %1</source>
   <translation>Recently Added in %1</translation>
 </message>
@@ -695,6 +787,10 @@
 <message>
   <source>Recommended</source>
   <translation>Recommended</translation>
+</message>
+<message>
+  <source>Reconnecting to the room…</source>
+  <translation>Reconnecting to the room…</translation>
 </message>
 <message>
   <source>Rediscover</source>
@@ -729,8 +825,20 @@
   <translation>Resume from %1</translation>
 </message>
 <message>
+  <source>Return to room</source>
+  <translation>Return to room</translation>
+</message>
+<message>
   <source>Romance for Valentine's Day</source>
   <translation>Romance for Valentine's Day</translation>
+</message>
+<message>
+  <source>Room code expired</source>
+  <translation>Room code expired</translation>
+</message>
+<message>
+  <source>Room code expires in %1 min</source>
+  <translation>Room code expires in %1 min</translation>
 </message>
 <message>
   <source>Scene</source>
@@ -747,6 +855,10 @@
 <message>
   <source>Season %1</source>
   <translation>Season %1</translation>
+</message>
+<message>
+  <source>Send invitations</source>
+  <translation>Send invitations</translation>
 </message>
 <message>
   <source>Server</source>
@@ -853,6 +965,10 @@
   <translation>Start Watching</translation>
 </message>
 <message>
+  <source>Starting room…</source>
+  <translation>Starting room…</translation>
+</message>
+<message>
   <source>Stereo</source>
   <translation>Stereo</translation>
 </message>
@@ -889,6 +1005,10 @@
   <translation>That PIN isn't right.</translation>
 </message>
 <message>
+  <source>That room is unavailable. Check the code or ask the host for a new one.</source>
+  <translation>That room is unavailable. Check the code or ask the host for a new one.</translation>
+</message>
+<message>
   <source>The code ran out. Choose New code for another.</source>
   <translation>The code ran out. Choose New code for another.</translation>
 </message>
@@ -897,16 +1017,40 @@
   <translation>The file's default</translation>
 </message>
 <message>
+  <source>The host ended the room.</source>
+  <translation>The host ended the room.</translation>
+</message>
+<message>
+  <source>The room changed. Try again.</source>
+  <translation>The room changed. Try again.</translation>
+</message>
+<message>
   <source>Theme Music</source>
   <translation>Theme Music</translation>
+</message>
+<message>
+  <source>There is nobody you can invite to this title.</source>
+  <translation>There is nobody you can invite to this title.</translation>
 </message>
 <message>
   <source>This Roku couldn't play this title.</source>
   <translation>This Roku couldn't play this title.</translation>
 </message>
 <message>
+  <source>This room is no longer available.</source>
+  <translation>This room is no longer available.</translation>
+</message>
+<message>
+  <source>This title isn't available to you.</source>
+  <translation>This title isn't available to you.</translation>
+</message>
+<message>
   <source>Title</source>
   <translation>Title</translation>
+</message>
+<message>
+  <source>Title unavailable</source>
+  <translation>Title unavailable</translation>
 </message>
 <message>
   <source>Titles</source>
@@ -915,6 +1059,10 @@
 <message>
   <source>Titles, artwork and episode details come from TMDB and TheTVDB. This product uses the TMDB API but is not endorsed or certified by TMDB.</source>
   <translation>Titles, artwork and episode details come from TMDB and TheTVDB. This product uses the TMDB API but is not endorsed or certified by TMDB.</translation>
+</message>
+<message>
+  <source>Too many requests. Try again shortly.</source>
+  <translation>Too many requests. Try again shortly.</translation>
 </message>
 <message>
   <source>Top</source>
@@ -1005,12 +1153,24 @@
   <translation>Video Format</translation>
 </message>
 <message>
+  <source>Waiting for everyone…</source>
+  <translation>Waiting for everyone…</translation>
+</message>
+<message>
   <source>Waiting for the code to be approved…</source>
   <translation>Waiting for the code to be approved…</translation>
 </message>
 <message>
   <source>Watch Status</source>
   <translation>Watch Status</translation>
+</message>
+<message>
+  <source>Watch Together</source>
+  <translation>Watch Together</translation>
+</message>
+<message>
+  <source>Watch Together · Paused</source>
+  <translation>Watch Together · Paused</translation>
 </message>
 <message>
   <source>Watched</source>
@@ -1043,6 +1203,10 @@
 <message>
   <source>Yellow</source>
   <translation>Yellow</translation>
+</message>
+<message>
+  <source>You already have an active room.</source>
+  <translation>You already have an active room.</translation>
 </message>
 <message>
   <source>Your Rating</source>

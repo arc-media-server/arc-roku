@@ -329,6 +329,16 @@ sub showTitleMenu()
     if m.item.user_data <> invalid and m.item.user_data.rating <> invalid then current = m.item.user_data.rating
     entries = [{ label: tr("Rate…"), detail: ratingStars(current) }]
     if m.item.kind = "series" then entries.Push(missingEpisodesEntry(m.showMissing))
+    m.roomTitle = invalid
+    if m.global <> invalid and m.global.watchTogether = true
+        for each action in m.actions
+            if action.kind = "play"
+                m.roomTitle = action
+                exit for
+            end if
+        end for
+        if m.roomTitle <> invalid then entries.Push({ label: tr("Watch Together"), detail: "" })
+    end if
     m.cardPanel.entries = entries
     m.cardPanel.selected = -1
     m.cardPanel.visible = true
@@ -341,6 +351,11 @@ sub onRatingPicked()
         if i = 1 and m.item.kind = "series"
             closeCardPanel()
             toggleMissingEpisodes()
+            return
+        end if
+        if i > 0 and m.roomTitle <> invalid
+            closeCardPanel()
+            m.top.action = { go: "together", itemId: m.roomTitle.item.id, startMs: m.roomTitle.startMs }
             return
         end if
         if i <> 0 then return

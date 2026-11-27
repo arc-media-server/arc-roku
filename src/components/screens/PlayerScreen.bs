@@ -106,6 +106,7 @@ end sub
 
 sub onParams()
     p = m.top.params
+    prepareRoomPlayback()
     m.top.findNode("title").text = valueOr(p.title, "")
     m.spinner.control = "start"
     if p.extra <> invalid
@@ -115,7 +116,7 @@ sub onParams()
         callApi("POST", "/cast", { url: p.extra.url }, "onExtraCast")
         return
     end if
-    if prerollEnabled(p)
+    if m.together = invalid and prerollEnabled(p)
         m.prerollWaiting = true
         m.prerollDeadline.control = "start"
         callApi("GET", prerollPath(p.id), invalid, "onPrerollList")
@@ -245,6 +246,7 @@ end sub
 
 sub leaving(_ = invalid as dynamic)
     m.closed = true
+    if m.together <> invalid then m.together.unobserveField("snapshot")
     m.prerollDeadline.control = "stop"
     if m.plan <> invalid then report("stopped", positionMs())
     m.video.control = "stop"
@@ -278,7 +280,7 @@ sub onItem(event as object)
     m.top.findNode("subtitle").text = sub2
     load(valueOr(m.top.params.startMs, 0), {})
     loadCastAndEpisodes(it)
-    if it.kind = "episode" and pref("auto_play", true) <> false
+    if m.together = invalid and it.kind = "episode" and pref("auto_play", true) <> false
         if m.top.params.queue <> invalid
             ' Playing through a queue (Shuffle Season): next is the queue's next entry, not Arc's.
             n = queueNext(m.top.params.queue)
@@ -313,6 +315,10 @@ end function
 ' load starts (or restarts) the stream at fromMs; opts may name another audio track or version.
 sub load(fromMs as dynamic, opts as object)
     m.generation = m.generation + 1
+    if m.together <> invalid
+        m.roomLoading = true
+        syncRoomPlayback()
+    end if
     old = m.plan
     m.spinner.visible = true
     m.spinner.control = "start"
@@ -421,6 +427,7 @@ sub onVideoState()
     end if
     if m.prerollWaiting then return
     if s = "playing"
+        m.roomLoading = false
         m.spinner.visible = false
         m.spinner.control = "stop"
         m.errorLabel.visible = false
@@ -432,6 +439,7 @@ sub onVideoState()
     else if s = "finished"
         report("stopped", durationOf())
         m.ended = true
+        if m.together <> invalid then m.finishedRoom = true
         if m.next <> invalid
             if m.upNextIn < 0 then startUpNext()
         else
@@ -454,6 +462,7 @@ sub onVideoState()
             fail(tr("This Roku couldn't play this title.") + " " + m.video.errorMsg)
         end if
     end if
+    if m.together <> invalid then syncRoomPlayback()
 end sub
 
 sub fail(text as string)
@@ -516,6 +525,7 @@ end sub
 ' --- controls ---
 
 sub onTick()
+    if m.together <> invalid then syncRoomPlayback()
     at = positionMs()
     drawSubtitles(at)
     drawSkip(at)
@@ -637,7 +647,7 @@ sub onSeekTimer()
     target = m.scrub
     m.scrub = -1
     m.thumbGroup.visible = false
-    if target >= 0 then seekTo(target)
+    if target >= 0 then userSeek(target)
 end sub
 
 ' A file plays from anywhere; a converted stream only has what's been made so far, and anything
@@ -663,6 +673,12 @@ sub seekTo(ms as double)
 end sub
 
 sub togglePause()
+    if m.together <> invalid
+        if m.roomSnapshot = invalid then return
+        if m.roomSnapshot.room.state = "paused" then roomCommand("play") else roomCommand("pause")
+        showControls()
+        return
+    end if
     if m.video.state = "playing"
         m.video.control = "pause"
         m.stateLabel.text = tr("Paused")
@@ -1136,7 +1152,7 @@ function cardKey(key as string) as boolean
         name = m.tabNames[m.tabIndex]
         if name = "chapters"
             setZone("picture")
-            seekTo(t.value)
+            userSeek(t.value)
         else if name = "episodes"
             playEpisode(t.value)
         end if
@@ -1154,6 +1170,11 @@ sub playEpisode(ep as object)
     end if
     startAt = 0
     if ep.user_data <> invalid and ep.user_data.played <> true and ep.user_data.position_ms <> invalid then startAt = ep.user_data.position_ms
+    if m.together <> invalid
+        roomCommand("change_item", startAt, ep.id)
+        setZone("picture")
+        return
+    end if
     title = m.top.findNode("title").text
     print "Arc: playing another episode from the player"
     m.top.action = { go: "play", replace: true, id: ep.id, startMs: startAt, title: title, subtitle: osdEpisodeLine(ep) }
@@ -1334,7 +1355,7 @@ sub drawSkip(at as double)
     end if
     ' Skip Intros Automatically (the profile's auto_skip): each intro or recap once, so seeking
     ' back into one plays it.
-    if mk.kind <> "credits" and pref("auto_skip", false) = true
+    if m.together = invalid and mk.kind <> "credits" and pref("auto_skip", false) = true
         key = mk.kind + ":" + mk.start_ms.ToStr()
         if not m.autoSkipped.DoesExist(key)
             m.autoSkipped[key] = true
@@ -1362,7 +1383,7 @@ sub skipNow()
     if mk.kind = "credits" and m.next <> invalid
         playNext()
     else
-        seekTo(mk.end_ms)
+        userSeek(mk.end_ms)
     end if
 end sub
 
@@ -1578,7 +1599,7 @@ sub onOptionPicked()
     else if section = "version"
         if v <> m.plan.file_id then load(positionMs(), { fileId: v })
     else if section = "chapters"
-        seekTo(v)
+        userSeek(v)
     end if
 end sub
 

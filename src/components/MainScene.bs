@@ -6,7 +6,7 @@
 ' Back closes the screen on top; on Home it leaves the app.
 
 sub init()
-    m.global.addFields({ hideSpoilers: true, spoilerRevision: 0, server: "", token: "", serverName: "", profile: {}, caps: {}, unauthorized: false })
+    m.global.addFields({ hideSpoilers: true, spoilerRevision: 0, server: "", token: "", serverName: "", profile: {}, caps: {}, watchTogether: false, togetherCapabilityKnown: false, unauthorized: false })
     m.global.observeField("unauthorized", "onUnauthorized")
     ' Live updates
     m.global.addField("liveTopics", "assocarray", true)
@@ -117,11 +117,12 @@ end sub
 sub openLaunchHome(profile as object)
     showSpinner(false)
     m.global.profile = profile
-    replaceAll("HomeScreen", {})
+    replaceAll("HomeScreen", { recoverTogether: m.pendingLink = invalid })
     openPendingLink()
 end sub
 
 sub setToken(token as string)
+    resetTogetherCapability()
     m.global.token = token
     agent = m.top.getHttpAgent()
     ' Every picture and stream the scene loads from Arc carries the sign-in.
@@ -232,10 +233,12 @@ sub onAction(event as object)
         start()
     else if go = "profile"
         m.global.profile = a.profile
-        replaceAll("HomeScreen", {})
+        resetTogetherCapability()
+        replaceAll("HomeScreen", { recoverTogether: m.pendingLink = invalid })
         openPendingLink()
     else if go = "profiles"
         m.global.profile = {}
+        resetTogetherCapability()
         callApi("DELETE", "/auth/profile", invalid, "onIgnored")
         replaceAll("ProfilesScreen", {})
     else if go = "signOut"
@@ -246,7 +249,9 @@ sub onAction(event as object)
     else if go = "play"
         ' Up Next replaces the player that's finishing.
         if a.replace = true then pop()
-        push("PlayerScreen", { id: a.id, startMs: a.startMs, title: a.title, subtitle: a.subtitle, queue: a.queue, preroll: a.replace <> true, together: a.together })
+        push("PlayerScreen", { id: a.id, startMs: a.startMs, title: a.title, subtitle: a.subtitle, queue: a.queue, preroll: a.replace <> true and a.together = invalid, together: a.together })
+    else if go = "together"
+        push("TogetherScreen", { itemId: a.itemId, startMs: a.startMs, roomId: a.roomId, recovered: a.recovered })
     else if go = "playExtra"
         push("PlayerScreen", { extra: { url: a.url }, title: a.title, subtitle: a.subtitle })
     else if go = "grid"
@@ -303,7 +308,7 @@ end function
 function railUsable() as boolean
     if m.places.Count() = 0 or m.stack.Count() = 0 then return false
     top = m.stack.Peek().subtype()
-    for each hidden in ["PlayerScreen", "ServerScreen", "SignInScreen", "ProfilesScreen", "ProblemScreen"]
+    for each hidden in ["PlayerScreen", "TogetherScreen", "ServerScreen", "SignInScreen", "ProfilesScreen", "ProblemScreen"]
         if top = hidden then return false
     end for
     return true
@@ -335,14 +340,19 @@ sub onRailPicked()
     m.rail.open = false
     if i < 0
         m.global.profile = {}
+        resetTogetherCapability()
         callApi("DELETE", "/auth/profile", invalid, "onIgnored")
         m.places = []
         replaceAll("ProfilesScreen", {})
         return
     end if
     if i >= m.places.Count() then return
-    m.rail.current = i
     go = m.places[i].go
+    if go.go = "together"
+        push("TogetherScreen", {})
+        return
+    end if
+    m.rail.current = i
     if go.go = "home"
         replaceAll("HomeScreen", {})
     else if go.go = "search"
@@ -415,7 +425,7 @@ sub onLiveTopics(event as object)
     screen = m.stack.Peek()
     kind = screen.subtype()
     ' Grids/search/player are never reloaded while in use. They refresh on normal navigation.
-    if kind = "HomeScreen" and liveTouches(topics, ["catalog", "library", "profile", "playback", "artwork"])
+    if kind = "HomeScreen" and liveTouches(topics, ["catalog", "library", "profile", "playback", "artwork", "watch_together"])
         screen.callFunc("returned", invalid)
     else if kind = "LibraryScreen" and liveTouches(topics, ["catalog", "library", "profile", "playback", "artwork"])
         screen.callFunc("liveRefresh", invalid)
@@ -441,4 +451,9 @@ sub onSpoilerPrefs(event as object)
     if res.tag = invalid or m.global.profile = invalid then return
     if res.tag.profile <> m.global.profile.id or res.tag.revision <> m.global.spoilerRevision then return
     if res.ok and res.data <> invalid then m.global.hideSpoilers = res.data.hide_spoilers = true
+end sub
+
+sub resetTogetherCapability()
+    m.global.watchTogether = false
+    m.global.togetherCapabilityKnown = false
 end sub
