@@ -37,6 +37,9 @@ sub onParams()
     m.embedded = valueOr(p.embedded, false) = true
     m.titleLabel.visible = not m.embedded
     if m.embedded then m.grid.vertFocusAnimationStyle = "floatingFocus"
+    if m.source.kind = "collection" or m.source.kind = "playlist"
+        m.hint.text = tr("* for Play All and Shuffle")
+    end if
     if m.source.kind = "library"
         m.hint.text = tr("* for options, sort and filter")
         callApi("GET", "/libraries/" + valueString(m.source.id) + "/facets", invalid, "onFacets")
@@ -81,6 +84,7 @@ sub reload()
     m.grid.itemSize = [size[0], size[1] + GRID_CARD_TOP_INSET]
     m.content = CreateObject("roSGNode", "ContentNode")
     m.loaded = 0
+    m.queueItems = []
     m.letters = []
     ' Where the loaded titles start in the whole list: 0, or a letter's place after a jump.
     m.base = 0
@@ -118,6 +122,10 @@ sub onPage(event as object)
         if page.letters <> invalid then m.letters = letterChoices(page.letters)
     end if
     for each card in page.cards
+        if m.source.kind = "collection" or m.source.kind = "playlist"
+            it = card.item
+            if it.available <> false and (it.kind = "movie" or it.kind = "series" or it.kind = "episode") then m.queueItems.Push(it)
+        end if
         node = m.content.createChild("ContentNode")
         node.addFields(cardFields())
         node.topInset = GRID_CARD_TOP_INSET
@@ -246,7 +254,19 @@ sub openMenu(section as string, focus = "" as string)
             values.Push({ act: e.act })
         end for
         m.menuCard = card
-        if entries.Count() > 0 then m.options.title = card.title else m.options.title = tr("Sort and filter")
+        if m.queueItems.Count() > 0
+            groupEntries = [{ label: tr("Play All"), detail: "" }, { label: tr("Shuffle"), detail: "" }]
+            groupEntries.Append(entries)
+            entries = groupEntries
+            groupActions = ["playAll", "shuffleAll"]
+            groupActions.Append(values)
+            values = groupActions
+            m.options.title = m.titleLabel.text
+        else if entries.Count() > 0
+            m.options.title = card.title
+        else
+            m.options.title = tr("Sort and filter")
+        end if
         if m.top.params.source.kind <> "library"
             if entries.Count() = 0 then return
         else if not m.embedded
@@ -351,6 +371,24 @@ sub openMenu(section as string, focus = "" as string)
     m.options.show = true
 end sub
 
+sub startGroupQueue(shuffle as boolean)
+    if m.queueItems.Count() = 0 then return
+    if shuffle
+        ' Mix the initial titles as well, so Shuffle can start on any title.
+        ids = shuffledIds(m.queueItems)
+        body = { item_ids: ids }
+    else if m.source.kind = "playlist"
+        body = { playlist_id: m.source.id }
+    else
+        ids = []
+        for each it in m.queueItems
+            ids.Push(it.id)
+        end for
+        body = { item_ids: ids }
+    end if
+    m.top.action = { go: "queueStart", body: body, shuffle: shuffle }
+end sub
+
 function viewName(v as string) as string
     if v = "collections" then return tr("Collections")
     if v = "folders" then return tr("Folders")
@@ -368,6 +406,11 @@ sub onOptionPicked()
         m.grid.setFocus(true)
         go = runCardAction(m.menuCard, v.act)
         if go <> invalid then m.top.action = go
+        return
+    end if
+    if section = "" and (v = "playAll" or v = "shuffleAll")
+        onOptionsClosed()
+        startGroupQueue(v = "shuffleAll")
         return
     end if
     if section = "" or (section = "filters" and v <> "clear_filters")

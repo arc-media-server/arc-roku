@@ -21,6 +21,7 @@
     <script type="text/brightscript" uri="pkg:/source/shared/tracks.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/libraryfilters.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/cardmenu.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/seasonactions.bs" />
     <children>
         <Rectangle width="1920" height="1080" color="0x0B1214FF" />
         <Label id="title" translation="[170, 70]" width="1300" font="font:LargeBoldSystemFont" color="0xF0F4F4FF" />
