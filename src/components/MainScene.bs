@@ -26,6 +26,7 @@ sub init()
     m.spinner.poster.uri = "pkg:/images/spinner.png"
     m.stack = []
     m.pendingLink = invalid
+    m.linkRevision = 0
     m.global.caps = deviceCaps()
     m.global.server = readSetting("server")
     m.global.serverName = readSetting("serverName")
@@ -356,27 +357,50 @@ sub onRailPicked()
     end if
 end sub
 
-' --- deep links (Roku's search and Continue Watching launch the app with a contentId) ---
+' --- deep links from Roku OS ---
 
 sub onLaunchArgs()
-    noteLink(m.top.launchArgs)
+    receiveLink(m.top.launchArgs)
 end sub
 
 sub onInputArgs()
-    noteLink(m.top.inputArgs)
-    if m.global.profile <> invalid and m.global.profile.id <> invalid then openPendingLink()
+    receiveLink(m.top.inputArgs)
 end sub
 
-sub noteLink(args as dynamic)
-    if args = invalid or args.contentId = invalid or args.contentId = "" then return
-    m.pendingLink = { id: args.contentId, play: args.mediaType = "movie" or args.mediaType = "episode" }
+sub receiveLink(args as dynamic)
+    link = rokuDeepLink(args)
+    if link = invalid then return
+    m.pendingLink = link
+    m.linkRevision++
+    openPendingLink()
 end sub
 
 sub openPendingLink()
     link = m.pendingLink
-    if link = invalid then return
+    if link = invalid or m.global.profile.id = invalid or m.stack.Count() = 0 then return
     m.pendingLink = invalid
-    push("DetailsScreen", { id: link.id })
+    if link.profileId <> invalid and link.profileId <> m.global.profile.id then return
+    if not link.play
+        push("DetailsScreen", { id: link.id })
+        return
+    end if
+    link.revision = m.linkRevision
+    link.activeProfile = m.global.profile.id
+    link.screen = m.stack.Peek().id
+    id = CreateObject("roUrlTransfer").Escape(link.id)
+    callApi("GET", "/items/" + id, invalid, "onLinkedItem", link)
+end sub
+
+sub onLinkedItem(event as object)
+    res = event.getData()
+    link = res.tag
+    ' A newer link, profile switch, or in-app navigation cancels a pending launch.
+    if link.revision <> m.linkRevision or link.activeProfile <> m.global.profile.id then return
+    if m.stack.Count() = 0 or m.stack.Peek().id <> link.screen then return
+    if not res.ok or not matchesRokuPlaybackLink(link, res.data) then return
+    m.rail.open = false
+    if m.stack.Peek().subtype() = "PlayerScreen" then pop()
+    push("PlayerScreen", { id: link.id, linkedItem: res.data, preroll: false })
 end sub
 
 ' Live updates: stop before profile/server changes; the old task owns its own connection.
