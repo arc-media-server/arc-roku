@@ -271,6 +271,8 @@ sub testBrowse()
     eq(jumped.offset, 412, "browseCards keeps where a jumped page starts")
     eq(letterChoices(jumped.letters).Join(","), "a,s", "letterChoices: A to Z with titles only")
     eq(letterChoices(invalid).Count(), 0, "letterChoices: none asked for")
+    eq(orderedLetters(letterChoices(jumped.letters), true).Join(","), "s,a", "letter rail follows a reversed title sort")
+    eq(orderedLetters([], true).Count(), 0, "letter rail handles an empty reversed list")
     eq(browseCards(lib, { total: 5, items: [] }).offset, 0, "browseCards: an ordinary page starts at 0")
     q.sort = "added"
     q.reverse = true
