@@ -1,0 +1,43 @@
+function playQueuePath(id as string) as string
+    return "/play-queues/" + CreateObject("roUrlTransfer").Escape(id)
+end function
+
+function queuePlayAction(q as object, entry as object) as object
+    it = entry.item
+    title = it.title
+    subtitle = ""
+    if it.kind = "episode"
+        if it.series_title <> invalid then title = it.series_title
+        subtitle = episodeTitled(it)
+    end if
+    return { go: "play", id: it.id, startMs: resumeMs(it), title: title, subtitle: subtitle, queue: q }
+end function
+
+' Only the current entry and its successors can be opened from the Queue screen.
+function visibleQueueEntries(q as dynamic) as object
+    out = []
+    if q = invalid or q.entries = invalid then return out
+    visible = false
+    for each entry in q.entries
+        if entry.id = q.current_entry_id then visible = true
+        if visible then out.Push(entry)
+    end for
+    return out
+end function
+
+' Send every entry ID and keep the current and previously played entries in place.
+function reorderedQueueIds(q as object, entryId as string, direction as integer) as dynamic
+    ids = []
+    currentIndex = -1
+    fromIndex = -1
+    for each entry in q.entries
+        if entry.id = q.current_entry_id then currentIndex = ids.Count()
+        if entry.id = entryId then fromIndex = ids.Count()
+        ids.Push(entry.id)
+    end for
+    target = fromIndex + direction
+    if currentIndex < 0 or fromIndex <= currentIndex or target <= currentIndex or target >= ids.Count() then return invalid
+    ids[fromIndex] = ids[target]
+    ids[target] = entryId
+    return ids
+end function

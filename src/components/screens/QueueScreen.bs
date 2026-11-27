@@ -1,0 +1,172 @@
+sub init()
+    m.note = m.top.findNode("note")
+    m.panel = m.top.findNode("options")
+    m.top.findNode("heading").text = tr("Queue")
+    m.panel.observeField("picked", "onPick")
+    m.panel.observeField("closed", "onClose")
+end sub
+
+sub onParams()
+    loadQueue()
+end sub
+
+sub takeFocus(_ = invalid as dynamic)
+    entries = m.panel.entries
+    if entries <> invalid and entries.Count() > 0 then m.panel.show = true
+end sub
+
+sub leaving(_ = invalid as dynamic)
+    m.closed = true
+end sub
+
+sub returned(_ = invalid as dynamic)
+    loadQueue()
+end sub
+
+sub loadQueue()
+    m.busy = true
+    m.note.text = tr("Loading…")
+    callApi("GET", "/play-queues/current", invalid, "onQueue")
+end sub
+
+sub onQueue(event as object)
+    if m.closed = true then return
+    res = event.getData()
+    m.busy = false
+    m.queue = invalid
+    if res.ok then m.queue = res.data
+    m.loadFailed = not res.ok and res.status <> 404
+    showQueue()
+    if m.refreshAfterFailure = true
+        m.refreshAfterFailure = false
+        m.note.text = tr("Couldn't update the queue. Try again.")
+    end if
+end sub
+
+sub showQueue()
+    m.selected = invalid
+    m.panel.title = tr("Queue")
+    m.entries = visibleQueueEntries(m.queue)
+    entries = []
+    m.note.text = ""
+    for each entry in m.entries
+        label = tr("Unavailable title")
+        detail = ""
+        if entry.available = true and entry.item <> invalid
+            item = entry.item
+            label = item.title
+            if item.kind = "episode"
+                if item.series_title <> invalid then label = item.series_title
+                detail = episodeTitled(item)
+            end if
+        end if
+        if entry.id = m.queue.current_entry_id then label = tr("Current: %1").Replace("%1", label)
+        entries.Push({ label: label, detail: detail })
+    end for
+    if m.loadFailed = true
+        m.note.text = tr("Couldn't load the queue. Try again.")
+        entries.Push({ label: tr("Retry") })
+    else if entries.Count() = 0
+        m.note.text = tr("The queue is empty. Add a title from its options.")
+        entries.Push({ label: tr("Back") })
+    end if
+    m.panel.entries = entries
+    m.panel.show = true
+end sub
+
+sub onPick()
+    if m.busy = true or m.closed = true then return
+    i = m.panel.picked
+    if i < 0 then return
+    if m.selected <> invalid
+        if i < m.edits.Count() then applyEdit(m.edits[i])
+    else if m.loadFailed = true
+        loadQueue()
+    else if m.entries.Count() = 0
+        onClose()
+    else if i < m.entries.Count()
+        showEntry(i)
+    end if
+end sub
+
+sub showEntry(index as integer)
+    entry = m.entries[index]
+    m.selected = entry
+    m.panel.title = m.panel.entries[index].label
+    entries = []
+    m.edits = []
+    if entry.available = true and entry.item <> invalid
+        entries.Push({ label: tr("Play") })
+        m.edits.Push("select")
+    end if
+    if index > 0
+        if index > 1
+            entries.Push({ label: tr("Move Earlier") })
+            m.edits.Push("earlier")
+        end if
+        if index < m.entries.Count() - 1
+            entries.Push({ label: tr("Move Later") })
+            m.edits.Push("later")
+        end if
+        entries.Push({ label: tr("Remove from Queue") })
+        m.edits.Push("remove")
+    end if
+    if entries.Count() = 0
+        showQueue()
+    else
+        m.panel.entries = entries
+        m.panel.show = true
+    end if
+end sub
+
+sub applyEdit(action as string)
+    entry = m.selected
+    body = { revision: m.queue.revision, operation: action }
+    if action = "select"
+        if entry.id = m.queue.current_entry_id
+            m.top.action = queuePlayAction(m.queue, entry)
+            return
+        end if
+        body.entry_id = entry.id
+    else if action = "remove"
+        body.entry_ids = [entry.id]
+    else
+        direction = 1
+        if action = "earlier" then direction = -1
+        ids = reorderedQueueIds(m.queue, entry.id, direction)
+        if ids = invalid then return
+        body.operation = "reorder"
+        body.entry_ids = ids
+    end if
+    m.busy = true
+    callApi("PATCH", playQueuePath(m.queue.id), body, "onEdited", action)
+end sub
+
+sub onEdited(event as object)
+    if m.closed = true then return
+    res = event.getData()
+    m.busy = false
+    if res.ok and res.data <> invalid
+        m.queue = res.data
+        if res.tag = "select"
+            entry = queueCurrent(m.queue)
+            if entry <> invalid
+                m.top.action = queuePlayAction(m.queue, entry)
+                return
+            end if
+        end if
+        showQueue()
+    else
+        ' Refresh before allowing another edit. A stale revision cannot reorder a newer queue.
+        loadQueue()
+        m.refreshAfterFailure = true
+    end if
+end sub
+
+sub onClose()
+    if m.selected <> invalid
+        showQueue()
+    else
+        m.top.action = { go: "home" }
+    end if
+end sub

@@ -26,6 +26,7 @@ sub init()
     m.spinner.poster.uri = "pkg:/images/spinner.png"
     m.stack = []
     m.pendingLink = invalid
+    m.top.findNode("queueNoticeTimer").observeField("fire", "hideQueueNotice")
     m.global.caps = deviceCaps()
     m.global.server = readSetting("server")
     m.global.serverName = readSetting("serverName")
@@ -259,6 +260,10 @@ sub onAction(event as object)
         push("SearchScreen", {})
     else if go = "settings"
         push("SettingsScreen", {})
+    else if go = "queueAdd"
+        queueAdd(a)
+    else if go = "queueStart"
+        startQueue(a)
     else if go = "about"
         push("AboutScreen", {})
     else if go = "home"
@@ -270,6 +275,136 @@ sub onAction(event as object)
     else if go = "back"
         pop()
     end if
+end sub
+
+sub queueAdd(a as object)
+    if m.queueAdding = true or m.global.profile.id = invalid then return
+    m.queueAdding = true
+    tag = { id: a.id, operation: a.operation, profile: m.global.profile.id, server: m.global.server, token: m.global.token, retried: false }
+    callApi("GET", "/play-queues/current", invalid, "onQueueForAdd", tag)
+end sub
+
+function queueAddHere(tag as object) as boolean
+    return m.global.profile.id = tag.profile and m.global.server = tag.server and m.global.token = tag.token
+end function
+
+sub onQueueForAdd(event as object)
+    res = event.getData()
+    if not queueAddHere(res.tag)
+        m.queueAdding = false
+        return
+    end if
+    if res.ok and res.data <> invalid
+        q = res.data
+        body = { revision: q.revision, operation: res.tag.operation, item_ids: [res.tag.id] }
+        callApi("PATCH", playQueuePath(q.id), body, "onQueueAdded", res.tag)
+    else if res.status = 404
+        callApi("POST", "/play-queues", { item_ids: [res.tag.id] }, "onQueueAdded", res.tag)
+    else
+        m.queueAdding = false
+        showQueueNotice(tr("Couldn't update the queue. Try again."))
+    end if
+end sub
+
+sub onQueueAdded(event as object)
+    res = event.getData()
+    m.queueAdding = false
+    if not queueAddHere(res.tag) then return
+    if res.ok
+        if res.tag.operation = "next"
+            showQueueNotice(tr("Added to play next."))
+        else
+            showQueueNotice(tr("Added to the queue."))
+        end if
+    else if (res.status = 409 or res.status = 404) and not res.tag.retried
+        tag = res.tag
+        tag.retried = true
+        m.queueAdding = true
+        callApi("GET", "/play-queues/current", invalid, "onQueueForAdd", tag)
+    else
+        showQueueNotice(tr("Couldn't update the queue. Try again."))
+    end if
+end sub
+
+sub startQueue(a as object)
+    if m.queueAdding = true or m.global.profile.id = invalid then return
+    m.queueAdding = true
+    tag = { request: a.body, shuffle: a.shuffle, retried: false, screenId: m.stack.Peek().id,
+            profile: m.global.profile.id, server: m.global.server, token: m.global.token }
+    callApi("GET", "/play-queues/current", invalid, "onQueueForStart", tag)
+end sub
+
+function canStartQueue(tag as object) as boolean
+    return queueAddHere(tag) and m.stack.Count() > 0 and m.stack.Peek().id = tag.screenId and not m.rail.open
+end function
+
+sub onQueueForStart(event as object)
+    res = event.getData()
+    if not canStartQueue(res.tag)
+        m.queueAdding = false
+        return
+    end if
+    body = {}
+    body.Append(res.tag.request)
+    if res.ok and res.data <> invalid
+        body.replace_id = res.data.id
+        body.revision = res.data.revision
+    else if res.status <> 404
+        m.queueAdding = false
+        showQueueNotice(tr("Couldn't start this queue. Try again."))
+        return
+    end if
+    callApi("POST", "/play-queues", body, "onStartedQueue", res.tag)
+end sub
+
+sub onStartedQueue(event as object)
+    res = event.getData()
+    if not canStartQueue(res.tag)
+        m.queueAdding = false
+        return
+    end if
+    if res.status = 409 and not res.tag.retried
+        tag = res.tag
+        tag.retried = true
+        callApi("GET", "/play-queues/current", invalid, "onQueueForStart", tag)
+        return
+    end if
+    if res.ok and res.data <> invalid and res.tag.shuffle = true
+        q = res.data
+        body = { revision: q.revision, operation: "shuffle" }
+        callApi("PATCH", playQueuePath(q.id), body, "onStartedQueueShuffled", res.tag)
+        return
+    end if
+    playStartedQueue(res)
+end sub
+
+sub onStartedQueueShuffled(event as object)
+    playStartedQueue(event.getData())
+end sub
+
+sub playStartedQueue(res as object)
+    m.queueAdding = false
+    if not canStartQueue(res.tag) then return
+    entry = invalid
+    if res.ok then entry = queueCurrent(res.data)
+    if entry = invalid
+        showQueueNotice(tr("Couldn't start this queue. Try again."))
+        return
+    end if
+    a = queuePlayAction(res.data, entry)
+    push("PlayerScreen", { id: a.id, startMs: 0, title: a.title, subtitle: a.subtitle, queue: a.queue, preroll: true })
+end sub
+
+sub showQueueNotice(message as string)
+    m.top.findNode("queueNoticeText").text = message
+    m.top.findNode("queueNotice").visible = true
+    timer = m.top.findNode("queueNoticeTimer")
+    timer.control = "stop"
+    timer.control = "start"
+end sub
+
+sub hideQueueNotice()
+    m.top.findNode("queueNotice").visible = false
 end sub
 
 sub onIgnored(event as object)
@@ -349,6 +484,8 @@ sub onRailPicked()
         replaceAll("HomeScreen", {})
     else if go.go = "search"
         replaceAll("SearchScreen", {})
+    else if go.go = "queue"
+        replaceAll("QueueScreen", {})
     else if go.go = "settings"
         replaceAll("SettingsScreen", {})
     else if go.go = "grid"

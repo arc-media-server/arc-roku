@@ -335,14 +335,14 @@ sub testPlaces()
     for each place in p
         ids.Push(place.id)
     end for
-    eq(ids.Join(","), "search,home,library:2,watchlist,library:1,library:3,playlists,settings", "navPlaces: profile's order, the Watchlist after one library")
+    eq(ids.Join(","), "search,home,library:2,watchlist,library:1,library:3,playlists,queue,settings", "navPlaces: profile's order, the Watchlist after one library")
     eq(p[2].icon, "tv", "navPlaces: a TV library's icon")
     eq(p[5].icon, "videos", "navPlaces: a videos library's icon")
     eq(p[4].go.go + " " + p[4].go.library.kind, "library movies", "navPlaces: a library opens its page")
     p = navPlaces(libs, invalid)
     eq(p[2].id, "watchlist", "navPlaces: the Watchlist first by default")
     p = navPlaces(libs, { watchlist_position: 99 })
-    eq(p[p.Count() - 3].id, "watchlist", "navPlaces: the Watchlist last when asked")
+    eq(p[p.Count() - 4].id, "watchlist", "navPlaces: the Watchlist last when asked")
     eq(placeIndex(p, "home"), 1, "placeIndex finds Home")
     eq(placeIndex(p, "nowhere"), -1, "placeIndex: unknown places")
 end sub
@@ -472,12 +472,12 @@ end sub
 
 sub testCardMenu()
     ep = { kind: "episode", itemId: "e", parentId: "s", resumeMs: 60000, played: false, watchlisted: false, inContinue: true }
-    eq(menuActs(cardMenu(ep)), "play,restart,watched,uncontinue,show,addToPlaylist", "card menu: an episode in Continue Watching")
+    eq(menuActs(cardMenu(ep)), "play,restart,watched,queueNext,queueAppend,uncontinue,show,addToPlaylist", "card menu: an episode in Continue Watching")
     movie = { kind: "movie", itemId: "m", parentId: "", resumeMs: 0, played: false, watchlisted: false, inContinue: true }
-    eq(menuActs(cardMenu(movie)), "play,watched,list,uncontinue,open,addToPlaylist", "card menu: a film in Up Next or Continue Watching")
-    eq(cardMenu(movie)[3].label, "Remove from Continue Watching", "card menu: the remove entry's name")
+    eq(menuActs(cardMenu(movie)), "play,watched,list,queueNext,queueAppend,uncontinue,open,addToPlaylist", "card menu: a film in Up Next or Continue Watching")
+    eq(cardMenu(movie)[5].label, "Remove from Continue Watching", "card menu: the remove entry's name")
     movie.inContinue = false
-    eq(menuActs(cardMenu(movie)), "play,watched,list,open,addToPlaylist", "card menu: elsewhere there's no remove entry")
+    eq(menuActs(cardMenu(movie)), "play,watched,list,queueNext,queueAppend,open,addToPlaylist", "card menu: elsewhere there's no remove entry")
     eq(cardMenu({ kind: "collection" }).Count(), 0, "card menu: not on a collection")
 end sub
 

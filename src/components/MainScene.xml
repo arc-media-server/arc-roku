@@ -14,6 +14,9 @@
     <script type="text/brightscript" uri="pkg:/source/shared/http.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/api.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/caps.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/playqueue.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/seasonactions.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/format.bs" />
     <!-- Live updates -->
     <script type="text/brightscript" uri="pkg:/source/shared/liveupdates.bs" />
     <children>
@@ -24,6 +27,12 @@
             <FloatFieldInterpolator id="screenFadeTo" key="[0.0, 1.0]" keyValue="[0.0, 1.0]" />
         </Animation>
         <NavRail id="rail" visible="false" />
+        <Group id="queueNotice" visible="false" translation="[590, 936]">
+            <Rectangle width="740" height="64" color="0x252F31FF" />
+            <Label id="queueNoticeText" width="740" height="64" horizAlign="center"
+                vertAlign="center" color="0xFFFFFFFF" font="font:MediumSystemFont" />
+        </Group>
+        <Timer id="queueNoticeTimer" duration="3.0" />
         <BusySpinner id="spinner" translation="[912, 492]" visible="false" />
     </children>
 </component>

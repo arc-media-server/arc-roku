@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="QueueScreen" extends="Group">
+    <interface>
+        <field id="params" type="assocarray" onChange="onParams" />
+        <field id="action" type="assocarray" alwaysNotify="true" />
+        <function name="takeFocus" />
+        <function name="leaving" />
+        <function name="returned" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/source/shared/http.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/api.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/format.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/seasonactions.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/playqueue.bs" />
+    <children>
+        <Rectangle width="1920" height="1080" color="0x0B1214FF" />
+        <Label id="heading" translation="[164, 90]" width="930" font="font:LargeBoldSystemFont" color="0xF0F4F4FF" />
+        <Label id="note" translation="[166, 183]" width="915" wrap="true" maxLines="3"
+            font="font:MediumSystemFont" color="0xC6D0D0FF" />
+        <OptionsPanel id="options" />
+    </children>
+</component>
