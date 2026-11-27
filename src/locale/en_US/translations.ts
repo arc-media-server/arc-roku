@@ -377,10 +377,6 @@
   <translation>HDR</translation>
 </message>
 <message>
-  <source>Hide Missing Episodes</source>
-  <translation>Hide Missing Episodes</translation>
-</message>
-<message>
   <source>Hide Spoilers</source>
   <translation>Hide Spoilers</translation>
 </message>
