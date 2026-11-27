@@ -205,6 +205,13 @@ sub pushLE(b as object, n as dynamic)
 end sub
 
 sub testTracks()
+    eq(subtitleTimingKey(7, { id: "s2" }), "7:s2", "subtitle timing is scoped to the file and text track")
+    eq(subtitleTimingKey(7, { id: "s2", image: true }), "", "burned picture subtitles cannot shift")
+    eq(shiftedSubtitleOffset(0, -500), -500, "subtitle timing can move earlier")
+    eq(shiftedSubtitleOffset(10000, 500), 10000, "subtitle timing clamps later")
+    eq(shiftedSubtitleOffset(-10000, -500), -10000, "subtitle timing clamps earlier")
+    eq(shiftedSubtitleOffset(1500, invalid), 0, "subtitle timing resets")
+    eq(subtitleTimingLabel(-500), "−0.5s", "subtitle timing shows a signed offset")
     eq(langKey("eng"), "en", "langKey maps three letters")
     eq(langKey("pt-BR"), "pt", "langKey drops the region")
     check(sameLanguage("ger", "de"), "sameLanguage across code styles")

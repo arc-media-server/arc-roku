@@ -65,6 +65,10 @@
   <translation>%1s</translation>
 </message>
 <message>
+  <source>0.5s</source>
+  <translation>0.5s</translation>
+</message>
+<message>
   <source>1 title</source>
   <translation>1 title</translation>
 </message>
@@ -305,6 +309,10 @@
   <translation>Director %1</translation>
 </message>
 <message>
+  <source>Earlier</source>
+  <translation>Earlier</translation>
+</message>
+<message>
   <source>Enter an address</source>
   <translation>Enter an address</translation>
 </message>
@@ -407,6 +415,10 @@
 <message>
   <source>Last watched</source>
   <translation>Last watched</translation>
+</message>
+<message>
+  <source>Later</source>
+  <translation>Later</translation>
 </message>
 <message>
   <source>Least recent first</source>
@@ -721,6 +733,10 @@
   <translation>Remove from Watchlist</translation>
 </message>
 <message>
+  <source>Reset</source>
+  <translation>Reset</translation>
+</message>
+<message>
   <source>Resume</source>
   <translation>Resume</translation>
 </message>
@@ -879,6 +895,10 @@
 <message>
   <source>Subtitle Size</source>
   <translation>Subtitle Size</translation>
+</message>
+<message>
+  <source>Subtitle Timing</source>
+  <translation>Subtitle Timing</translation>
 </message>
 <message>
   <source>Subtitles</source>
