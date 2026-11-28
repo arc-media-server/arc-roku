@@ -7,7 +7,8 @@
 ' Each row is { id, title, style ("poster", "thumb" or "backdrop"), path, shape, continueRow }, where path is the /api/v1
 ' request for its titles and shape says how the answer is laid out: "list" (an array of titles),
 ' "page" ({ items }), "recent" (a TV library's recent cards), "collection" ({ items }) or
-' "playlist" ({ entries: [{ item }] }). continueRow marks Continue Watching and Up Next, whose cards
+' "playlist" ({ entries: [{ item }] }). seasonPosters selects season art on poster rows.
+' continueRow marks Continue Watching and Up Next, whose cards
 ' can be taken out of them (DELETE /home/continue/{id}), as on the web.
 
 function resolveHomeRows(prefs as object, libraries as object, today as object) as object
@@ -23,10 +24,10 @@ function resolveHomeRows(prefs as object, libraries as object, today as object) 
     if shownRow(saved, "continue")
         path = "/home/continue"
         if not split then path = path + "?with_up_next=1"
-        rows.Push({ id: "continue", title: tr("Continue Watching"), style: rowStyle(saved, "continue", "thumb"), path: path, shape: "list", continueRow: true })
+        rows.Push({ id: "continue", title: tr("Continue Watching"), style: rowStyle(saved, "continue", "thumb"), path: path, shape: "list", continueRow: true, seasonPosters: rowSeasonPosters(saved["continue"]) })
     end if
     if split and shownRow(saved, "next-up")
-        rows.Push({ id: "next-up", title: tr("Up Next"), style: rowStyle(saved, "next-up", "thumb"), path: "/home/next-up", shape: "list", continueRow: true })
+        rows.Push({ id: "next-up", title: tr("Up Next"), style: rowStyle(saved, "next-up", "thumb"), path: "/home/next-up", shape: "list", continueRow: true, seasonPosters: rowSeasonPosters(saved["next-up"]) })
     end if
     pick = seasonalPick(today)
     if pick <> invalid and shownRow(saved, "seasonal")
@@ -49,7 +50,7 @@ function resolveHomeRows(prefs as object, libraries as object, today as object) 
             title = tr("Recently Added in %1").Replace("%1", lib.name)
             showsOnly = saved[recent] <> invalid and saved[recent].shows_only = true
             if lib.kind = "shows" and not showsOnly
-                rows.Push({ id: recent, title: title, style: look, path: "/libraries/" + lib.id.ToStr() + "/recent-shows", shape: "recent" })
+                rows.Push({ id: recent, title: title, style: rowStyle(saved, recent, look), path: "/libraries/" + lib.id.ToStr() + "/recent-shows", shape: "recent", seasonPosters: rowSeasonPosters(saved[recent], true) })
             else
                 rows.Push({ id: recent, title: title, style: look, path: "/items" + queryString({ library_id: lib.id, kind: libraryItemKind(lib), sort: "added", limit: 24 }), shape: "page" })
             end if
@@ -70,7 +71,7 @@ function resolveHomeRows(prefs as object, libraries as object, today as object) 
             if row.id.StartsWith("collection:")
                 rows.Push({ id: row.id, title: title, style: "poster", path: "/collections/" + row.id.Mid(11), shape: "collection" })
             else if row.id.StartsWith("playlist:")
-                rows.Push({ id: row.id, title: title, style: "poster", path: "/playlists/" + row.id.Mid(9), shape: "playlist" })
+                rows.Push({ id: row.id, title: title, style: rowStyle(saved, row.id, "poster"), path: "/playlists/" + row.id.Mid(9), shape: "playlist", seasonPosters: rowSeasonPosters(row) })
             end if
         end if
     end for
@@ -89,6 +90,11 @@ function rowStyle(saved as object, id as string, fallback as string) as string
     ' "arc" is what the web calls Backdrops.
     if r.style = "arc" then return "backdrop"
     return fallback
+end function
+
+function rowSeasonPosters(row as dynamic, fallback = false as boolean) as boolean
+    if row = invalid or row.posters = invalid then return fallback
+    return row.posters = "season"
 end function
 
 function libraryItemKind(lib as object) as string
