@@ -21,6 +21,7 @@
     <script type="text/brightscript" uri="pkg:/source/shared/tracks.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/libraryfilters.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/cardmenu.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/seasonactions.bs" />
     <children>
         <Rectangle width="1920" height="1080" color="0x0B1214FF" />
         <Label id="title" translation="[170, 70]" width="1300" font="font:LargeBoldSystemFont" color="0xF0F4F4FF" />
@@ -28,6 +29,10 @@
         <Label id="hint" translation="[1300, 80]" width="500" horizAlign="right" font="font:SmallestSystemFont" color="0x9AA7A7FF" />
         <MarkupGrid id="grid" translation="[156, 230]" itemComponentName="CardItem" drawFocusFeedback="false"
             vertFocusAnimationStyle="fixedFocusWrap" />
+        <LabelList id="letterRail" translation="[1802, 226]" itemSize="[74, 30]" numRows="27"
+            vertFocusAnimationStyle="floatingFocus" visible="false"
+            font="font:SmallestSystemFont" color="0xA7B4B4FF" focusedColor="0x0B1214FF"
+            focusBitmapBlendColor="0xF5F5F7FF" />
         <Label id="empty" translation="[170, 300]" width="1500" wrap="true" font="font:MediumSystemFont" color="0x9AA7A7FF" visible="false" />
         <BusySpinner id="spinner" translation="[912, 560]" />
         <OptionsPanel id="options" visible="false" />

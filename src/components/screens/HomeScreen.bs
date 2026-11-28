@@ -104,6 +104,7 @@ sub resolve()
     if m.closed or m.prefs = invalid or m.libraries = invalid or not m.capabilityReady then return
     publishPlaces()
     m.specs = resolveHomeRows(m.prefs, m.libraries, CreateObject("roDateTime"))
+    m.specs.Push({ id: "queue", title: tr("Queue"), style: "poster", path: "/play-queues/current", shape: "queue" })
     m.results = []
     m.placed = 0
     m.newContent = CreateObject("roSGNode", "ContentNode")
@@ -175,18 +176,25 @@ sub onRow(event as object)
     res = event.getData()
     if res.tag = invalid or res.tag.generation <> m.generation then return
     i = res.tag.index
-    m.results[i] = []
-    if res.ok
-        if m.specs[i].id = "rooms"
-            if res.data <> invalid and res.data.rooms <> invalid
-                for each room in res.data.rooms
-                    if room.state <> "ended" and room.item <> invalid
-                        m.results[i].Push({ item: room.item, room: room })
-                    end if
-                end for
+    if m.specs[i].shape = "queue"
+        m.homeQueue = invalid
+        if res.ok then m.homeQueue = res.data
+        m.results[i] = homeQueueCards(m.homeQueue)
+
+    else
+        m.results[i] = []
+        if res.ok
+            if m.specs[i].id = "rooms"
+                if res.data <> invalid and res.data.rooms <> invalid
+                    for each room in res.data.rooms
+                        if room.state <> "ended" and room.item <> invalid
+                            m.results[i].Push({ item: room.item, room: room })
+                        end if
+                    end for
+                end if
+            else
+                m.results[i] = rowItems(m.specs[i].shape, res.data)
             end if
-        else
-            m.results[i] = rowItems(m.specs[i].shape, res.data)
         end if
     end if
     placeRows()
@@ -215,6 +223,7 @@ sub placeRows()
                 node.addFields(cardFields())
                 fillCard(node, card, spec.style)
                 node.inContinue = spec.continueRow = true
+                node.addFields({ queueEntry: valueOr(card.queueEntry, ""), queueId: valueOr(card.queueId, "") })
                 if card.room <> invalid
                     node.addFields({ roomId: card.room.id, joinedRoom: card.room.joined = true, hostingRoom: card.room.hosting = true })
                     node.title = card.room.item.title
@@ -332,6 +341,10 @@ end sub
 sub onSelected()
     c = focusedCard()
     if c = invalid then return
+    if c.queueEntry <> ""
+        queueCardAction(c, "select")
+        return
+    end if
     ' An episode opens its show's page, landing on that episode (as Plex and Arc's other apps).
     if c.hasField("roomId")
         m.top.action = { go: "together", roomId: c.roomId }
@@ -352,7 +365,11 @@ function onKeyEvent(key as string, press as boolean) as boolean
             return true
         end if
         if c <> invalid and (c.kind = "movie" or c.kind = "episode")
-            m.top.action = { go: "play", id: c.itemId, startMs: c.resumeMs, title: c.title, subtitle: c.line2 }
+            if c.queueEntry <> ""
+                queueCardAction(c, "select")
+            else
+                m.top.action = { go: "play", id: c.itemId, startMs: c.resumeMs, title: c.title, subtitle: c.line2 }
+            end if
             return true
         end if
     else if key = "options"
@@ -374,6 +391,18 @@ sub showMenu()
             label = tr("Decline invitation")
             if c.hostingRoom then label = tr("Cancel room")
             entries.Push({ label: label, act: "dismissRoom" })
+        end if
+    end if
+    q = m.homeQueue
+    if c <> invalid and c.queueEntry <> "" and q <> invalid and c.queueId = q.id
+        for i = entries.Count() - 1 to 0 step -1
+            if entries[i].act = "play" or entries[i].act = "restart" then entries.Delete(i)
+        end for
+        entries.Unshift({ label: tr("Play"), act: "queue:select" })
+        if c.queueEntry <> q.current_entry_id
+            if reorderedQueueIds(q, c.queueEntry, -1) <> invalid then entries.Push({ label: tr("Move Earlier"), act: "queue:earlier" })
+            if reorderedQueueIds(q, c.queueEntry, 1) <> invalid then entries.Push({ label: tr("Move Later"), act: "queue:later" })
+            entries.Push({ label: tr("Remove from Queue"), act: "queue:remove" })
         end if
     end if
     if entries.Count() = 0 then return
@@ -402,9 +431,16 @@ sub onCardPicked()
         id = CreateObject("roUrlTransfer").Escape(m.menuCard.roomId)
         callApi("POST", "/watch-together/rooms/" + id + "/dismiss", invalid, "onCardChanged")
         return
+    else if act.StartsWith("queue:")
+        queueCardAction(m.menuCard, act.Mid(6))
+        return
     end if
     go = runCardAction(m.menuCard, act)
     if go <> invalid then m.top.action = go
+end sub
+
+sub queueCardAction(card as object, operation as string)
+    m.top.action = { go: "queueEdit", queueId: card.queueId, entryId: card.queueEntry, operation: operation }
 end sub
 
 sub closeCardPanel()

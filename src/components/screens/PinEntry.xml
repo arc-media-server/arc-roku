@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Arc's profile PIN screen: masked entry beside a TV remote keypad. -->
+<component name="PinEntry" extends="Group">
+    <interface>
+        <field id="profile" type="assocarray" onChange="onProfileChanged" alwaysNotify="true" />
+        <field id="entry" type="assocarray" alwaysNotify="true" />
+        <function name="takeFocus" />
+        <function name="failed" />
+    </interface>
+    <children>
+        <Poster uri="pkg:/images/auth/background.jpg" width="1920" height="1080" />
+        <Poster id="avatar" width="192" height="192" translation="[568, 215]" />
+        <Label id="initial" width="192" height="192" translation="[568, 215]" horizAlign="center" vertAlign="center" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" />
+        <Label id="name" width="520" translation="[404, 445]" horizAlign="center" font="font:MediumBoldSystemFont" color="0xF5F5F7FF" />
+        <Label id="heading" width="520" translation="[404, 506]" horizAlign="center" font="font:SmallSystemFont" color="0xA7A7B1FF" />
+        <Group id="slots" translation="[390, 580]" />
+        <Label id="message" width="610" translation="[359, 711]" horizAlign="center" font="font:SmallSystemFont" />
+        <Capsule id="backFill" width="228" height="76" translation="[550, 784]" />
+        <Label id="backLabel" width="228" height="76" translation="[550, 784]" horizAlign="center" vertAlign="center" font="font:SmallBoldSystemFont" />
+        <Group id="pad" translation="[1116, 268]" />
+    </children>
+</component>

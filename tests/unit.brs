@@ -90,6 +90,9 @@ sub testFormat()
     movie.user_data.position_ms = 754000
     eq(playLabel(movie), "Resume from 12:34", "playLabel resumes a movie")
     eq(metaLine(movie), "1999 · 15 · 2h 16m · Action · Science Fiction", "metaLine")
+    eq(yearAndEdition({ kind: "movie", year: 2008, edition: "IMAX" }), "2008 · IMAX", "named movie cut")
+    eq(yearAndEdition({ kind: "movie", edition: "IMAX" }), "IMAX", "named movie cut without a year")
+    eq(yearAndEdition({ kind: "movie", year: 2008 }), "2008", "movie without an edition")
     movie.user_data.played = true
     eq(resumeMs(movie), 0, "a watched title doesn't resume")
     eq(minutesLeft(754000, 8160000), 124, "minutesLeft rounds up")
@@ -205,6 +208,18 @@ sub pushLE(b as object, n as dynamic)
 end sub
 
 sub testTracks()
+    item = { files: [{ id: 1 }, { id: 2, part: 2 }, { id: 3, missing: true }, { id: 4, part: 1 }] }
+    files = filesForVersion(item)
+    eq(files.Count(), 2, "pre-play files exclude missing or later split parts")
+    eq(files[1].id, 4, "pre-play file ID is preserved")
+    eq(versionFilename({ id: 4, path: "D:" + Chr(92) + "films" + Chr(92) + "cut.mkv" }), "cut.mkv", "duplicate labels use the file name")
+    eq(subtitleTimingKey(7, { id: "s2" }), "7:s2", "subtitle timing is scoped to the file and text track")
+    eq(subtitleTimingKey(7, { id: "s2", image: true }), "", "burned picture subtitles cannot shift")
+    eq(shiftedSubtitleOffset(0, -500), -500, "subtitle timing can move earlier")
+    eq(shiftedSubtitleOffset(10000, 500), 10000, "subtitle timing clamps later")
+    eq(shiftedSubtitleOffset(-10000, -500), -10000, "subtitle timing clamps earlier")
+    eq(shiftedSubtitleOffset(1500, invalid), 0, "subtitle timing resets")
+    eq(subtitleTimingLabel(-500), "−0.5s", "subtitle timing shows a signed offset")
     eq(langKey("eng"), "en", "langKey maps three letters")
     eq(langKey("pt-BR"), "pt", "langKey drops the region")
     check(sameLanguage("ger", "de"), "sameLanguage across code styles")
@@ -225,7 +240,14 @@ sub testTracks()
     eq(chooseSubtitle(tracks, "en", "fr", "").id, "c", "chooseSubtitle prefers a plain track")
     eq(chooseSubtitle(tracks, "en", "en", "foreign").id, "a", "chooseSubtitle foreign mode falls back to forced in the audio's language")
     check(chooseSubtitle(tracks, "fr", "de", "manual") = invalid, "chooseSubtitle manual picks nothing without forced in that language")
-    check(chooseSubtitle([{ id: "x", language: "en", image: true }], "en", "", "") = invalid, "chooseSubtitle skips picture subtitles")
+    picture = { id: "s4", language: "en", image: true }
+    eq(chooseSubtitle([picture], "en", "", "").id, "s4", "chooseSubtitle can use an embedded picture track")
+    eq(subtitleBurnId(picture), "s4", "embedded pictures use the burn-in request")
+    eq(subtitleBurnId({ id: "x", image: true, external: true }), "", "external pictures cannot be burned in")
+    eq(playableSubtitles([{ id: "x", image: true, external: true }]).Count(), 0, "external pictures are hidden")
+    eq(subtitleBurnId(tracks[2]), "", "text subtitles don't request burn-in")
+    eq(subtitleBurnId(invalid), "", "switching subtitles off clears burn-in")
+    eq(chooseSubtitle([{ id: "s8", language: "en", image: true, forced: true }], "", "en", "manual").id, "s8", "forced picture subtitles can match the active audio")
     eq(rememberedSubtitleLanguage({ language: "de" }, ""), "de", "remember a picked language")
     eq(rememberedSubtitleLanguage(invalid, ""), "", "remember off in last-used mode")
     check(rememberedSubtitleLanguage(invalid, "always") = invalid, "off doesn't change an always mode")
@@ -271,6 +293,8 @@ sub testBrowse()
     eq(jumped.offset, 412, "browseCards keeps where a jumped page starts")
     eq(letterChoices(jumped.letters).Join(","), "a,s", "letterChoices: A to Z with titles only")
     eq(letterChoices(invalid).Count(), 0, "letterChoices: none asked for")
+    eq(orderedLetters(letterChoices(jumped.letters), true).Join(","), "s,a", "letter rail follows a reversed title sort")
+    eq(orderedLetters([], true).Count(), 0, "letter rail handles an empty reversed list")
     eq(browseCards(lib, { total: 5, items: [] }).offset, 0, "browseCards: an ordinary page starts at 0")
     q.sort = "added"
     q.reverse = true
@@ -471,13 +495,24 @@ sub testSeasons()
 end sub
 
 sub testCardMenu()
+    queue = { id: "q", current_entry_id: "here", entries: [
+        { id: "played", available: true, item: { id: "a" } },
+        { id: "here", available: true, item: { id: "b" } },
+        { id: "unavailable", available: false },
+        { id: "next", available: true, item: { id: "c" } }
+    ] }
+    cards = homeQueueCards(queue)
+    eq(cards.Count(), 2, "Home Queue shows current and playable upcoming entries")
+    eq(cards[0].queueEntry, "here", "Home Queue cards target queue entry IDs")
+    eq(cards[1].queueId, "q", "Home Queue cards retain their originating queue")
+    eq(reorderedQueueIds(queue, "next", -1).Join(","), "played,here,next,unavailable", "queue reorder retains protected and unavailable entries")
     ep = { kind: "episode", itemId: "e", parentId: "s", resumeMs: 60000, played: false, watchlisted: false, inContinue: true }
-    eq(menuActs(cardMenu(ep)), "play,restart,watched,uncontinue,show", "card menu: an episode in Continue Watching")
+    eq(menuActs(cardMenu(ep)), "play,restart,watched,queueNext,queueAppend,uncontinue,show,addToPlaylist", "card menu: an episode in Continue Watching")
     movie = { kind: "movie", itemId: "m", parentId: "", resumeMs: 0, played: false, watchlisted: false, inContinue: true }
-    eq(menuActs(cardMenu(movie)), "play,watched,list,uncontinue,open", "card menu: a film in Up Next or Continue Watching")
-    eq(cardMenu(movie)[3].label, "Remove from Continue Watching", "card menu: the remove entry's name")
+    eq(menuActs(cardMenu(movie)), "play,watched,list,queueNext,queueAppend,uncontinue,open,addToPlaylist", "card menu: a film in Up Next or Continue Watching")
+    eq(cardMenu(movie)[5].label, "Remove from Continue Watching", "card menu: the remove entry's name")
     movie.inContinue = false
-    eq(menuActs(cardMenu(movie)), "play,watched,list,open", "card menu: elsewhere there's no remove entry")
+    eq(menuActs(cardMenu(movie)), "play,watched,list,queueNext,queueAppend,open,addToPlaylist", "card menu: elsewhere there's no remove entry")
     eq(cardMenu({ kind: "collection" }).Count(), 0, "card menu: not on a collection")
 end sub
 

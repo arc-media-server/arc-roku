@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- Signing in with a code: Arc's POST /auth/link, approved from a phone or computer with
-     "Link a Device", then asked every 3 seconds until the token arrives. -->
+<!-- Android TV's link layout: steps and actions on the left, four code tiles on the right. -->
 <component name="SignInScreen" extends="Group">
     <interface>
         <field id="params" type="assocarray" />
@@ -12,14 +11,23 @@
     <script type="text/brightscript" uri="pkg:/source/shared/http.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/api.bs" />
     <children>
-        <!-- Arc's stacked logo above, as arc-tv's sign-in. -->
-        <Poster uri="pkg:/images/logo-stacked.png" width="113" height="120" translation="[903, 48]" />
-        <Label id="title" width="1920" horizAlign="center" translation="[0, 200]" font="font:LargeBoldSystemFont" color="0xF0F4F4FF" />
-        <Label id="steps" width="1200" horizAlign="center" wrap="true" translation="[360, 290]" font="font:MediumSystemFont" color="0x9AA7A7FF" />
-        <Label id="link" width="1920" horizAlign="center" translation="[0, 420]" font="font:MediumBoldSystemFont" color="0xF5F5F7FF" />
-        <Label id="code" width="1920" horizAlign="center" translation="[0, 500]" font="font:LargeSystemFont" color="0xF0F4F4FF" />
-        <Label id="note" width="1920" horizAlign="center" translation="[0, 700]" font="font:SmallSystemFont" color="0x9AA7A7FF" />
-        <ButtonGroup id="buttons" iconUri="" focusedIconUri="" translation="[760, 800]" minWidth="400" />
+        <Poster uri="pkg:/images/auth/background.jpg" width="1920" height="1080" />
+        <Poster uri="pkg:/images/logo-sign-in.png" width="360" height="96" translation="[192, 192]" />
+        <Label id="title" translation="[192, 332]" width="780" font="font:LargeBoldSystemFont" color="0xF5F5F7FF" />
+        <Group id="steps" translation="[192, 472]" />
+        <Group translation="[192, 812]">
+            <Capsule id="newCodeBack" width="282" height="76" />
+            <Label id="newCodeLabel" width="282" height="76" horizAlign="center" vertAlign="center" font="font:SmallBoldSystemFont" />
+            <Capsule id="otherBack" width="310" height="76" translation="[306, 0]" />
+            <Label id="otherLabel" width="310" height="76" translation="[306, 0]" horizAlign="center" vertAlign="center" font="font:SmallBoldSystemFont" />
+        </Group>
+        <Group id="tiles" translation="[1024, 356]" />
+        <Poster id="linkSpinner" uri="pkg:/images/spinner.png" translation="[1062, 630]" width="34" height="34" scaleRotateCenter="[17, 17]" visible="false" />
+        <Animation id="linkSpin" duration="1" repeat="true">
+            <FloatFieldInterpolator fieldToInterp="linkSpinner.rotation" key="[0.0, 1.0]" keyValue="[0.0, 6.283185]" />
+        </Animation>
+        <Label id="note" width="690" horizAlign="center" wrap="true" maxLines="2" translation="[1024, 620]" font="font:SmallSystemFont" color="0xB0B0B8FF" />
+        <Label id="server" width="690" horizAlign="center" translation="[1024, 700]" font="font:SmallSystemFont" color="0x888891FF" />
         <Timer id="poll" repeat="false" duration="3" />
     </children>
 </component>
