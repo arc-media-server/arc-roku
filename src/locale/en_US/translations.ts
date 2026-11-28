@@ -685,6 +685,10 @@
   <translation>Pick the server Arc is running on. It needs to be on the same network as this Roku, or you can type its address.</translation>
 </message>
 <message>
+  <source>Picture subtitles</source>
+  <translation>Picture subtitles</translation>
+</message>
+<message>
   <source>PIN</source>
   <translation>PIN</translation>
 </message>
