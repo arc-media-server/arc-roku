@@ -208,6 +208,11 @@ sub pushLE(b as object, n as dynamic)
 end sub
 
 sub testTracks()
+    item = { files: [{ id: 1 }, { id: 2, part: 2 }, { id: 3, missing: true }, { id: 4, part: 1 }] }
+    files = filesForVersion(item)
+    eq(files.Count(), 2, "pre-play files exclude missing or later split parts")
+    eq(files[1].id, 4, "pre-play file ID is preserved")
+    eq(versionFilename({ id: 4, path: "D:" + Chr(92) + "films" + Chr(92) + "cut.mkv" }), "cut.mkv", "duplicate labels use the file name")
     eq(langKey("eng"), "en", "langKey maps three letters")
     eq(langKey("pt-BR"), "pt", "langKey drops the region")
     check(sameLanguage("ger", "de"), "sameLanguage across code styles")

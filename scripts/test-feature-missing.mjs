@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 const requests=[];
 const server=createServer((req,res)=>{requests.push([req.url,req.headers.authorization]);res.setHeader('Content-Type','application/json');res.end('{"seasons":[{"season_number":1,"episodes":[]}]}');});
 const dir=await mkdtemp(path.join(tmpdir(),'arc-missing-'));
-const shared=['http','cards','format','seasons','seasonactions','cardmenu','ratings'].map(n=>'out/staging/source/shared/'+n+'.brs');
+const shared=['http','cards','format','seasons','seasonactions','cardmenu','ratings','quality','tracks'].map(n=>'out/staging/source/shared/'+n+'.brs');
 try{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));
  const api=path.join(dir,'api.brs');await writeFile(api,(await readFile('tests/missing-api.brs','utf8')).replace('__PORT__',String(server.address().port)));

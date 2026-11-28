@@ -369,6 +369,10 @@
   <translation>Featurette</translation>
 </message>
 <message>
+  <source>File %1</source>
+  <translation>File %1</translation>
+</message>
+<message>
   <source>Filters</source>
   <translation>Filters</translation>
 </message>
@@ -703,6 +707,14 @@
 <message>
   <source>Play Next</source>
   <translation>Play Next</translation>
+</message>
+<message>
+  <source>Play Version</source>
+  <translation>Play Version</translation>
+</message>
+<message>
+  <source>Play Version…</source>
+  <translation>Play Version…</translation>
 </message>
 <message>
   <source>Playback</source>

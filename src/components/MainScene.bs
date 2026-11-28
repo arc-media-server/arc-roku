@@ -287,7 +287,7 @@ end sub
 
 sub playTitle(a as object)
     if a.replace = true then pop()
-    push("PlayerScreen", { id: a.id, startMs: a.startMs, title: a.title, subtitle: a.subtitle, queue: a.queue, preroll: a.replace <> true, together: a.together })
+    push("PlayerScreen", { id: a.id, startMs: a.startMs, title: a.title, subtitle: a.subtitle, queue: a.queue, fileId: a.fileId, preroll: a.replace <> true, together: a.together })
 end sub
 
 sub refreshHomeQueue()

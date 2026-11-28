@@ -333,6 +333,13 @@ sub showTitleMenu()
         entries.Push({ label: tr("Add to Queue") })
         entries.Push({ label: tr("Add to Playlist") })
     end if
+    m.titleVersionTarget = m.item
+    if m.item.kind = "series" then m.titleVersionTarget = nextEpisode()
+    m.titleVersionIndex = -1
+    if filesForVersion(m.titleVersionTarget).Count() > 1
+        m.titleVersionIndex = entries.Count()
+        entries.Push({ label: tr("Play Version…") })
+    end if
     m.cardPanel.entries = entries
     m.cardPanel.selected = -1
     m.cardPanel.visible = true
@@ -717,6 +724,18 @@ sub showSeasonMenu()
     cardEntries = []
     if at.node.available <> false and at.node.itemId <> "" then cardEntries = cardMenu(at.node)
     entries = seasonMenu(cardEntries, episodes)
+    m.episodeVersionTarget = invalid
+    if at.node.available <> false and at.node.itemId <> ""
+        for each episode in at.season.episodes
+            if episode.id = at.node.itemId
+                m.episodeVersionTarget = episode
+                exit for
+            end if
+        end for
+        if filesForVersion(m.episodeVersionTarget).Count() > 1
+            entries.Push({ label: tr("Play Version…"), act: "playVersion" })
+        end if
+    end if
     if entries.Count() = 0 then return
     m.menuAt = at
     m.menuEntries = entries
@@ -732,15 +751,34 @@ sub showSeasonMenu()
 end sub
 
 sub onCardPicked()
+    i = m.cardPanel.picked
+    if m.versionsOpen = true
+        if i < 0 or i >= m.versionFiles.Count() then return
+        it = m.versionTarget
+        file = m.versionFiles[i]
+        closeCardPanel()
+        m.top.action = { go: "play", id: it.id, startMs: resumeMs(it), title: m.item.title, subtitle: episodeLine(it), fileId: file.id }
+        return
+    end if
+    if m.ratingPanel = "more" and i = m.titleVersionIndex and i >= 0
+        showVersions(m.titleVersionTarget)
+        return
+    end if
     ' Star rating owns this panel only while a title menu/rating list is open.
     if m.ratingPanel <> invalid and m.ratingPanel <> ""
         onRatingPicked()
         return
     end if
-    i = m.cardPanel.picked
-    closeCardPanel()
-    if i < 0 or i >= m.menuEntries.Count() then return
+    if i < 0 or i >= m.menuEntries.Count()
+        closeCardPanel()
+        return
+    end if
     act = m.menuEntries[i].act
+    if act = "playVersion"
+        showVersions(m.episodeVersionTarget)
+        return
+    end if
+    closeCardPanel()
     at = m.menuAt
     node = at.node
     if act = "play" or act = "restart"
@@ -760,7 +798,33 @@ sub onCardPicked()
     end if
 end sub
 
+sub showVersions(item as object)
+    m.versionsOpen = true
+    m.versionTarget = item
+    m.versionFiles = filesForVersion(item)
+    labels = []
+    counts = {}
+    for each file in m.versionFiles
+        label = versionName(versionFileInfo(file))
+        labels.Push(label)
+        if counts[label] = invalid then counts[label] = 0
+        counts[label]++
+    end for
+    entries = []
+    for i = 0 to m.versionFiles.Count() - 1
+        detail = ""
+        if counts[labels[i]] > 1 then detail = versionFilename(m.versionFiles[i])
+        entries.Push({ label: labels[i], detail: detail })
+    end for
+    m.cardPanel.title = tr("Play Version")
+    m.cardPanel.entries = entries
+    m.cardPanel.selected = -1
+    m.cardPanel.focusIndex = 0
+    m.cardPanel.show = true
+end sub
+
 sub closeCardPanel()
+    m.versionsOpen = false
     m.cardPanel.visible = false
     if m.ratingPanel <> invalid and m.ratingPanel <> ""
         m.ratingPanel = ""

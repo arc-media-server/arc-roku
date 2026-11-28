@@ -310,7 +310,7 @@ end function
 function versionName(v as object) as string
     res = ""
     if v.height <> invalid and v.height > 0
-        if v.height >= 2000 then res = "4K" else res = v.height.ToStr() + "p"
+        if v.height >= 1700 or (v.width <> invalid and v.width >= 3200) then res = "4K" else res = v.height.ToStr() + "p"
     end if
     size = ""
     if v.size <> invalid and v.size > 0
@@ -333,4 +333,11 @@ function chapterAt(chapters as dynamic, ms as double) as integer
         if chapters[i].start_ms <= ms then at = i
     end for
     return at
+end function
+
+function versionFilename(file as object) as string
+    path = valueString(file.path).Replace(Chr(92), "/")
+    parts = path.Split("/")
+    if parts.Count() > 0 and parts.Peek() <> "" then return parts.Peek()
+    return tr("File %1").Replace("%1", file.id.ToStr())
 end function
