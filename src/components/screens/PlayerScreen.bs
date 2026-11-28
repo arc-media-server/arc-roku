@@ -214,7 +214,11 @@ sub onPrefs(event as object)
     m.prefs = {}
     if res.ok and res.data <> invalid then m.prefs = res.data
     applySubtitleLook()
-    callApi("GET", "/items/" + escape(m.top.params.id), invalid, "onItem")
+    if m.top.params.linkedItem <> invalid
+        startItem(m.top.params.linkedItem, resumeMs(m.top.params.linkedItem))
+    else
+        callApi("GET", "/items/" + escape(m.top.params.id), invalid, "onItem")
+    end if
 end sub
 
 function pref(name as string, fallback as dynamic) as dynamic
@@ -265,8 +269,12 @@ sub onItem(event as object)
         fail(tr("Couldn't load this title.") + " " + res.error)
         return
     end if
-    m.item = res.data
-    it = m.item
+    startItem(res.data, valueOr(m.top.params.startMs, 0))
+end sub
+
+sub startItem(it as object, startMs as dynamic)
+    if m.closed then return
+    m.item = it
     title = it.title
     sub2 = ""
     if it.kind = "episode"
@@ -280,7 +288,7 @@ sub onItem(event as object)
     if it.kind = "episode" and m.top.params.subtitle <> invalid and m.top.params.subtitle <> "" then sub2 = m.top.params.subtitle
     m.top.findNode("title").text = title
     m.top.findNode("subtitle").text = sub2
-    load(valueOr(m.top.params.startMs, 0), { fileId: m.top.params.fileId })
+    load(startMs, { fileId: m.top.params.fileId })
     loadCastAndEpisodes(it)
     if m.together = invalid
         if m.top.params.queue <> invalid
