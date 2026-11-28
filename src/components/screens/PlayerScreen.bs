@@ -64,6 +64,7 @@ sub init()
     m.generation = 0
     m.prefs = invalid
     m.subtitle = invalid
+    m.subtitleOffsets = {}
     m.cues = []
     m.cuesFor = ""
     m.maxKbps = 0
@@ -1322,9 +1323,27 @@ sub onCues(event as object)
     print "Arc: subtitles loaded, "; m.cues.Count(); " cues"
 end sub
 
+function activeSubtitleTimingKey() as string
+    if m.plan = invalid then return ""
+    return subtitleTimingKey(m.plan.file_id, m.subtitle)
+end function
+
+function currentSubtitleOffset() as integer
+    key = activeSubtitleTimingKey()
+    if key = "" then return 0
+    return valueOr(m.subtitleOffsets[key], 0)
+end function
+
+sub adjustSubtitleTiming(delta as dynamic)
+    key = activeSubtitleTimingKey()
+    if key = "" then return
+    m.subtitleOffsets[key] = shiftedSubtitleOffset(currentSubtitleOffset(), delta)
+    drawSubtitles(positionMs())
+end sub
+
 sub drawSubtitles(at as double)
     text = ""
-    if m.subtitle <> invalid and m.cues.Count() > 0 then text = cueText(m.cues, at)
+    if m.subtitle <> invalid and m.cues.Count() > 0 then text = cueText(m.cues, at - currentSubtitleOffset())
     if text = m.shownCue and m.subsLift = m.controls.visible and m.cardTop = (m.zone = "tabs" or m.zone = "card") then return
     m.cardTop = m.zone = "tabs" or m.zone = "card"
     m.shownCue = text
@@ -1568,6 +1587,18 @@ sub openMenu(section as string)
             entries.Push({ label: tr("Chapters"), detail: "" })
             m.menuValues.Push("chapters")
         end if
+    else if section = "subtitleTiming"
+        if activeSubtitleTimingKey() = ""
+            closeMenu()
+            return
+        end if
+        m.options.title = tr("Subtitle Timing") + " · " + subtitleTimingLabel(currentSubtitleOffset())
+        entries = [
+            { label: tr("Earlier"), detail: tr("0.5s") },
+            { label: tr("Later"), detail: tr("0.5s") },
+            { label: tr("Reset"), detail: "" }
+        ]
+        m.menuValues = [-500, 500, invalid]
     else if section = "audio"
         m.options.title = tr("Audio")
         i = 0
@@ -1621,8 +1652,13 @@ sub openMenu(section as string)
         selected = at
         if selected < 0 then selected = 0
     end if
+    if (section = "" or section = "playback") and activeSubtitleTimingKey() <> ""
+        entries.Push({ label: tr("Subtitle Timing"), detail: subtitleTimingLabel(currentSubtitleOffset()) })
+        m.menuValues.Push("subtitleTiming")
+    end if
     m.options.entries = entries
     m.options.selected = selected
+    m.options.focusIndex = 0
     m.options.visible = true
     m.controls.visible = false
     m.options.show = true
@@ -1644,6 +1680,11 @@ sub onOptionPicked()
     if section = "" or section = "playback"
         m.menuParent = section
         openMenu(v)
+        return
+    end if
+    if section = "subtitleTiming"
+        adjustSubtitleTiming(v)
+        m.options.title = tr("Subtitle Timing") + " · " + subtitleTimingLabel(currentSubtitleOffset())
         return
     end if
     closeMenu()

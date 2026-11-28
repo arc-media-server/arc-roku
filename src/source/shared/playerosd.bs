@@ -100,3 +100,26 @@ function valueOrEmpty(v as dynamic) as string
     if v = invalid then return ""
     return v
 end function
+
+' Text cues are drawn by Roku. Picture subtitles are already part of the video.
+function subtitleTimingKey(fileId as dynamic, track as dynamic) as string
+    if fileId = invalid or track = invalid or track.image = true then return ""
+    return fileId.ToStr() + ":" + track.id
+end function
+
+function shiftedSubtitleOffset(currentMs as integer, deltaMs as dynamic) as integer
+    if deltaMs = invalid then return 0
+    nextMs = currentMs + deltaMs
+    if nextMs < -10000 then return -10000
+    if nextMs > 10000 then return 10000
+    return nextMs
+end function
+
+function subtitleTimingLabel(offsetMs as integer) as string
+    sign = ""
+    if offsetMs < 0 then sign = "−"
+    if offsetMs > 0 then sign = "+"
+    magnitude = Abs(offsetMs)
+    seconds = sign + (magnitude \ 1000).ToStr() + "." + ((magnitude mod 1000) \ 100).ToStr()
+    return tr("%1s").Replace("%1", seconds)
+end function
