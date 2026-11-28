@@ -6,7 +6,9 @@ sub work()
     req = m.top.request
     res = apiCall(req)
     res.tag = req.tag
-    if not res.ok
+    roomRequest = Left(req.path, 15) = "/watch-together"
+    quietRoom = roomRequest and (Right(req.path, 10) = "/heartbeat" or (req.path = "/watch-together/current" and res.status = 404))
+    if not res.ok and not quietRoom
         ' One line per failed call: the method, the path without its query, and the outcome.
         ' Never the server address, query strings, bodies or the token.
         path = req.path
@@ -19,7 +21,11 @@ sub work()
         end if
         method = "GET"
         if req.method <> invalid then method = UCase(req.method)
-        print "Arc: "; method; " "; path; " failed: "; res.status; " "; res.error
+        if roomRequest
+            print "Arc: watch together request failed: "; res.status
+        else
+            print "Arc: "; method; " "; path; " failed: "; res.status; " "; res.error
+        end if
     end if
     profileChallenge = false
     if req.path = "/auth/profile" and res.data <> invalid and Type(res.data) = "roAssociativeArray"

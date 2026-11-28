@@ -340,6 +340,20 @@ sub showTitleMenu()
         m.titleVersionIndex = entries.Count()
         entries.Push({ label: tr("Play Version…") })
     end if
+    m.roomTitle = invalid
+    m.roomMenuIndex = -1
+    if m.global <> invalid and m.global.watchTogether = true
+        for each action in m.actions
+            if action.kind = "play"
+                m.roomTitle = action
+                exit for
+            end if
+        end for
+        if m.roomTitle <> invalid
+            m.roomMenuIndex = entries.Count()
+            entries.Push({ label: tr("Watch Together"), detail: "" })
+        end if
+    end if
     m.cardPanel.entries = entries
     m.cardPanel.selected = -1
     m.cardPanel.visible = true
@@ -354,11 +368,16 @@ sub onRatingPicked()
             m.top.action = { go: "playlistPicker", id: m.item.id, title: m.item.title }
             return
         end if
-        if i >= m.queueMenuStart and i < m.cardPanel.entries.Count()
+        if i >= m.queueMenuStart and i < m.queueMenuStart + 2 and i < m.cardPanel.entries.Count()
             operation = "append"
             if i = m.queueMenuStart then operation = "next"
             closeCardPanel()
             m.top.action = { go: "queueAdd", id: m.item.id, operation: operation }
+            return
+        end if
+        if i >= 0 and i = m.roomMenuIndex and m.roomTitle <> invalid
+            closeCardPanel()
+            m.top.action = { go: "together", itemId: m.roomTitle.item.id, startMs: m.roomTitle.startMs }
             return
         end if
         if i <> 0 then return

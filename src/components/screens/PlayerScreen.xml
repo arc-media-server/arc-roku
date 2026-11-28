@@ -20,6 +20,8 @@
     <script type="text/brightscript" uri="pkg:/source/shared/playerosd.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/seasonactions.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/preroll.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/together.bs" />
+    <script type="text/brightscript" uri="pkg:/components/screens/RoomPlayback.bs" />
     <children>
         <Rectangle width="1920" height="1080" color="0x000000FF" />
         <Video id="video" width="1920" height="1080" enableUI="false" />
@@ -67,6 +69,10 @@
             <Label id="upNextTitle" translation="[370, 66]" width="260" height="140" wrap="true" maxLines="3" font="font:SmallSystemFont" color="0xF0F4F4FF" />
             <Label id="upNextCount" translation="[30, 230]" width="600" font="font:SmallBoldSystemFont" color="0xF0F4F4FF" />
             <Label id="upNextKeys" translation="[30, 280]" width="600" font="font:SmallestSystemFont" color="0xC6D0D0FF" />
+        </Group>
+        <Group id="roomNotice" translation="[490, 66]" visible="false">
+            <Rectangle width="940" height="72" color="0x0B1214EC" />
+            <Label width="940" height="72" horizAlign="center" vertAlign="center" font="font:SmallBoldSystemFont" color="0xF5F5F7FF" />
         </Group>
         <OptionsPanel id="options" visible="false" />
         <Label id="error" translation="[160, 460]" width="1600" horizAlign="center" wrap="true" font="font:MediumSystemFont" color="0xF0F4F4FF" visible="false" />

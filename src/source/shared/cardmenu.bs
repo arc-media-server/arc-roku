@@ -17,6 +17,7 @@ function cardMenu(node as dynamic) as object
         else
             out.Push({ label: tr("Play"), act: "play" })
         end if
+        if m.global <> invalid and m.global.watchTogether = true and node.available <> false then out.Push({ label: tr("Watch Together"), act: "together" })
     end if
     if node.played then out.Push({ label: tr("Mark as unwatched"), act: "unwatched" }) else out.Push({ label: tr("Mark as watched"), act: "watched" })
     if kind <> "episode"
@@ -45,6 +46,7 @@ function runCardAction(node as object, act as string) as dynamic
     id = CreateObject("roUrlTransfer").Escape(node.itemId)
     if act = "play" then return { go: "play", id: node.itemId, startMs: node.resumeMs, title: node.title, subtitle: node.line2 }
     if act = "restart" then return { go: "play", id: node.itemId, startMs: 0, title: node.title, subtitle: node.line2 }
+    if act = "together" then return { go: "together", itemId: node.itemId, startMs: node.resumeMs }
     if act = "show" then return { go: "open", id: node.parentId, episodeId: node.itemId }
     if act = "open" then return { go: "open", id: node.itemId }
     if act = "addToPlaylist" then return { go: "playlistPicker", id: node.itemId, title: node.title }
