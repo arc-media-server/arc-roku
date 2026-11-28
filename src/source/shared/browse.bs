@@ -192,7 +192,7 @@ function joinWith(parts as object, sep as string) as string
     return out
 end function
 
-' searchCards: /search's answer as rows of cards: titles, episodes, collections and people.
+' searchRows: /search's answer as rows of cards.
 function searchRows(data as dynamic) as object
     rows = []
     if data = invalid then return rows
@@ -221,6 +221,13 @@ function searchRows(data as dynamic) as object
             people.Push({ item: { id: p.id.ToStr(), kind: "person", title: p.name, images: { primary: p.image } }, line2: personRole(p.known_for) })
         end for
         rows.Push({ title: tr("People"), style: "poster", cards: people })
+    end if
+    if data.genres <> invalid and data.genres.Count() > 0
+        genres = []
+        for each genre in data.genres
+            genres.Push({ item: { id: valueString(genre.library_id), kind: "genre", title: genre.name }, line2: genre.library_name })
+        end for
+        rows.Push({ title: tr("Genres"), style: "thumb", cards: genres })
     end if
     return rows
 end function

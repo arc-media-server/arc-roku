@@ -40,7 +40,6 @@ sub init()
     m.restoring = false
     m.item = invalid
     m.seasons = invalid
-    m.showMissing = false
     m.seasonsRequest = 0
     m.related = {}
     m.landed = false
@@ -53,7 +52,6 @@ sub init()
 end sub
 
 sub onParams()
-    m.showMissing = false
     m.seasonTab = 0
     m.seasonsRequest++
     beginThemeVisit()
@@ -219,7 +217,8 @@ sub onItem(event as object)
     it = m.item
     m.related = {}
     if it.kind = "series"
-        requestSeasons(m.showMissing)
+        m.seasonsRequest++
+        callApi("GET", "/me/prefs", invalid, "onSeasonPrefs", { id: it.id, request: m.seasonsRequest })
     else
         m.seasons = []
         m.seasonRows = []
@@ -328,7 +327,6 @@ sub showTitleMenu()
     current = 0
     if m.item.user_data <> invalid and m.item.user_data.rating <> invalid then current = m.item.user_data.rating
     entries = [{ label: tr("Rate…"), detail: ratingStars(current) }]
-    if m.item.kind = "series" then entries.Push(missingEpisodesEntry(m.showMissing))
     m.queueMenuStart = entries.Count()
     if m.item.kind = "movie" or m.item.kind = "series" or m.item.kind = "episode"
         entries.Push({ label: tr("Play Next") })
@@ -344,11 +342,6 @@ end sub
 sub onRatingPicked()
     i = m.cardPanel.picked
     if m.ratingPanel = "more"
-        if i = 1 and m.item.kind = "series"
-            closeCardPanel()
-            toggleMissingEpisodes()
-            return
-        end if
         if i = m.queueMenuStart + 2 and i < m.cardPanel.entries.Count()
             closeCardPanel()
             m.top.action = { go: "playlistPicker", id: m.item.id, title: m.item.title }
@@ -472,14 +465,11 @@ sub onChanged(event as object)
     end if
 end sub
 
-sub requestSeasons(missing as boolean)
-    m.seasonsRequest++
-    callApi("GET", seasonsPath(m.item.id, missing), invalid, "onSeasons", { id: m.item.id, missing: missing, request: m.seasonsRequest })
-end sub
-
-sub toggleMissingEpisodes()
-    m.keepPlace = true
-    requestSeasons(not m.showMissing)
+sub onSeasonPrefs(event as object)
+    res = event.getData()
+    if m.item = invalid or res.tag.id <> m.item.id or res.tag.request <> m.seasonsRequest then return
+    missing = res.ok and res.data <> invalid and res.data.show_missing_episodes = true
+    callApi("GET", seasonsPath(m.item.id, missing), invalid, "onSeasons", res.tag)
 end sub
 
 sub onSeasons(event as object)
@@ -491,12 +481,11 @@ sub onSeasons(event as object)
         return
     end if
     m.error.text = ""
-    m.showMissing = res.tag.missing
     m.seasons = valueOr(res.data.seasons, [])
     ' Each season, then the episodes the order doesn't place ("Not in This Order").
     m.seasonRows = []
     if res.ok then m.seasonRows = seasonRows(res.data)
-    ' After a change from the * menu the focus stays where it was; otherwise it lands afresh.
+    ' Preserve focus on a live refresh or after marking a season.
     if m.keepPlace <> true then m.landed = false
     m.keepPlace = false
     buildRows()
@@ -728,7 +717,7 @@ sub showSeasonMenu()
     cardEntries = []
     if at.node.available <> false and at.node.itemId <> "" then cardEntries = cardMenu(at.node)
     entries = seasonMenu(cardEntries, episodes)
-    entries.Push(missingEpisodesEntry(m.showMissing))
+    if entries.Count() = 0 then return
     m.menuAt = at
     m.menuEntries = entries
     list = []
@@ -754,10 +743,6 @@ sub onCardPicked()
     act = m.menuEntries[i].act
     at = m.menuAt
     node = at.node
-    if act = "showMissing" or act = "hideMissing"
-        toggleMissingEpisodes()
-        return
-    end if
     if act = "play" or act = "restart"
         if node.available = false or node.itemId = "" then return
         startMs = node.resumeMs

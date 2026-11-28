@@ -116,7 +116,14 @@ sub layout()
     ' without a logo, the title. (No loadWidth: the simulator would stretch the logo to it.)
     m.shade.visible = backdrop
     m.logo.visible = backdrop and m.logo.uri <> ""
-    m.logoTitle.visible = backdrop and m.logo.uri = ""
+    genre = c <> invalid and c.kind = "genre"
+    m.logoTitle.visible = genre or (backdrop and m.logo.uri = "")
+    if genre then m.logoTitle.vertAlign = "center" else m.logoTitle.vertAlign = "bottom"
+    if genre
+        m.logoTitle.translation = [24, 0]
+        m.logoTitle.width = w - 48
+        m.logoTitle.height = ph
+    end if
     if backdrop
         m.shade.translation = [0, ph / 2]
         m.shade.width = w
@@ -135,7 +142,7 @@ sub layout()
     m.card.scaleRotateCenter = [w / 2, ph / 2]
     ' Every card has its caption when its slot leaves room for it.
     caption = h >= ph + 60
-    m.line1.visible = caption
+    m.line1.visible = caption and not genre
     m.line2.visible = caption and m.line2.text <> ""
     captionAlign = "center"
     if c <> invalid and c.showOverview = true then captionAlign = "left"
