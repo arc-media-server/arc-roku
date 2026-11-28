@@ -20,5 +20,5 @@ try{
  const screen=path.join(dir,'screen.brs');await writeFile(screen,source);
  const out=execFileSync(process.execPath,['node_modules/brs-node/bin/brs.cli.js','--no-sg',...shared,screen,'tests/missing-menu.brs'],{encoding:'utf8',timeout:15000});
  assert.match(out,/MISSING MENU PASSED/);
- console.log('Missing episodes: native API/Bearer and real menu, failure/stale-response, unavailable playback callbacks passed');
+ console.log('Missing episodes: native API/Bearer and profile preferences, stale responses and unavailable playback guards passed');
 }finally{server.closeAllConnections();await new Promise(r=>server.close(r));await rm(dir,{recursive:true,force:true});}

@@ -31,6 +31,7 @@ sub onParams()
     m.source = p.source
     m.libraryView = m.source.kind
     m.query = libraryQueryDefaults()
+    if m.source.genre <> invalid then m.query.genre = m.source.genre
     m.titleLabel.text = valueOr(p.title, "")
     ' Inside a library's page (LibraryScreen) the pills name the view and choose it, and Up from
     ' the top row goes on to them, so the grid doesn't wrap round.

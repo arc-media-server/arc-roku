@@ -11,8 +11,9 @@
 //   src/images/splash_fhd.png   1920x1080 arc-logo-stacked-white.svg, 320 px tall, centred on BG
 //   src/images/splash_hd.png    1280x720  the same, 213 px tall
 //   src/images/logo-stacked.png 227x240   arc-logo-stacked-white.svg on transparent (server pick,
-//                                         sign-in, About)
+//                                         About)
 //   src/images/logo-main.png    211x56    arc-logo-white.svg on transparent (profiles, the open rail)
+//   src/images/logo-sign-in.png 360x96 arc-logo-white.svg on transparent (device linking)
 //   src/images/logo-mark.png    56x56     arc-mark-white.svg on transparent (the closed rail)
 
 import { readFileSync } from 'node:fs';
@@ -48,6 +49,7 @@ const jobs = [
   { out: 'src/images/splash_hd.png', w: 1280, h: 720, html: centred(1280, 720, stacked(213), BG) },
   { out: 'src/images/logo-stacked.png', w: 227, h: 240, html: centred(227, 240, stacked(240), 'transparent'), transparent: true },
   { out: 'src/images/logo-main.png', w: 211, h: 56, html: centred(211, 56, main(211), 'transparent'), transparent: true },
+  { out: 'src/images/logo-sign-in.png', w: 360, h: 96, html: centred(360, 96, main(360), 'transparent'), transparent: true },
   { out: 'src/images/logo-mark.png', w: 56, h: 56, html: centred(56, 56, svg('arc-mark-white.svg', 56, 56), 'transparent'), transparent: true },
 ];
 
