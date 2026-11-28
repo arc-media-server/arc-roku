@@ -63,6 +63,12 @@ sub onRowFocus()
             return
         end if
     end if
+    if m.rowKeys <> invalid and i >= 0 and i < m.rowKeys.Count()
+        if m.rowKeys[i] = "sendLogs" or m.rowKeys[i] = "detailedLogs"
+            m.note.text = tr("Detailed logging turns off after two hours. Sending shares recent app events with this server’s admin.")
+            return
+        end if
+    end if
     m.note.text = tr("Playback and subtitle choices follow your profile, on every device. Choosing a track in the player updates them too.")
 end sub
 
@@ -162,6 +168,9 @@ sub draw()
     rows.Push(["profiles", tr("Switch Profile"), name])
     rows.Push(["server", tr("Server"), m.global.serverName])
     rows.Push(["signOut", tr("Sign Out of This Roku"), ""])
+    until = Val(readSetting("detailedLogsUntil"))
+    rows.Push(["detailedLogs", tr("Detailed logging"), onOff(until > CreateObject("roDateTime").AsSeconds())])
+    rows.Push(["sendLogs", tr("Send logs"), ""])
     rows.Push(["about", tr("About"), CreateObject("roAppInfo").GetVersion()])
     content = CreateObject("roSGNode", "ContentNode")
     m.rowKeys = []
@@ -213,6 +222,8 @@ sub onRow()
         m.top.action = { go: "otherServer" }
     else if key = "signOut"
         m.top.action = { go: "signOut" }
+    else if key = "sendLogs" or key = "detailedLogs"
+        m.top.action = { go: key }
     else if key = "about"
         m.top.action = { go: "about" }
     else
@@ -309,4 +320,8 @@ sub onSpoilersSaved(event as object)
         ' The API Task logs the failed route once; don't print provider bodies or URLs here.
         m.top.findNode("note").text = tr("Couldn't save this setting. Try again.")
     end if
+end sub
+
+sub diagnosticsChanged()
+    draw()
 end sub

@@ -273,6 +273,10 @@
   <translation>Continue Watching</translation>
 </message>
 <message>
+  <source>Could not send logs. Try again.</source>
+  <translation>Could not send logs. Try again.</translation>
+</message>
+<message>
   <source>Couldn't add this title. Try again.</source>
   <translation>Couldn't add this title. Try again.</translation>
 </message>
@@ -355,6 +359,14 @@
 <message>
   <source>Deleted scene</source>
   <translation>Deleted scene</translation>
+</message>
+<message>
+  <source>Detailed logging</source>
+  <translation>Detailed logging</translation>
+</message>
+<message>
+  <source>Detailed logging turns off after two hours. Sending shares recent app events with this server’s admin.</source>
+  <translation>Detailed logging turns off after two hours. Sending shares recent app events with this server’s admin.</translation>
 </message>
 <message>
   <source>Director</source>
@@ -565,6 +577,10 @@
   <translation>Local network</translation>
 </message>
 <message>
+  <source>Logs sent.</source>
+  <translation>Logs sent.</translation>
+</message>
+<message>
   <source>Longest first</source>
   <translation>Longest first</translation>
 </message>
@@ -703,6 +719,10 @@
 <message>
   <source>Off</source>
   <translation>Off</translation>
+</message>
+<message>
+  <source>OK</source>
+  <translation>OK</translation>
 </message>
 <message>
   <source>OK to play now · Back to keep watching</source>
@@ -981,6 +1001,10 @@
   <translation>Send invitations</translation>
 </message>
 <message>
+  <source>Send logs</source>
+  <translation>Send logs</translation>
+</message>
+<message>
   <source>Server</source>
   <translation>Server</translation>
 </message>
@@ -1157,6 +1181,10 @@
   <translation>Theme Music</translation>
 </message>
 <message>
+  <source>There are no app logs to send.</source>
+  <translation>There are no app logs to send.</translation>
+</message>
+<message>
   <source>There is nobody you can invite to this title.</source>
   <translation>There is nobody you can invite to this title.</translation>
 </message>
@@ -1263,6 +1291,10 @@
 <message>
   <source>Up Next</source>
   <translation>Up Next</translation>
+</message>
+<message>
+  <source>Update your Arc server to send logs.</source>
+  <translation>Update your Arc server to send logs.</translation>
 </message>
 <message>
   <source>Use another server</source>

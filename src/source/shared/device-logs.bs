@@ -1,0 +1,25 @@
+function deviceLogEntry(level as dynamic, eventName as dynamic, stamp as dynamic) as dynamic
+    if type(level) <> "roString" and type(level) <> "String" then return invalid
+    if type(eventName) <> "roString" and type(eventName) <> "String" then return invalid
+    if type(stamp) <> "roLongInteger" and type(stamp) <> "LongInteger" and type(stamp) <> "roDouble" and type(stamp) <> "Double" then return invalid
+    if stamp < 1 or stamp > 253402300799999& then return invalid
+    levels = { debug: true, info: true, warn: true, error: true }
+    events = { app_started: true, profile_picker: true, automatic_sign_in: true, request_failed: true, request_timeout: true, session_expired: true, playback_started: true, playback_failed: true, detailed_logging_enabled: true, detailed_logging_expired: true }
+    if levels[level] <> true or events[eventName] <> true or LCase(level) <> level or LCase(eventName) <> eventName then return invalid
+    return { level: level, event: eventName, time_ms: stamp }
+end function
+
+function projectDeviceLogs(raw as dynamic) as object
+    out = []
+    if type(raw) <> "roArray" then return out
+    firstRow = raw.Count() - 1200
+    if firstRow < 0 then firstRow = 0
+    for i = firstRow to raw.Count() - 1
+        row = raw[i]
+        if type(row) = "roAssociativeArray"
+            safe = deviceLogEntry(row.level, row.event, row.time_ms)
+            if safe <> invalid then out.Push(safe)
+        end if
+    end for
+    return out
+end function

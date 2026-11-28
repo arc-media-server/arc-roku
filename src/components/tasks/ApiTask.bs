@@ -35,6 +35,13 @@ sub work()
         ' The sign-in was revoked (signed out from Arc's Devices): the scene goes back to sign-in.
         m.global.unauthorized = true
     end if
+    if req.path <> "/client-logs" and m.global.deviceLogEvent <> invalid
+        if res.status = 401 and not profileChallenge
+            m.global.deviceLogEvent = "warn session_expired"
+        else if not quietRoom and (res.status <= 0 or res.status >= 500)
+            m.global.deviceLogEvent = "warn request_failed"
+        end if
+    end if
     m.top.response = res
 end sub
 
