@@ -9,6 +9,10 @@
   <translation>* for options, sort and filter</translation>
 </message>
 <message>
+  <source>* for Play All and Shuffle</source>
+  <translation>* for Play All and Shuffle</translation>
+</message>
+<message>
   <source>%1 and %2</source>
   <translation>%1 and %2</translation>
 </message>
@@ -687,6 +691,10 @@
 <message>
   <source>Play %1</source>
   <translation>Play %1</translation>
+</message>
+<message>
+  <source>Play All</source>
+  <translation>Play All</translation>
 </message>
 <message>
   <source>Play from the beginning</source>
