@@ -1,3 +1,13 @@
+' At rest a movie fills the upper screen with art and keeps the first related row below it.
+const MOVIE_REST_Y = 350
+' At rest the season pills peek in at the bottom, with the episodes below the viewport.
+const SERIES_REST_Y = 240
+const SERIES_EPISODES_Y = -300
+const RELATED_ROWS_Y = -560
+' Leave a peek of the fifth episode in the season shelf, like Android TV.
+const EPISODE_CARD_WIDTH = 388
+const EPISODE_OVERVIEW_SPACE = 112
+
 sub init()
     m.global.observeField("hideSpoilers", "renderSummary")
     initThemeMusic()
@@ -18,6 +28,7 @@ sub init()
     m.tabLabels = ""
     m.error = m.top.findNode("error")
     shareSignIn([m.backdrop, m.logo])
+    m.logo.observeField("loadStatus", "updateTitleVisibility")
     m.buttons.observeField("picked", "onButton")
     m.page = m.top.findNode("page")
     m.slide = m.top.findNode("slide")
@@ -29,7 +40,6 @@ sub init()
     m.restoring = false
     m.item = invalid
     m.seasons = invalid
-    m.showMissing = false
     m.seasonsRequest = 0
     m.related = {}
     m.landed = false
@@ -42,7 +52,6 @@ sub init()
 end sub
 
 sub onParams()
-    m.showMissing = false
     m.seasonTab = 0
     m.seasonsRequest++
     beginThemeVisit()
@@ -65,9 +74,17 @@ sub focusButtons()
     m.rowsFocused = false
     m.tabsFocused = false
     m.buttons.opacity = 1
+    m.tabs.opacity = 1
     m.buttons.setFocus(true)
-    slideTo(0)
+    slideTo(overviewRestY())
 end sub
+
+function overviewRestY() as integer
+    if m.item = invalid then return 0
+    if m.item.kind = "movie" then return MOVIE_REST_Y
+    if m.item.kind = "series" then return SERIES_REST_Y
+    return 0
+end function
 
 ' The buttons fade while the rows have the focus: they'd show their focused one otherwise.
 sub focusRows()
@@ -75,7 +92,7 @@ sub focusRows()
     m.tabsFocused = false
     m.buttons.opacity = 0
     m.episodes.setFocus(true)
-    slideTo(-560)
+    positionRows()
 end sub
 
 ' A show's season tabs sit at the top with the chosen season's episodes under them.
@@ -85,7 +102,22 @@ sub focusTabs()
     m.buttons.opacity = 0
     m.tabs.opacity = 1
     m.tabs.setFocus(true)
-    slideTo(-560)
+    slideTo(SERIES_EPISODES_Y)
+end sub
+
+sub positionRows()
+    y = RELATED_ROWS_Y
+    if m.tabs.visible
+        f = m.episodes.rowItemFocused
+        season = f = invalid or f.Count() = 0 or f[0] = 0
+        if season
+            m.tabs.opacity = 1
+            y = SERIES_EPISODES_Y
+        else
+            m.tabs.opacity = 0
+        end if
+    end if
+    slideTo(y)
 end sub
 
 ' Moving along the tabs (or OK on one) shows that season's episodes.
@@ -126,9 +158,15 @@ sub showTabs()
 end sub
 
 sub slideTo(y as integer)
-    if m.page.translation[1] = y then return
+    if m.slideTarget = y then return
+    m.slideTarget = y
+    origin = m.page.translation
     m.slide.control = "stop"
-    m.slideTo.keyValue = [m.page.translation, [0, y]]
+    if origin[1] = y
+        m.page.translation = [0, y]
+        return
+    end if
+    m.slideTo.keyValue = [origin, [0, y]]
     m.slide.control = "start"
 end sub
 
@@ -172,13 +210,15 @@ sub onItem(event as object)
         return
     end if
     if res.tag <> m.top.params.id then return
+    firstLoad = m.item = invalid
     m.item = res.data
     loadThemeMusic()
     renderSummary()
     it = m.item
     m.related = {}
     if it.kind = "series"
-        requestSeasons(m.showMissing)
+        m.seasonsRequest++
+        callApi("GET", "/me/prefs", invalid, "onSeasonPrefs", { id: it.id, request: m.seasonsRequest })
     else
         m.seasons = []
         m.seasonRows = []
@@ -195,6 +235,7 @@ sub onItem(event as object)
     end if
     showButtons()
     buildRows()
+    if firstLoad and m.rowsFocused <> true and m.tabsFocused <> true then m.page.translation = [0, overviewRestY()]
 end sub
 
 ' The rating box and genres; the year, length and quality badges; Starring and Director.
@@ -211,7 +252,7 @@ sub showHeroLines(it as object)
     end for
     stars = joinNames(creditNames(it, "actor", 3))
     m.starring.text = ""
-    if stars <> "" then m.starring.text = tr("Starring %1").Replace("%1", stars)
+    if it.kind <> "movie" and stars <> "" then m.starring.text = tr("Starring %1").Replace("%1", stars)
     directors = joinNames(creditNames(it, "director", 2))
     m.director.text = ""
     if directors <> "" then m.director.text = tr("Director %1").Replace("%1", directors)
@@ -286,7 +327,33 @@ sub showTitleMenu()
     current = 0
     if m.item.user_data <> invalid and m.item.user_data.rating <> invalid then current = m.item.user_data.rating
     entries = [{ label: tr("Rate…"), detail: ratingStars(current) }]
-    if m.item.kind = "series" then entries.Push(missingEpisodesEntry(m.showMissing))
+    m.queueMenuStart = entries.Count()
+    if m.item.kind = "movie" or m.item.kind = "series" or m.item.kind = "episode"
+        entries.Push({ label: tr("Play Next") })
+        entries.Push({ label: tr("Add to Queue") })
+        entries.Push({ label: tr("Add to Playlist") })
+    end if
+    m.titleVersionTarget = m.item
+    if m.item.kind = "series" then m.titleVersionTarget = nextEpisode()
+    m.titleVersionIndex = -1
+    if filesForVersion(m.titleVersionTarget).Count() > 1
+        m.titleVersionIndex = entries.Count()
+        entries.Push({ label: tr("Play Version…") })
+    end if
+    m.roomTitle = invalid
+    m.roomMenuIndex = -1
+    if m.global <> invalid and m.global.watchTogether = true
+        for each action in m.actions
+            if action.kind = "play"
+                m.roomTitle = action
+                exit for
+            end if
+        end for
+        if m.roomTitle <> invalid
+            m.roomMenuIndex = entries.Count()
+            entries.Push({ label: tr("Watch Together"), detail: "" })
+        end if
+    end if
     m.cardPanel.entries = entries
     m.cardPanel.selected = -1
     m.cardPanel.visible = true
@@ -296,9 +363,21 @@ end sub
 sub onRatingPicked()
     i = m.cardPanel.picked
     if m.ratingPanel = "more"
-        if i = 1 and m.item.kind = "series"
+        if i = m.queueMenuStart + 2 and i < m.cardPanel.entries.Count()
             closeCardPanel()
-            toggleMissingEpisodes()
+            m.top.action = { go: "playlistPicker", id: m.item.id, title: m.item.title }
+            return
+        end if
+        if i >= m.queueMenuStart and i < m.queueMenuStart + 2 and i < m.cardPanel.entries.Count()
+            operation = "append"
+            if i = m.queueMenuStart then operation = "next"
+            closeCardPanel()
+            m.top.action = { go: "queueAdd", id: m.item.id, operation: operation }
+            return
+        end if
+        if i >= 0 and i = m.roomMenuIndex and m.roomTitle <> invalid
+            closeCardPanel()
+            m.top.action = { go: "together", itemId: m.roomTitle.item.id, startMs: m.roomTitle.startMs }
             return
         end if
         if i <> 0 then return
@@ -412,14 +491,11 @@ sub onChanged(event as object)
     end if
 end sub
 
-sub requestSeasons(missing as boolean)
-    m.seasonsRequest++
-    callApi("GET", seasonsPath(m.item.id, missing), invalid, "onSeasons", { id: m.item.id, missing: missing, request: m.seasonsRequest })
-end sub
-
-sub toggleMissingEpisodes()
-    m.keepPlace = true
-    requestSeasons(not m.showMissing)
+sub onSeasonPrefs(event as object)
+    res = event.getData()
+    if m.item = invalid or res.tag.id <> m.item.id or res.tag.request <> m.seasonsRequest then return
+    missing = res.ok and res.data <> invalid and res.data.show_missing_episodes = true
+    callApi("GET", seasonsPath(m.item.id, missing), invalid, "onSeasons", res.tag)
 end sub
 
 sub onSeasons(event as object)
@@ -431,12 +507,11 @@ sub onSeasons(event as object)
         return
     end if
     m.error.text = ""
-    m.showMissing = res.tag.missing
     m.seasons = valueOr(res.data.seasons, [])
     ' Each season, then the episodes the order doesn't place ("Not in This Order").
     m.seasonRows = []
     if res.ok then m.seasonRows = seasonRows(res.data)
-    ' After a change from the * menu the focus stays where it was; otherwise it lands afresh.
+    ' Preserve focus on a live refresh or after marking a season.
     if m.keepPlace <> true then m.landed = false
     m.keepPlace = false
     buildRows()
@@ -523,10 +598,17 @@ sub buildRows()
                 node.line2 = seasonCardLine(e, spec.unplaced = true)
                 node.addField("subtitleLine", "string", false)
                 node.subtitleLine = episodeLine(e)
+                node.showOverview = true
             end if
         end for
-        sizes.Push(cardSize(spec.style))
-        heights.Push(cardRowHeight(spec.style))
+        size = cardSize(spec.style)
+        height = cardRowHeight(spec.style)
+        if spec.kind = "season"
+            size = cardSlot(EPISODE_CARD_WIDTH, size[1] + EPISODE_OVERVIEW_SPACE)
+            height = height + EPISODE_OVERVIEW_SPACE
+        end if
+        sizes.Push(size)
+        heights.Push(height)
     end for
     m.episodes.rowItemSize = sizes
     m.episodes.rowHeights = heights
@@ -584,10 +666,7 @@ sub onRowFocus()
     if f = invalid or f.Count() < 2 or m.episodes.content = invalid then return
     row = m.episodes.content.getChild(f[0])
     if row = invalid then return
-    ' The tabs belong to the season row: they fade while a row below it has the focus.
-    if m.tabs.visible
-        if f[0] = 0 then m.tabs.opacity = 1 else m.tabs.opacity = 0
-    end if
+    if m.rowsFocused = true then positionRows()
     m.focusRow = row.title
     m.focusCol = f[1]
     m.focusItemId = row.getChild(f[1]).itemId
@@ -664,7 +743,19 @@ sub showSeasonMenu()
     cardEntries = []
     if at.node.available <> false and at.node.itemId <> "" then cardEntries = cardMenu(at.node)
     entries = seasonMenu(cardEntries, episodes)
-    entries.Push(missingEpisodesEntry(m.showMissing))
+    m.episodeVersionTarget = invalid
+    if at.node.available <> false and at.node.itemId <> ""
+        for each episode in at.season.episodes
+            if episode.id = at.node.itemId
+                m.episodeVersionTarget = episode
+                exit for
+            end if
+        end for
+        if filesForVersion(m.episodeVersionTarget).Count() > 1
+            entries.Push({ label: tr("Play Version…"), act: "playVersion" })
+        end if
+    end if
+    if entries.Count() = 0 then return
     m.menuAt = at
     m.menuEntries = entries
     list = []
@@ -679,21 +770,36 @@ sub showSeasonMenu()
 end sub
 
 sub onCardPicked()
+    i = m.cardPanel.picked
+    if m.versionsOpen = true
+        if i < 0 or i >= m.versionFiles.Count() then return
+        it = m.versionTarget
+        file = m.versionFiles[i]
+        closeCardPanel()
+        m.top.action = { go: "play", id: it.id, startMs: resumeMs(it), title: m.item.title, subtitle: episodeLine(it), fileId: file.id }
+        return
+    end if
+    if m.ratingPanel = "more" and i = m.titleVersionIndex and i >= 0
+        showVersions(m.titleVersionTarget)
+        return
+    end if
     ' Star rating owns this panel only while a title menu/rating list is open.
     if m.ratingPanel <> invalid and m.ratingPanel <> ""
         onRatingPicked()
         return
     end if
-    i = m.cardPanel.picked
-    closeCardPanel()
-    if i < 0 or i >= m.menuEntries.Count() then return
-    act = m.menuEntries[i].act
-    at = m.menuAt
-    node = at.node
-    if act = "showMissing" or act = "hideMissing"
-        toggleMissingEpisodes()
+    if i < 0 or i >= m.menuEntries.Count()
+        closeCardPanel()
         return
     end if
+    act = m.menuEntries[i].act
+    if act = "playVersion"
+        showVersions(m.episodeVersionTarget)
+        return
+    end if
+    closeCardPanel()
+    at = m.menuAt
+    node = at.node
     if act = "play" or act = "restart"
         if node.available = false or node.itemId = "" then return
         startMs = node.resumeMs
@@ -704,14 +810,40 @@ sub onCardPicked()
         body = { played: act = "seasonWatched", season_number: at.season.season_number }
         callApi("PUT", "/items/" + escape(m.item.id) + "/played", body, "onCardChanged")
     else if act = "shuffleSeason"
-        callApi("POST", "/play-queues", { item_ids: shuffledIds(at.season.episodes) }, "onSeasonQueue", m.item.id)
+        m.top.action = { go: "queueStart", body: { item_ids: shuffledIds(at.season.episodes) } }
     else
         go = runCardAction(node, act)
         if go <> invalid then m.top.action = go
     end if
 end sub
 
+sub showVersions(item as object)
+    m.versionsOpen = true
+    m.versionTarget = item
+    m.versionFiles = filesForVersion(item)
+    labels = []
+    counts = {}
+    for each file in m.versionFiles
+        label = versionName(versionFileInfo(file))
+        labels.Push(label)
+        if counts[label] = invalid then counts[label] = 0
+        counts[label]++
+    end for
+    entries = []
+    for i = 0 to m.versionFiles.Count() - 1
+        detail = ""
+        if counts[labels[i]] > 1 then detail = versionFilename(m.versionFiles[i])
+        entries.Push({ label: labels[i], detail: detail })
+    end for
+    m.cardPanel.title = tr("Play Version")
+    m.cardPanel.entries = entries
+    m.cardPanel.selected = -1
+    m.cardPanel.focusIndex = 0
+    m.cardPanel.show = true
+end sub
+
 sub closeCardPanel()
+    m.versionsOpen = false
     m.cardPanel.visible = false
     if m.ratingPanel <> invalid and m.ratingPanel <> ""
         m.ratingPanel = ""
@@ -730,20 +862,6 @@ sub onCardChanged(event as object)
     else
         m.error.text = tr("Couldn't change what's watched.") + " " + res.error
     end if
-end sub
-
-' Shuffle Season's queue is made: play its first entry, with the queue for the player to play on.
-sub onSeasonQueue(event as object)
-    res = event.getData()
-    if m.item = invalid or res.tag <> m.item.id then return
-    first = invalid
-    if res.ok then first = queueCurrent(res.data)
-    if first = invalid
-        m.error.text = tr("Couldn't start playing this season.") + " " + valueOr(res.error, "")
-        return
-    end if
-    print "Arc: shuffling a season ("; res.data.entries.Count(); " episodes)"
-    m.top.action = { go: "play", id: first.item.id, startMs: 0, title: m.item.title, subtitle: episodeLine(first.item), queue: res.data }
 end sub
 
 ' episodeLine: "S1 · E4 · Shindig", for the player's second line.
@@ -765,8 +883,13 @@ sub renderSummary()
     logo = img.logo
     if ep then logo = img.series_logo
     m.logo.uri = imageUrl(logo)
-    m.titleLabel.visible = logo = invalid
+    updateTitleVisibility()
     if ep and it.series_title <> invalid then m.titleLabel.text = it.series_title else m.titleLabel.text = it.title
     showHeroLines(it)
     m.overview.text = valueOr(it.overview, "")
+end sub
+
+' Keep the title readable when the server's logo image is slow or unavailable.
+sub updateTitleVisibility()
+    m.titleLabel.visible = m.logo.uri = "" or m.logo.loadStatus <> "ready"
 end sub

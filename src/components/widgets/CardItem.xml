@@ -35,11 +35,11 @@
                 <Poster id="strip" uri="pkg:/images/strip.png" visible="false" />
             </MaskGroup>
             <!-- A person's picture is round (the Apple TV's cast), with a ring when focused. -->
-            <Poster id="ring" uri="pkg:/images/ring.png" visible="false" opacity="0" />
             <MaskGroup id="round" maskUri="pkg:/images/circle-mask.png" visible="false">
                 <Rectangle id="roundBlank" color="0x1C2526FF" />
                 <Poster id="face" loadDisplayMode="scaleToZoom" />
             </MaskGroup>
+            <Poster id="ring" uri="pkg:/images/ring.png" visible="false" opacity="0" />
             <Poster id="play" uri="pkg:/images/play-mini.png" width="22" height="22" visible="false" />
             <Label id="left" font="font:SmallestBoldSystemFont" color="0xFFFFFFFF" visible="false" />
             <Rectangle id="track" color="0x00000099" visible="false" />
@@ -49,6 +49,7 @@
             <Poster id="edge" uri="pkg:/images/focus-ring.9.png" opacity="0" />
             <Label id="line1" font="font:SmallBoldSystemFont" color="0xF0F4F4FF" horizAlign="center" />
             <Label id="line2" font="font:SmallestSystemFont" color="0x9AA7A7FF" horizAlign="center" />
+            <Label id="overview" font="font:SmallestSystemFont" color="0xC6D0D0FF" wrap="true" maxLines="3" visible="false" />
         </Group>
     </children>
 </component>

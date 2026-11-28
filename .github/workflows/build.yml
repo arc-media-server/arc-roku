@@ -30,6 +30,8 @@ jobs:
       version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -56,10 +58,12 @@ jobs:
           echo "version=$v" >> "$GITHUB_OUTPUT"
           echo "Version $v"
       - name: Package
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           npm run build
           mkdir -p release
-          cp out/arc-roku.zip "release/arc-roku-${{ steps.version.outputs.version }}.zip"
+          cp out/arc-roku.zip "release/arc-roku-$VERSION.zip"
           cd release && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:

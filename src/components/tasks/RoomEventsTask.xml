@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="RoomEventsTask" extends="Task">
+    <interface>
+        <field id="url" type="string" />
+        <field id="token" type="string" />
+        <field id="stopRequested" type="boolean" />
+        <field id="room" type="assocarray" alwaysNotify="true" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/source/shared/http.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/liveupdates.bs" />
+</component>

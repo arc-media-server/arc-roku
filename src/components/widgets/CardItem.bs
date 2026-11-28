@@ -13,6 +13,7 @@ sub init()
     m.tick = m.top.findNode("tick")
     m.line1 = m.top.findNode("line1")
     m.line2 = m.top.findNode("line2")
+    m.overview = m.top.findNode("overview")
     m.shade = m.top.findNode("shade")
     m.logo = m.top.findNode("logo")
     m.logoTitle = m.top.findNode("logoTitle")
@@ -27,10 +28,15 @@ end sub
 
 sub onContent()
     c = m.top.itemContent
-    if c = invalid then return
+    if c = invalid
+        m.overview.visible = false
+        return
+    end if
     art = c.HDPosterUrl
-    if c.spoilerEligible = true and hideSpoilers() then art = c.safeArt
-    if c.style = "named" then m.face.uri = art else m.picture.uri = art
+    spoilersHidden = c.spoilerEligible = true and hideSpoilers()
+    if spoilersHidden then art = c.safeArt
+    m.overview.visible = c.showOverview = true and not spoilersHidden and c.overview <> ""
+    if m.overview.visible then m.overview.text = c.overview else m.overview.text = ""
     m.picture.opacity = 1
     m.blank.opacity = 1
     if c.available = false
@@ -43,6 +49,7 @@ sub onContent()
     if backdrop then m.logo.uri = c.logo else m.logo.uri = ""
     m.logoTitle.text = c.title
     layout()
+    if c.style = "named" then m.face.uri = art else m.picture.uri = art
 end sub
 
 ' The picture's height comes from its style (cardPicture in cards.bs); the two lines go under it
@@ -57,7 +64,9 @@ sub layout()
     w = m.top.width - 2 * PAD
     h = m.top.height
     if w <= 0 or h <= 0 then return
-    m.card.translation = [PAD, 0]
+    topInset = 0
+    if c <> invalid and c.topInset <> invalid then topInset = c.topInset
+    m.card.translation = [PAD, topInset]
     ' "named" (people): a poster with the name and role under it.
     named = c <> invalid and c.style = "named"
     thumb = c <> invalid and (c.style = "thumb" or named)
@@ -77,20 +86,24 @@ sub layout()
             n.width = w
             n.height = w
         end for
-        m.face.loadWidth = w
-        m.face.loadHeight = w
-        ' ring.png is a 272 px ring around a 240 px circle.
-        r = w * 272 / 240
-        m.ring.width = r
-        m.ring.height = r
-        m.ring.translation = [(w - r) / 2, (w - r) / 2]
+        ' Let scaleToZoom crop the original portrait into the circle.
+        ' Draw the ring inside the portrait so the focused card fits within its row.
+        m.ring.width = w
+        m.ring.height = w
     end if
     for each n in [m.blank, m.picture]
         n.width = w
         n.height = ph
     end for
-    m.picture.loadWidth = w
-    m.picture.loadHeight = ph
+    if backdrop
+        ' Keep the source ratio. The simulator stretches to loadWidth and loadHeight before
+        ' scaleToZoom can crop, which squashes wide artwork in this 4:3 frame.
+        m.picture.loadWidth = 0
+        m.picture.loadHeight = 0
+    else
+        m.picture.loadWidth = w
+        m.picture.loadHeight = ph
+    end if
     m.frame.maskSize = [w, ph]
     if ph > w
         m.frame.maskUri = "pkg:/images/mask-poster.png"
@@ -103,7 +116,14 @@ sub layout()
     ' without a logo, the title. (No loadWidth: the simulator would stretch the logo to it.)
     m.shade.visible = backdrop
     m.logo.visible = backdrop and m.logo.uri <> ""
-    m.logoTitle.visible = backdrop and m.logo.uri = ""
+    genre = c <> invalid and c.kind = "genre"
+    m.logoTitle.visible = genre or (backdrop and m.logo.uri = "")
+    if genre then m.logoTitle.vertAlign = "center" else m.logoTitle.vertAlign = "bottom"
+    if genre
+        m.logoTitle.translation = [24, 0]
+        m.logoTitle.width = w - 48
+        m.logoTitle.height = ph
+    end if
     if backdrop
         m.shade.translation = [0, ph / 2]
         m.shade.width = w
@@ -122,12 +142,18 @@ sub layout()
     m.card.scaleRotateCenter = [w / 2, ph / 2]
     ' Every card has its caption when its slot leaves room for it.
     caption = h >= ph + 60
-    m.line1.visible = caption
+    m.line1.visible = caption and not genre
     m.line2.visible = caption and m.line2.text <> ""
+    captionAlign = "center"
+    if c <> invalid and c.showOverview = true then captionAlign = "left"
+    m.line1.horizAlign = captionAlign
+    m.line2.horizAlign = captionAlign
     m.line1.translation = [0, ph + 14]
     m.line1.width = w
     m.line2.translation = [0, ph + 50]
     m.line2.width = w
+    m.overview.translation = [0, ph + 86]
+    m.overview.width = w
     progress = 0.0
     if c <> invalid then progress = c.progress
     m.track.visible = progress > 0

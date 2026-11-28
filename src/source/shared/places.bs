@@ -2,11 +2,12 @@
 ' order with the Watchlist where the profile put it (prefs.watchlist_position: how many libraries
 ' come before it), Playlists and Settings. Each has an id, a label, an icon
 ' (pkg:/images/nav/<icon>.png) and the action that opens it as the first screen.
-function navPlaces(libraries as object, prefs as dynamic) as object
+function navPlaces(libraries as object, prefs as dynamic, together = false as boolean) as object
     places = [
         { id: "search", label: tr("Search"), icon: "search", go: { go: "search" } },
         { id: "home", label: tr("Home"), icon: "home", go: { go: "home" } }
     ]
+    if together then places.Push({ id: "together", label: tr("Watch Together"), icon: "tv", go: { go: "together" } })
     libs = orderLibraries(libraries, prefs)
     watchlistAt = 0
     if prefs <> invalid and prefs.watchlist_position <> invalid then watchlistAt = prefs.watchlist_position

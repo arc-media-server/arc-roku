@@ -5,7 +5,11 @@
 ' libraryQueryDefaults: a library's sort and filters before the viewer changes them (title, A to Z).
 ' letter is where a title-sorted grid starts ("" for the beginning; "s" starts at S).
 function libraryQueryDefaults() as object
-    return { sort: "title", reverse: false, unwatched: false, genre: "", decade: "", resolution: "", letter: "" }
+    return {
+        sort: "title", reverse: false, letter: "", unwatched: false, watch_state: ""
+        genre: "", decade: "", resolution: "", dynamic_range: ""
+        video_codec: "", audio_codec: "", audio_channels: ""
+    }
 end function
 
 ' browsePath: the request for a grid's page. source: { kind, id, libraryKind, path }.
@@ -15,10 +19,7 @@ function browsePath(source as object, q as dynamic, offset as integer, limit as 
         params = { library_id: source.id, kind: libraryItemKind({ kind: source.libraryKind }), sort: q.sort, limit: limit }
         if offset > 0 then params.offset = offset
         if q.reverse = true and q.sort <> "shuffle" then params.reverse = true
-        if q.unwatched = true then params.unwatched = true
-        if q.genre <> "" then params.genre = q.genre
-        if q.decade <> "" then params.decade = q.decade
-        if q.resolution <> "" then params.resolution = q.resolution
+        params.Append(libraryFilterParams(q))
         ' Sorted by title, the first page asks where each letter starts (letters) and, after a jump,
         ' starts at that letter (Arc counts the titles before it; later pages carry on from there).
         if q.sort = "title" and offset = 0
@@ -39,6 +40,20 @@ function browsePath(source as object, q as dynamic, offset as integer, limit as 
     if kind = "watchlist" then return "/watchlist"
     if kind = "playlists" then return "/playlists"
     return ""
+end function
+
+' The same filters are sent on every page, including a page reached by jumping to a letter.
+function libraryFilterParams(q as object) as object
+    filters = {}
+    if q.unwatched = true
+        filters.unwatched = true
+    else if valueString(q.watch_state) <> ""
+        filters.watch_state = q.watch_state
+    end if
+    for each key in ["genre", "decade", "resolution", "dynamic_range", "video_codec", "audio_codec", "audio_channels"]
+        if valueString(q[key]) <> "" then filters[key] = q[key]
+    end for
+    return filters
 end function
 
 ' browsePaged: whether a grid loads in pages (a library's titles) or all at once.
@@ -153,21 +168,6 @@ function resolutionName(v as string) as string
     return v
 end function
 
-' querySummary: "Title · A to Z · Unwatched · Drama", shown under a library's name.
-function querySummary(q as object) as string
-    parts = [sortName(q.sort)]
-    if q.sort <> "shuffle"
-        d = sortDirections(q.sort)
-        if q.reverse = true then parts.Push(d[1]) else parts.Push(d[0])
-    end if
-    if q.unwatched = true then parts.Push(tr("Unwatched"))
-    if q.genre <> "" then parts.Push(q.genre)
-    if q.decade <> "" then parts.Push(tr("%1s").Replace("%1", q.decade))
-    if q.resolution <> "" then parts.Push(resolutionName(q.resolution))
-    if q.sort = "title" and valueString(q.letter) <> "" then parts.Push(tr("From %1").Replace("%1", UCase(q.letter)))
-    return joinWith(parts, " · ")
-end function
-
 ' letterChoices: the letters a title-sorted list can jump to, A to Z, from the first page's
 ' letters ([{ letter, count }]): only those with titles. "#" (numbers and symbols) is where the list
 ' starts anyway, so All titles covers it.
@@ -177,6 +177,15 @@ function letterChoices(letters as dynamic) as object
     for each l in letters
         c = LCase(valueString(l.letter))
         if c >= "a" and c <= "z" and Len(c) = 1 and l.count <> invalid and l.count > 0 then out.Push(c)
+    end for
+    return out
+end function
+
+function orderedLetters(letters as object, reverse as boolean) as object
+    if not reverse then return letters
+    out = []
+    for i = letters.Count() - 1 to 0 step -1
+        out.Push(letters[i])
     end for
     return out
 end function
@@ -192,7 +201,7 @@ function joinWith(parts as object, sep as string) as string
     return out
 end function
 
-' searchCards: /search's answer as rows of cards: titles, episodes, collections and people.
+' searchRows: /search's answer as rows of cards.
 function searchRows(data as dynamic) as object
     rows = []
     if data = invalid then return rows
@@ -221,6 +230,13 @@ function searchRows(data as dynamic) as object
             people.Push({ item: { id: p.id.ToStr(), kind: "person", title: p.name, images: { primary: p.image } }, line2: personRole(p.known_for) })
         end for
         rows.Push({ title: tr("People"), style: "poster", cards: people })
+    end if
+    if data.genres <> invalid and data.genres.Count() > 0
+        genres = []
+        for each genre in data.genres
+            genres.Push({ item: { id: valueString(genre.library_id), kind: "genre", title: genre.name }, line2: genre.library_name })
+        end for
+        rows.Push({ title: tr("Genres"), style: "thumb", cards: genres })
     end if
     return rows
 end function

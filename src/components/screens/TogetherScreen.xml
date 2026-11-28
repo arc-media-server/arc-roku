@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="TogetherScreen" extends="Group">
+    <interface>
+        <field id="params" type="assocarray" onChange="onParams" />
+        <field id="action" type="assocarray" alwaysNotify="true" />
+        <function name="takeFocus" />
+        <function name="returned" />
+        <function name="leaving" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/source/shared/http.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/api.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/together.bs" />
+    <children>
+        <Rectangle width="1920" height="1080" color="0x0B1214FF" />
+        <Label id="heading" translation="[148, 84]" width="1560" font="font:LargeBoldSystemFont" color="0xF5F5F7FF" />
+        <Label id="title" translation="[148, 185]" width="1010" font="font:MediumBoldSystemFont" color="0xF5F5F7FF" />
+        <Label id="code" translation="[148, 252]" width="1010" font="font:LargeBoldSystemFont" color="0xF5F5F7FF" />
+        <Label id="expiry" translation="[148, 334]" width="1000" font="font:SmallSystemFont" color="0xC6D0D0FF" />
+        <Label id="people" translation="[148, 424]" width="950" height="490" wrap="true" font="font:SmallSystemFont" color="0xC6D0D0FF" />
+        <Label id="status" translation="[148, 936]" width="1600" font="font:SmallSystemFont" color="0xF5F5F7FF" />
+        <LabelList id="actions" translation="[1170, 185]" itemSize="[590, 76]" numRows="8" vertFocusAnimationStyle="floatingFocus"
+            color="0xC6D0D0FF" focusedColor="0x0B1214FF" focusBitmapBlendColor="0xF5F5F7FF" />
+        <OptionsPanel id="picker" visible="false" />
+        <Timer id="enterTimer" repeat="false" duration="0.1" />
+        <Timer id="beat" repeat="true" duration="2" />
+    </children>
+</component>

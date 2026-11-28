@@ -9,6 +9,7 @@
         <field id="side" type="string" value="right" onChange="onSide" />
         <field id="entries" type="array" />
         <field id="selected" type="integer" value="-1" />
+        <field id="focusIndex" type="integer" value="0" />
         <field id="show" type="boolean" alwaysNotify="true" onChange="onShow" />
         <field id="picked" type="integer" alwaysNotify="true" />
         <field id="closed" type="boolean" alwaysNotify="true" />

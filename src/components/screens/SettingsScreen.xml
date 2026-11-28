@@ -21,8 +21,8 @@
         <Rectangle width="1920" height="1080" color="0x0B1214FF" />
         <Label id="heading" translation="[170, 70]" width="1000" font="font:LargeBoldSystemFont" color="0xF0F4F4FF" />
         <!-- Who's watching, where tvOS's Settings shows its icon. -->
-        <Poster id="avatar" translation="[270, 260]" width="260" height="260" />
-        <Label id="letter" translation="[270, 260]" width="260" height="260" horizAlign="center" vertAlign="center" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" />
+        <Poster id="avatar" translation="[320, 260]" width="260" height="260" />
+        <Label id="letter" translation="[320, 260]" width="260" height="260" horizAlign="center" vertAlign="center" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" />
         <Label id="profileName" translation="[170, 550]" width="560" horizAlign="center" font="font:MediumBoldSystemFont" color="0xF0F4F4FF" />
         <Label id="serverLine" translation="[170, 610]" width="560" horizAlign="center" font="font:SmallSystemFont" color="0x9AA7A7FF" />
         <Label id="note" translation="[170, 700]" width="560" wrap="true" horizAlign="center" font="font:SmallestSystemFont" color="0x9AA7A7FF" />

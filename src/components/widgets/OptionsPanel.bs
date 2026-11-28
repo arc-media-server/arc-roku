@@ -35,7 +35,7 @@ sub onShow()
         m.radio.visible = false
         m.plain.visible = true
         m.plain.content = content
-        m.plain.jumpToItem = 0
+        m.plain.jumpToItem = m.top.focusIndex
         m.plain.setFocus(true)
     end if
 end sub

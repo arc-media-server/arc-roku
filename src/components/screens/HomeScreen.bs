@@ -7,12 +7,14 @@
 sub init()
     m.global.observeField("hideSpoilers", "showHero")
     m.rows = m.top.findNode("rows")
+    m.hero = m.top.findNode("hero")
     m.backdrop = m.top.findNode("backdrop")
     m.logo = m.top.findNode("logo")
     m.heroTitle = m.top.findNode("heroTitle")
     m.heroMeta = m.top.findNode("heroMeta")
     m.heroOverview = m.top.findNode("heroOverview")
     shareSignIn([m.backdrop, m.logo])
+    m.logo.observeField("loadStatus", "updateTitleVisibility")
     m.empty = m.top.findNode("empty")
     m.cardPanel = m.top.findNode("cardPanel")
     m.cardPanel.observeField("picked", "onCardPicked")
@@ -23,23 +25,22 @@ sub init()
     m.rows.observeField("rowItemSelected", "onSelected")
     m.content = CreateObject("roSGNode", "ContentNode")
     m.rows.content = m.content
-    m.sizes = []
-    m.heights = []
     m.prefs = invalid
     m.libraries = invalid
     m.library = invalid
+    m.roomArt = {}
+    m.closed = false
 end sub
 
 ' Home loads once its params are set (MainScene sets them as it shows the screen).
 sub onParams()
     p = m.top.params
-    if p <> invalid then m.library = p.library
+    if p <> invalid
+        m.library = p.library
+        m.recoverTogether = p.recoverTogether = true
+    end if
     if m.library <> invalid
-        ' Under the library's pills: the hero sits lower and has no overview.
-        m.logo.translation = [170, 165]
-        m.logo.height = 150
-        m.heroTitle.translation = [170, 210]
-        m.heroOverview.visible = false
+        m.rows.translation = [156, 152]
     end if
     load()
 end sub
@@ -50,6 +51,7 @@ sub takeFocus(_ = invalid as dynamic)
 end sub
 
 sub leaving(_ = invalid as dynamic)
+    m.closed = true
 end sub
 
 ' Back from a title or the player: rows load again (Continue Watching will have changed).
@@ -66,8 +68,16 @@ sub load()
     m.prefs = invalid
     m.libraries = invalid
     m.generation = CreateObject("roDateTime").AsSeconds().ToStr() + Rnd(100000).ToStr()
+    m.capabilityReady = m.global.togetherCapabilityKnown
     callApi("GET", "/me/prefs", invalid, "onPrefs", m.generation)
     callApi("GET", "/libraries", invalid, "onLibraries", m.generation)
+    if not m.capabilityReady
+        task = CreateObject("roSGNode", "ApiTask")
+        task.request = { method: "GET", path: "/capabilities", timeoutMs: 4000, tag: m.generation }
+        task.observeField("response", "onTogetherCapability")
+        keepTask(task)
+        task.control = "RUN"
+    end if
 end sub
 
 sub onPrefs(event as object)
@@ -91,18 +101,20 @@ sub onLibraries(event as object)
 end sub
 
 sub resolve()
-    if m.prefs = invalid or m.libraries = invalid then return
-    m.top.action = { go: "places", places: navPlaces(m.libraries, m.prefs) }
+    if m.closed or m.prefs = invalid or m.libraries = invalid or not m.capabilityReady then return
+    publishPlaces()
     m.specs = resolveHomeRows(m.prefs, m.libraries, CreateObject("roDateTime"))
+    m.specs.Push({ id: "queue", title: tr("Queue"), style: "poster", path: "/play-queues/current", shape: "queue" })
     m.results = []
+    m.placed = 0
+    m.newContent = CreateObject("roSGNode", "ContentNode")
+    if m.global.watchTogether = true
+        m.specs.Push({ id: "rooms", title: tr("Watch Together"), style: "thumb", path: "/watch-together/rooms" })
+    end if
     for i = 0 to m.specs.Count() - 1
         m.results.Push(invalid)
         callApi("GET", m.specs[i].path, invalid, "onRow", { generation: m.generation, index: i })
     end for
-    m.placed = 0
-    m.newContent = CreateObject("roSGNode", "ContentNode")
-    m.newSizes = []
-    m.newHeights = []
     if m.specs.Count() = 0 then showEmpty(tr("Nothing here yet. Add a library in Arc's settings on the web."))
 end sub
 
@@ -123,20 +135,68 @@ sub onRecommended(event as object)
     end for
     m.placed = 0
     m.newContent = CreateObject("roSGNode", "ContentNode")
-    m.newSizes = []
-    m.newHeights = []
     if rows.Count() = 0
+        m.content = m.newContent
+        m.rows.content = m.content
         showEmpty(tr("Nothing to recommend yet. Recommendations appear here once this library has titles you can watch."))
         return
     end if
     placeRows()
 end sub
 
+sub publishPlaces()
+    m.top.action = { go: "places", places: navPlaces(m.libraries, m.prefs, m.global.watchTogether) }
+end sub
+
+sub onTogetherCapability(event as object)
+    res = event.getData()
+    if m.closed or res.tag <> m.generation then return
+    m.capabilityReady = true
+    if res.ok and res.data <> invalid
+        m.global.togetherCapabilityKnown = true
+        if res.data.features <> invalid
+            cap = res.data.features.watch_together
+            m.global.watchTogether = cap <> invalid and cap.supported = true and cap.available = true and cap.allowed = true
+        end if
+    end if
+    resolve()
+    if m.recoverTogether and m.global.watchTogether = true
+        m.recoverTogether = false
+        callApi("GET", "/watch-together/current", invalid, "onTogetherRecovery")
+    end if
+end sub
+
+sub onTogetherRecovery(event as object)
+    res = event.getData()
+    if m.closed or not m.top.visible or not res.ok or res.data = invalid or res.data.state = "ended" then return
+    m.top.action = { go: "together", recovered: res.data }
+end sub
+
 sub onRow(event as object)
     res = event.getData()
     if res.tag = invalid or res.tag.generation <> m.generation then return
     i = res.tag.index
-    if res.ok then m.results[i] = rowItems(m.specs[i].shape, res.data) else m.results[i] = []
+    if m.specs[i].shape = "queue"
+        m.homeQueue = invalid
+        if res.ok then m.homeQueue = res.data
+        m.results[i] = homeQueueCards(m.homeQueue)
+
+    else
+        m.results[i] = []
+        if res.ok
+            if m.specs[i].id = "rooms"
+                if res.data <> invalid and res.data.rooms <> invalid
+                    for each room in res.data.rooms
+                        if room.state <> "ended" and room.item <> invalid
+                            m.results[i].Push({ item: room.item, room: room })
+                        end if
+                    end for
+                end if
+            else
+                m.results[i] = rowItems(m.specs[i].shape, res.data)
+            end if
+        end if
+    end if
     placeRows()
 end sub
 
@@ -148,16 +208,36 @@ sub placeRows()
         cards = m.results[m.placed]
         m.placed = m.placed + 1
         if cards.Count() > 0
-            row = m.newContent.createChild("ContentNode")
+            if spec.id = "rooms"
+                row = CreateObject("roSGNode", "ContentNode")
+                rowIndex = roomRowIndex(m.newContent)
+                m.newContent.insertChild(row, rowIndex)
+                m.roomsRow = row
+            else
+                row = m.newContent.createChild("ContentNode")
+            end if
             row.title = spec.title
+            row.addFields({ showsHero: m.library = invalid and spec.id = "continue", rowSpec: valueOr(spec.id, ""), rowStyle: spec.style })
             for each card in cards
                 node = row.createChild("ContentNode")
                 node.addFields(cardFields())
-                fillCard(node, card, spec.style)
+                fillCard(node, card, spec.style, spec.seasonPosters)
                 node.inContinue = spec.continueRow = true
+                node.addFields({ queueEntry: valueOr(card.queueEntry, ""), queueId: valueOr(card.queueId, "") })
+                if card.room <> invalid
+                    node.addFields({ roomId: card.room.id, joinedRoom: card.room.joined = true, hostingRoom: card.room.hosting = true })
+                    node.title = card.room.item.title
+                    node.line2 = tr("Hosted by %1").Replace("%1", card.room.host_name)
+                    if card.room.joined = true then node.line2 = tr("Return to room")
+                    if m.roomArt[card.item.id] <> invalid
+                        node.HDPosterUrl = m.roomArt[card.item.id]
+                    else
+                        node.HDPosterUrl = "pkg:/images/logo-main.png"
+                        id = CreateObject("roUrlTransfer").Escape(card.item.id)
+                        callApi("GET", "/items/" + id, invalid, "onRoomArt", { id: card.item.id, generation: m.generation })
+                    end if
+                end if
             end for
-            m.newSizes.Push(cardSize(spec.style))
-            m.newHeights.Push(cardRowHeight(spec.style))
             added = true
         end if
     end while
@@ -167,11 +247,31 @@ end sub
 ' swapIn shows the rows placed so far, keeping focus where it was when Home is reloaded.
 sub swapIn()
     focused = m.rows.rowItemFocused
-    m.rows.rowItemSize = m.newSizes
-    m.rows.rowHeights = m.newHeights
+    if m.content <> invalid and focused <> invalid and focused.Count() = 2
+        oldRow = m.content.getChild(focused[0])
+        if oldRow <> invalid and oldRow.hasField("rowSpec") and oldRow.rowSpec <> ""
+            for i = 0 to m.newContent.getChildCount() - 1
+                candidate = m.newContent.getChild(i)
+                if candidate.rowSpec = oldRow.rowSpec
+                    focused = [i, focused[1]]
+                    exit for
+                end if
+            end for
+        end if
+    end if
+    sizes = []
+    heights = []
+    for i = 0 to m.newContent.getChildCount() - 1
+        style = m.newContent.getChild(i).rowStyle
+        sizes.Push(cardSize(style))
+        heights.Push(cardRowHeight(style))
+    end for
+    m.rows.rowItemSize = sizes
+    m.rows.rowHeights = heights
     m.rows.content = m.newContent
     m.content = m.newContent
     if m.newContent.getChildCount() = 0
+        onFocusMoved()
         if m.placed = m.specs.Count() then showEmpty(tr("Nothing to show yet. Titles appear here once Arc has scanned your libraries."))
         return
     end if
@@ -191,21 +291,36 @@ sub showEmpty(text as string)
     m.empty.visible = true
 end sub
 
-function focusedCard() as dynamic
+function focusedRow() as dynamic
     f = m.rows.rowItemFocused
     if f = invalid or f.Count() < 2 or m.content = invalid then return invalid
-    row = m.content.getChild(f[0])
-    if row = invalid then return invalid
-    return row.getChild(f[1])
+    return m.content.getChild(f[0])
 end function
 
-' The hero follows focus after a moment's rest, so scrolling along a row stays smooth.
+function focusedCard() as dynamic
+    row = focusedRow()
+    if row = invalid then return invalid
+    return row.getChild(m.rows.rowItemFocused[1])
+end function
+
+' The Home hero belongs to Continue Watching. Debounce changes within the shelf.
 sub onFocusMoved()
+    if m.library <> invalid then return
+    row = focusedRow()
+    card = focusedCard()
+    wasVisible = m.hero.visible
+    m.hero.visible = card <> invalid and row.showsHero = true
+    y = 64
+    if m.hero.visible then y = 1080 - cardRowHeight(card.style)
+    if m.rows.translation[1] <> y then m.rows.translation = [156, y]
     m.heroDelay.control = "stop"
-    m.heroDelay.control = "start"
+    if m.hero.visible
+        if wasVisible then m.heroDelay.control = "start" else showHero()
+    end if
 end sub
 
 sub showHero()
+    if not m.hero.visible then return
     c = focusedCard()
     if c = invalid then return
     art = c.backdrop
@@ -216,7 +331,7 @@ sub showHero()
     end if
     m.backdrop.uri = art
     m.logo.uri = c.logo
-    m.heroTitle.visible = c.logo = ""
+    updateTitleVisibility()
     m.heroTitle.text = c.title
     meta = c.meta
     m.heroMeta.text = meta
@@ -226,8 +341,14 @@ end sub
 sub onSelected()
     c = focusedCard()
     if c = invalid then return
+    if c.queueEntry <> ""
+        queueCardAction(c, "select")
+        return
+    end if
     ' An episode opens its show's page, landing on that episode (as Plex and Arc's other apps).
-    if c.kind = "episode" and c.parentId <> ""
+    if c.hasField("roomId")
+        m.top.action = { go: "together", roomId: c.roomId }
+    else if c.kind = "episode" and c.parentId <> ""
         m.top.action = { go: "open", id: c.parentId, episodeId: c.itemId }
     else
         m.top.action = { go: "open", id: c.itemId }
@@ -239,8 +360,16 @@ function onKeyEvent(key as string, press as boolean) as boolean
     if m.cardPanel.visible then return true
     if key = "play"
         c = focusedCard()
+        if c <> invalid and c.hasField("roomId")
+            m.top.action = { go: "together", roomId: c.roomId }
+            return true
+        end if
         if c <> invalid and (c.kind = "movie" or c.kind = "episode")
-            m.top.action = { go: "play", id: c.itemId, startMs: c.resumeMs, title: c.title, subtitle: c.line2 }
+            if c.queueEntry <> ""
+                queueCardAction(c, "select")
+            else
+                m.top.action = { go: "play", id: c.itemId, startMs: c.resumeMs, title: c.title, subtitle: c.line2 }
+            end if
             return true
         end if
     else if key = "options"
@@ -256,6 +385,26 @@ end function
 sub showMenu()
     c = focusedCard()
     entries = cardMenu(c)
+    if c <> invalid and c.hasField("roomId")
+        entries = [{ label: tr("Open room"), act: "openRoom" }]
+        if c.joinedRoom <> true
+            label = tr("Decline invitation")
+            if c.hostingRoom then label = tr("Cancel room")
+            entries.Push({ label: label, act: "dismissRoom" })
+        end if
+    end if
+    q = m.homeQueue
+    if c <> invalid and c.queueEntry <> "" and q <> invalid and c.queueId = q.id
+        for i = entries.Count() - 1 to 0 step -1
+            if entries[i].act = "play" or entries[i].act = "restart" then entries.Delete(i)
+        end for
+        entries.Unshift({ label: tr("Play"), act: "queue:select" })
+        if c.queueEntry <> q.current_entry_id
+            if reorderedQueueIds(q, c.queueEntry, -1) <> invalid then entries.Push({ label: tr("Move Earlier"), act: "queue:earlier" })
+            if reorderedQueueIds(q, c.queueEntry, 1) <> invalid then entries.Push({ label: tr("Move Later"), act: "queue:later" })
+            entries.Push({ label: tr("Remove from Queue"), act: "queue:remove" })
+        end if
+    end if
     if entries.Count() = 0 then return
     m.menuCard = c
     m.menuEntries = entries
@@ -274,8 +423,24 @@ sub onCardPicked()
     i = m.cardPanel.picked
     closeCardPanel()
     if i < 0 or i >= m.menuEntries.Count() then return
-    go = runCardAction(m.menuCard, m.menuEntries[i].act)
+    act = m.menuEntries[i].act
+    if act = "openRoom"
+        m.top.action = { go: "together", roomId: m.menuCard.roomId }
+        return
+    else if act = "dismissRoom"
+        id = CreateObject("roUrlTransfer").Escape(m.menuCard.roomId)
+        callApi("POST", "/watch-together/rooms/" + id + "/dismiss", invalid, "onCardChanged")
+        return
+    else if act.StartsWith("queue:")
+        queueCardAction(m.menuCard, act.Mid(6))
+        return
+    end if
+    go = runCardAction(m.menuCard, act)
     if go <> invalid then m.top.action = go
+end sub
+
+sub queueCardAction(card as object, operation as string)
+    m.top.action = { go: "queueEdit", queueId: card.queueId, entryId: card.queueEntry, operation: operation }
 end sub
 
 sub closeCardPanel()
@@ -287,3 +452,32 @@ end sub
 sub onCardChanged(event as object)
     load()
 end sub
+
+' Keep the title readable when the server's logo image is slow or unavailable.
+sub updateTitleVisibility()
+    m.heroTitle.visible = m.logo.uri = "" or m.logo.loadStatus <> "ready"
+end sub
+
+sub onRoomArt(event as object)
+    res = event.getData()
+    if res.tag.generation <> m.generation or not res.ok or res.data = invalid or res.data.images = invalid then return
+    images = res.data.images
+    art = images.backdrop
+    if res.data.kind = "episode" then art = images.series_backdrop
+    if art = invalid then art = images.primary
+    if art = invalid then return
+    url = imageUrl(art)
+    m.roomArt[res.tag.id] = url
+    for j = 0 to m.roomsRow.getChildCount() - 1
+        node = m.roomsRow.getChild(j)
+        if node.itemId = res.tag.id then node.HDPosterUrl = url
+    end for
+end sub
+
+function roomRowIndex(content as object) as integer
+    for i = 0 to content.getChildCount() - 1
+        if content.getChild(i).showsHero = true then return i + 1
+    end for
+    if content.getChildCount() > 0 then return 1
+    return 0
+end function

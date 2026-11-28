@@ -150,6 +150,7 @@ sub draw()
     rows = []
     rows.Push(["auto_play", tr("Auto-Play Next Episode"), onOff(pref("auto_play", true) <> false)])
     rows.Push(["hide_spoilers", tr("Hide Spoilers"), onOff(pref("hide_spoilers", false) = true)])
+    rows.Push(["show_missing_episodes", tr("Show Missing Episodes"), onOff(pref("show_missing_episodes", false) = true)])
     rows.Push(["auto_skip", tr("Skip Intros Automatically"), onOff(pref("auto_skip", false) = true)])
     ' Theme music
     rows.Push(["theme_music", tr("Theme Music"), onOff(pref("theme_music", true) <> false)])
@@ -197,6 +198,11 @@ sub onRow()
         save("auto_play", pref("auto_play", true) = false)
     else if key = "hide_spoilers"
         saveSpoilers()
+    else if key = "show_missing_episodes"
+        if m.savingMissingEpisodes = true then return
+        m.savingMissingEpisodes = true
+        body = { show_missing_episodes: pref("show_missing_episodes", false) <> true }
+        callApi("PATCH", "/me/prefs", body, "onMissingEpisodesSaved")
     else if key = "auto_skip"
         save("auto_skip", pref("auto_skip", false) <> true)
     else if key = "theme_music"
@@ -272,6 +278,17 @@ sub save(key as string, value as dynamic)
 end sub
 
 sub onSaved(event as object)
+end sub
+
+sub onMissingEpisodesSaved(event as object)
+    m.savingMissingEpisodes = false
+    res = event.getData()
+    if res.ok and res.data <> invalid
+        m.prefs.show_missing_episodes = res.data.show_missing_episodes = true
+        draw()
+    else
+        m.note.text = tr("Couldn't save this setting. Try again.")
+    end if
 end sub
 
 function onKeyEvent(key as string, press as boolean) as boolean

@@ -23,6 +23,7 @@
     <script type="text/brightscript" uri="pkg:/source/shared/seasons.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/cards.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/quality.bs" />
+    <script type="text/brightscript" uri="pkg:/source/shared/tracks.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/titlepage.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/cardmenu.bs" />
     <script type="text/brightscript" uri="pkg:/source/shared/seasonactions.bs" />

@@ -91,6 +91,9 @@ sub testFormat()
     movie.user_data.position_ms = 754000
     eq(playLabel(movie), "Resume from 12:34", "playLabel resumes a movie")
     eq(metaLine(movie), "1999 · 15 · 2h 16m · Action · Science Fiction", "metaLine")
+    eq(yearAndEdition({ kind: "movie", year: 2008, edition: "IMAX" }), "2008 · IMAX", "named movie cut")
+    eq(yearAndEdition({ kind: "movie", edition: "IMAX" }), "IMAX", "named movie cut without a year")
+    eq(yearAndEdition({ kind: "movie", year: 2008 }), "2008", "movie without an edition")
     movie.user_data.played = true
     eq(resumeMs(movie), 0, "a watched title doesn't resume")
     eq(minutesLeft(754000, 8160000), 124, "minutesLeft rounds up")
@@ -148,6 +151,14 @@ sub testHome()
     check(split[0].continueRow = true and split[1].continueRow = true, "Continue Watching and Up Next can be removed from")
     looks = resolveHomeRows({ split_up_next: true, home: [{ id: "continue", style: "arc" }, { id: "next-up", style: "poster" }] }, [], invalid)
     eq(looks[0].style + " " + looks[1].style, "backdrop poster", "the web's Backdrops (arc) and Posters looks for carrying on watching")
+    seasonRows = resolveHomeRows({ split_up_next: true, home: [
+        { id: "continue", style: "poster", posters: "season" },
+        { id: "next-up", style: "poster", posters: "series" },
+        { id: "playlist:one", style: "thumb", posters: "season" }
+    ] }, [{ id: 2, name: "TV", kind: "shows" }], invalid)
+    check(seasonRows[0].seasonPosters = true and seasonRows[1].seasonPosters = false, "each carry-on shelf reads its own poster preference")
+    check(seasonRows[3].id = "recent:2" and seasonRows[3].seasonPosters = true, "Recently Added defaults to season posters")
+    check(seasonRows[4].id = "playlist:one" and seasonRows[4].style = "thumb" and seasonRows[4].seasonPosters = true, "playlist keeps its width and poster preferences")
     slot = cardSize("poster")
     eq(slot[1], 410, "posters leave room for their two lines")
     slot = cardSize("backdrop")
@@ -206,6 +217,18 @@ sub pushLE(b as object, n as dynamic)
 end sub
 
 sub testTracks()
+    item = { files: [{ id: 1 }, { id: 2, part: 2 }, { id: 3, missing: true }, { id: 4, part: 1 }] }
+    files = filesForVersion(item)
+    eq(files.Count(), 2, "pre-play files exclude missing or later split parts")
+    eq(files[1].id, 4, "pre-play file ID is preserved")
+    eq(versionFilename({ id: 4, path: "D:" + Chr(92) + "films" + Chr(92) + "cut.mkv" }), "cut.mkv", "duplicate labels use the file name")
+    eq(subtitleTimingKey(7, { id: "s2" }), "7:s2", "subtitle timing is scoped to the file and text track")
+    eq(subtitleTimingKey(7, { id: "s2", image: true }), "", "burned picture subtitles cannot shift")
+    eq(shiftedSubtitleOffset(0, -500), -500, "subtitle timing can move earlier")
+    eq(shiftedSubtitleOffset(10000, 500), 10000, "subtitle timing clamps later")
+    eq(shiftedSubtitleOffset(-10000, -500), -10000, "subtitle timing clamps earlier")
+    eq(shiftedSubtitleOffset(1500, invalid), 0, "subtitle timing resets")
+    eq(subtitleTimingLabel(-500), "−0.5s", "subtitle timing shows a signed offset")
     eq(langKey("eng"), "en", "langKey maps three letters")
     eq(langKey("pt-BR"), "pt", "langKey drops the region")
     check(sameLanguage("ger", "de"), "sameLanguage across code styles")
@@ -226,7 +249,14 @@ sub testTracks()
     eq(chooseSubtitle(tracks, "en", "fr", "").id, "c", "chooseSubtitle prefers a plain track")
     eq(chooseSubtitle(tracks, "en", "en", "foreign").id, "a", "chooseSubtitle foreign mode falls back to forced in the audio's language")
     check(chooseSubtitle(tracks, "fr", "de", "manual") = invalid, "chooseSubtitle manual picks nothing without forced in that language")
-    check(chooseSubtitle([{ id: "x", language: "en", image: true }], "en", "", "") = invalid, "chooseSubtitle skips picture subtitles")
+    picture = { id: "s4", language: "en", image: true }
+    eq(chooseSubtitle([picture], "en", "", "").id, "s4", "chooseSubtitle can use an embedded picture track")
+    eq(subtitleBurnId(picture), "s4", "embedded pictures use the burn-in request")
+    eq(subtitleBurnId({ id: "x", image: true, external: true }), "", "external pictures cannot be burned in")
+    eq(playableSubtitles([{ id: "x", image: true, external: true }]).Count(), 0, "external pictures are hidden")
+    eq(subtitleBurnId(tracks[2]), "", "text subtitles don't request burn-in")
+    eq(subtitleBurnId(invalid), "", "switching subtitles off clears burn-in")
+    eq(chooseSubtitle([{ id: "s8", language: "en", image: true, forced: true }], "", "en", "manual").id, "s8", "forced picture subtitles can match the active audio")
     eq(rememberedSubtitleLanguage({ language: "de" }, ""), "de", "remember a picked language")
     eq(rememberedSubtitleLanguage(invalid, ""), "", "remember off in last-used mode")
     check(rememberedSubtitleLanguage(invalid, "always") = invalid, "off doesn't change an always mode")
@@ -272,6 +302,8 @@ sub testBrowse()
     eq(jumped.offset, 412, "browseCards keeps where a jumped page starts")
     eq(letterChoices(jumped.letters).Join(","), "a,s", "letterChoices: A to Z with titles only")
     eq(letterChoices(invalid).Count(), 0, "letterChoices: none asked for")
+    eq(orderedLetters(letterChoices(jumped.letters), true).Join(","), "s,a", "letter rail follows a reversed title sort")
+    eq(orderedLetters([], true).Count(), 0, "letter rail handles an empty reversed list")
     eq(browseCards(lib, { total: 5, items: [] }).offset, 0, "browseCards: an ordinary page starts at 0")
     q.sort = "added"
     q.reverse = true
@@ -282,6 +314,32 @@ sub testBrowse()
     eq(browsePath({ kind: "collection", id: "abc" }, invalid, 0, 60), "/collections/abc", "browsePath collection")
     eq(browsePath({ kind: "person", id: "369" }, invalid, 0, 60), "/people/369", "browsePath person")
     eq(querySummary(q), "Date added · Oldest first · Unwatched · Drama", "querySummary")
+
+    q = libraryQueryDefaults()
+    q.letter = "s"
+    chooseLibraryFilter(q, "watch_state", "unwatched")
+    chooseLibraryFilter(q, "watch_state", "unstarted")
+    chooseLibraryFilter(q, "dynamic_range", "dolby_vision")
+    chooseLibraryFilter(q, "video_codec", "hevc")
+    chooseLibraryFilter(q, "audio_codec", "eac3")
+    chooseLibraryFilter(q, "audio_channels", "6")
+    enc = "audio_channels=6&audio_codec=eac3&dynamic_range=dolby_vision"
+    eq(browsePath(lib, q, 0, 60), "/items?" + enc + "&kind=series&letters=1&library_id=2&limit=60&sort=title&video_codec=hevc&watch_state=unstarted", "rich filters replace Unwatched and reset the jump")
+    eq(browsePath(lib, q, 60, 60), "/items?" + enc + "&kind=series&library_id=2&limit=60&offset=60&sort=title&video_codec=hevc&watch_state=unstarted", "rich filters carry on to later pages")
+    eq(querySummary(q), "Title · A to Z · Not Started · Dolby Vision · HEVC · Dolby Digital Plus · 5.1", "rich filter summary uses readable names")
+    chooseLibraryFilter(q, "watch_state", "unwatched")
+    check(not libraryFilterParams(q).DoesExist("watch_state"), "Unwatched clears the explicit watch state")
+    eq(libraryFilterSections(q, { audio_codecs: [{ value: "aac", count: 2 }] })[3].values.Count(), 2, "a selected codec stays available after it disappears from facets")
+    q.sort = "year"
+    q.reverse = true
+    q = clearLibraryFilters(q)
+    eq(querySummary(q), "Year · Oldest first", "clearing filters keeps the sort and direction")
+    eq(libraryFilterParams(q).Count(), 0, "clearing filters removes all filter parameters")
+    facets = { audio_channels: [{ value: "2", count: 8 }, { value: "8", count: 1 }, { value: "6", count: 4 }], video_codecs: [{ value: "h264", count: 8 }] }
+    sections = libraryFilterSections(q, facets)
+    eq(sections.Count(), 2, "a technical facet with just one value is hidden")
+    eq(sections[1].values[0].value, "8", "audio channels sort by highest channel count first")
+    eq(libraryFilterSections(q, invalid).Count(), 1, "watch status stays available without facets")
 
     page = browseCards(lib, { total: 130, items: [{ id: "a", kind: "series" }] })
     eq(page.total, 130, "browseCards keeps the library total")
@@ -446,13 +504,24 @@ sub testSeasons()
 end sub
 
 sub testCardMenu()
+    queue = { id: "q", current_entry_id: "here", entries: [
+        { id: "played", available: true, item: { id: "a" } },
+        { id: "here", available: true, item: { id: "b" } },
+        { id: "unavailable", available: false },
+        { id: "next", available: true, item: { id: "c" } }
+    ] }
+    cards = homeQueueCards(queue)
+    eq(cards.Count(), 2, "Home Queue shows current and playable upcoming entries")
+    eq(cards[0].queueEntry, "here", "Home Queue cards target queue entry IDs")
+    eq(cards[1].queueId, "q", "Home Queue cards retain their originating queue")
+    eq(reorderedQueueIds(queue, "next", -1).Join(","), "played,here,next,unavailable", "queue reorder retains protected and unavailable entries")
     ep = { kind: "episode", itemId: "e", parentId: "s", resumeMs: 60000, played: false, watchlisted: false, inContinue: true }
-    eq(menuActs(cardMenu(ep)), "play,restart,watched,uncontinue,show", "card menu: an episode in Continue Watching")
+    eq(menuActs(cardMenu(ep)), "play,restart,watched,queueNext,queueAppend,uncontinue,show,addToPlaylist", "card menu: an episode in Continue Watching")
     movie = { kind: "movie", itemId: "m", parentId: "", resumeMs: 0, played: false, watchlisted: false, inContinue: true }
-    eq(menuActs(cardMenu(movie)), "play,watched,list,uncontinue,open", "card menu: a film in Up Next or Continue Watching")
-    eq(cardMenu(movie)[3].label, "Remove from Continue Watching", "card menu: the remove entry's name")
+    eq(menuActs(cardMenu(movie)), "play,watched,list,queueNext,queueAppend,uncontinue,open,addToPlaylist", "card menu: a film in Up Next or Continue Watching")
+    eq(cardMenu(movie)[5].label, "Remove from Continue Watching", "card menu: the remove entry's name")
     movie.inContinue = false
-    eq(menuActs(cardMenu(movie)), "play,watched,list,open", "card menu: elsewhere there's no remove entry")
+    eq(menuActs(cardMenu(movie)), "play,watched,list,queueNext,queueAppend,open,addToPlaylist", "card menu: elsewhere there's no remove entry")
     eq(cardMenu({ kind: "collection" }).Count(), 0, "card menu: not on a collection")
 end sub
 

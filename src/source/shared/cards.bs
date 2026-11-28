@@ -43,19 +43,21 @@ function cardRowHeight(style as string) as integer
 end function
 
 function cardFields() as object
-    return { available: true, spoilerEligible: false, safeArt: "", safeBackdrop: "", itemId: "", kind: "", parentId: "", line2: "", progress: 0.0, style: "poster", backdrop: "", logo: "", meta: "", overview: "", resumeMs: 0, played: false, path: "", watchlisted: false, leftMin: 0, inContinue: false }
+    return { available: true, spoilerEligible: false, safeArt: "", safeBackdrop: "", itemId: "", kind: "", parentId: "", line2: "", progress: 0.0, style: "poster", backdrop: "", logo: "", meta: "", overview: "", showOverview: false, topInset: 0, resumeMs: 0, played: false, path: "", watchlisted: false, leftMin: 0, inContinue: false }
 end function
 
 ' fillCard sets a ContentNode (with cardFields) for an item shown as "poster", "thumb" or
 ' "backdrop" (the title's background art with its logo on it, the web's Backdrops look).
-sub fillCard(node as object, card as object, style as string)
+sub fillCard(node as object, card as object, style as string, seasonPosters = invalid as dynamic)
     it = card.item
     img = it.images
     if img = invalid then img = {}
     ep = it.kind = "episode"
     poster = img.primary
-    if ep and img.series_primary <> invalid then poster = img.series_primary
-    if card.season <> invalid and card.seasonPoster <> invalid then poster = card.seasonPoster
+    episodePoster = img.series_primary
+    if seasonPosters = true and img.season_primary <> invalid and img.season_primary <> "" then episodePoster = img.season_primary
+    if ep and episodePoster <> invalid and episodePoster <> "" then poster = episodePoster
+    if seasonPosters <> false and card.season <> invalid and card.seasonPoster <> invalid and card.seasonPoster <> "" then poster = card.seasonPoster
     thumb = img.backdrop
     if thumb = invalid then thumb = img.primary
     if ep
@@ -70,8 +72,13 @@ sub fillCard(node as object, card as object, style as string)
 
     node.itemId = valueOr(it.id, "")
     node.spoilerEligible = spoilerEligible(it)
-    node.safeArt = imageUrl(safeEpisodeArt(it))
-    node.safeBackdrop = fullImage(node.safeArt)
+    safeEpisode = imageUrl(safeEpisodeArt(it))
+    node.safeArt = safeEpisode
+    node.safeBackdrop = fullImage(safeEpisode)
+    ' Season and show posters can still be shown while the episode still is hidden.
+    if ep and style = "poster" and seasonPosters = true and episodePoster <> invalid and episodePoster <> ""
+        node.safeArt = imageUrl(episodePoster)
+    end if
     node.available = it.available <> false
     node.kind = it.kind
     if it.path <> invalid then node.path = it.path
@@ -101,8 +108,8 @@ sub fillCard(node as object, card as object, style as string)
     else if card.season <> invalid
         subText = tr("Season %1").Replace("%1", card.season.ToStr())
         if card.episodes <> invalid and card.episodes > 1 then subText = subText + " · " + tr("%1 new episodes").Replace("%1", card.episodes.ToStr())
-    else if it.year <> invalid and it.year > 0
-        subText = it.year.ToStr()
+    else
+        subText = yearAndEdition(it)
     end if
     if card.line2 <> invalid then subText = card.line2
     node.title = title

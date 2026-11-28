@@ -101,15 +101,17 @@ function subtitleDetail(s as object) as string
     if s.forced = true then forced = tr("Forced")
     sdh = ""
     if s.hearing_impaired = true then sdh = "SDH"
-    return joinParts([forced, sdh, title], " · ")
+    picture = ""
+    if s.image = true then picture = tr("Picture subtitles")
+    return joinParts([forced, sdh, title, picture], " · ")
 end function
 
-' textSubtitles: the tracks Arc can turn into text (picture subtitles can't be drawn here).
-function textSubtitles(tracks as dynamic) as object
+' Arc can render text as cues or burn in an embedded picture track.
+function playableSubtitles(tracks as dynamic) as object
     out = []
     if tracks = invalid then return out
     for each s in tracks
-        if s.image <> true then out.Push(s)
+        if s.image <> true or s.external <> true then out.Push(s)
     end for
     return out
 end function
@@ -119,7 +121,7 @@ end function
 ' chooseSubtitle: the profile's language when its subtitle mode wants it, else a forced track in
 ' the audio's language, else none (invalid). Modes: "" last used, "foreign", "always", "manual".
 function chooseSubtitle(tracks as dynamic, preferred as dynamic, audioLanguage as dynamic, mode as dynamic) as dynamic
-    text = textSubtitles(tracks)
+    playable = playableSubtitles(tracks)
     if preferred = invalid then preferred = ""
     if audioLanguage = invalid then audioLanguage = ""
     if mode = invalid then mode = ""
@@ -130,24 +132,38 @@ function chooseSubtitle(tracks as dynamic, preferred as dynamic, audioLanguage a
         wanted = preferred <> "" and audioLanguage <> "" and not sameLanguage(audioLanguage, preferred)
     end if
     if preferred <> "" and wanted
-        plain = invalid
-        notForced = invalid
-        first = invalid
-        for each s in text
-            if sameLanguage(s.language, preferred)
-                if first = invalid then first = s
-                if s.forced <> true and notForced = invalid then notForced = s
-                if s.forced <> true and s.hearing_impaired <> true and plain = invalid then plain = s
+        for each picture in [false, true]
+            match = preferredSubtitle(playable, preferred, picture)
+            if match <> invalid then return match
+        end for
+    end if
+    for each picture in [false, true]
+        for each s in playable
+            if (s.image = true) = picture and s.forced = true
+                if s.language = invalid or audioLanguage = "" or sameLanguage(s.language, audioLanguage) then return s
             end if
         end for
-        if plain <> invalid then return plain
-        if notForced <> invalid then return notForced
-        if first <> invalid then return first
-    end if
-    for each s in text
-        if s.forced = true and (s.language = invalid or audioLanguage = "" or sameLanguage(s.language, audioLanguage)) then return s
     end for
     return invalid
+end function
+
+function preferredSubtitle(tracks as object, language as string, picture as boolean) as dynamic
+    first = invalid
+    notForced = invalid
+    for each s in tracks
+        if (s.image = true) = picture and sameLanguage(s.language, language)
+            if s.forced <> true and s.hearing_impaired <> true then return s
+            if s.forced <> true and notForced = invalid then notForced = s
+            if first = invalid then first = s
+        end if
+    end for
+    if notForced <> invalid then return notForced
+    return first
+end function
+
+function subtitleBurnId(track as dynamic) as string
+    if track <> invalid and track.image = true and track.external <> true then return track.id
+    return ""
 end function
 
 ' rememberedSubtitleLanguage: what to save when the viewer picks a track; invalid = nothing changes.
@@ -310,7 +326,7 @@ end function
 function versionName(v as object) as string
     res = ""
     if v.height <> invalid and v.height > 0
-        if v.height >= 2000 then res = "4K" else res = v.height.ToStr() + "p"
+        if v.height >= 1700 or (v.width <> invalid and v.width >= 3200) then res = "4K" else res = v.height.ToStr() + "p"
     end if
     size = ""
     if v.size <> invalid and v.size > 0
@@ -333,4 +349,11 @@ function chapterAt(chapters as dynamic, ms as double) as integer
         if chapters[i].start_ms <= ms then at = i
     end for
     return at
+end function
+
+function versionFilename(file as object) as string
+    path = valueString(file.path).Replace(Chr(92), "/")
+    parts = path.Split("/")
+    if parts.Count() > 0 and parts.Peek() <> "" then return parts.Peek()
+    return tr("File %1").Replace("%1", file.id.ToStr())
 end function

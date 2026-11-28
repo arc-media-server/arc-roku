@@ -52,12 +52,6 @@ function seasonCardLine(e as object, unplaced as boolean) as string
     return parts.Join(" · ")
 end function
 
-' The visibility choice is local to this open show, and available even without any files.
-function missingEpisodesEntry(showing as boolean) as object
-    if showing then return { label: tr("Hide Missing Episodes"), act: "hideMissing" }
-    return { label: tr("Show Missing Episodes"), act: "showMissing" }
-end function
-
 function seasonsPath(id as string, missing as boolean) as string
     path = "/series/" + CreateObject("roUrlTransfer").Escape(id) + "/seasons"
     if missing then path += "?missing=1"

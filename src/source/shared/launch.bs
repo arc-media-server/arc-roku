@@ -15,3 +15,31 @@ function launchProfile(status as object, automaticId as string, fresh as boolean
     end if
     return invalid
 end function
+
+' Keep content-only links usable for in-app details and development. Roku's movie and episode
+' links require playback at the selected profile's bookmark.
+function rokuDeepLink(args as dynamic) as dynamic
+    if Type(args) <> "roAssociativeArray" then return invalid
+    params = {}
+    for each key in args
+        params[LCase(key)] = args[key]
+    end for
+    id = params.contentid
+    if GetInterface(id, "ifString") = invalid then return invalid
+    if id.Trim() = "" or Len(id) > 255 then return invalid
+    kind = ""
+    if params.mediatype <> invalid
+        if GetInterface(params.mediatype, "ifString") = invalid then return invalid
+        kind = LCase(params.mediatype)
+        if kind <> "" and kind <> "movie" and kind <> "episode" and kind <> "series" and kind <> "season" then return invalid
+    end if
+    profile = params.profileid
+    if profile <> invalid and GetInterface(profile, "ifString") = invalid then return invalid
+    if profile = "" then profile = invalid
+    return { id: id, kind: kind, play: kind = "movie" or kind = "episode", profileId: profile }
+end function
+
+function matchesRokuPlaybackLink(link as object, item as dynamic) as boolean
+    if Type(item) <> "roAssociativeArray" then return false
+    return item.id = link.id and item.kind = link.kind and item.available <> false
+end function

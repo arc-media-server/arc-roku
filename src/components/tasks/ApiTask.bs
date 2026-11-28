@@ -6,7 +6,9 @@ sub work()
     req = m.top.request
     res = apiCall(req)
     res.tag = req.tag
-    if not res.ok
+    roomRequest = Left(req.path, 15) = "/watch-together"
+    quietRoom = roomRequest and (Right(req.path, 10) = "/heartbeat" or (req.path = "/watch-together/current" and res.status = 404))
+    if not res.ok and not quietRoom
         ' One line per failed call: the method, the path without its query, and the outcome.
         ' Never the server address, query strings, bodies or the token.
         path = req.path
@@ -19,7 +21,11 @@ sub work()
         end if
         method = "GET"
         if req.method <> invalid then method = UCase(req.method)
-        print "Arc: "; method; " "; path; " failed: "; res.status; " "; res.error
+        if roomRequest
+            print "Arc: watch together request failed: "; res.status
+        else
+            print "Arc: "; method; " "; path; " failed: "; res.status; " "; res.error
+        end if
     end if
     profileChallenge = false
     if req.path = "/auth/profile" and res.data <> invalid and Type(res.data) = "roAssociativeArray"
@@ -29,10 +35,10 @@ sub work()
         ' The sign-in was revoked (signed out from Arc's Devices): the scene goes back to sign-in.
         m.global.unauthorized = true
     end if
-    if req.path <> "/client-logs" and m.global.hasField("deviceLogEvent")
+    if req.path <> "/client-logs" and m.global.deviceLogEvent <> invalid
         if res.status = 401 and not profileChallenge
             m.global.deviceLogEvent = "warn session_expired"
-        else if res.status <= 0 or res.status >= 500
+        else if not quietRoom and (res.status <= 0 or res.status >= 500)
             m.global.deviceLogEvent = "warn request_failed"
         end if
     end if
