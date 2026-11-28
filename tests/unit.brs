@@ -90,6 +90,9 @@ sub testFormat()
     movie.user_data.position_ms = 754000
     eq(playLabel(movie), "Resume from 12:34", "playLabel resumes a movie")
     eq(metaLine(movie), "1999 · 15 · 2h 16m · Action · Science Fiction", "metaLine")
+    eq(yearAndEdition({ kind: "movie", year: 2008, edition: "IMAX" }), "2008 · IMAX", "named movie cut")
+    eq(yearAndEdition({ kind: "movie", edition: "IMAX" }), "IMAX", "named movie cut without a year")
+    eq(yearAndEdition({ kind: "movie", year: 2008 }), "2008", "movie without an edition")
     movie.user_data.played = true
     eq(resumeMs(movie), 0, "a watched title doesn't resume")
     eq(minutesLeft(754000, 8160000), 124, "minutesLeft rounds up")
@@ -205,6 +208,11 @@ sub pushLE(b as object, n as dynamic)
 end sub
 
 sub testTracks()
+    item = { files: [{ id: 1 }, { id: 2, part: 2 }, { id: 3, missing: true }, { id: 4, part: 1 }] }
+    files = filesForVersion(item)
+    eq(files.Count(), 2, "pre-play files exclude missing or later split parts")
+    eq(files[1].id, 4, "pre-play file ID is preserved")
+    eq(versionFilename({ id: 4, path: "D:" + Chr(92) + "films" + Chr(92) + "cut.mkv" }), "cut.mkv", "duplicate labels use the file name")
     eq(subtitleTimingKey(7, { id: "s2" }), "7:s2", "subtitle timing is scoped to the file and text track")
     eq(subtitleTimingKey(7, { id: "s2", image: true }), "", "burned picture subtitles cannot shift")
     eq(shiftedSubtitleOffset(0, -500), -500, "subtitle timing can move earlier")
@@ -485,13 +493,24 @@ sub testSeasons()
 end sub
 
 sub testCardMenu()
+    queue = { id: "q", current_entry_id: "here", entries: [
+        { id: "played", available: true, item: { id: "a" } },
+        { id: "here", available: true, item: { id: "b" } },
+        { id: "unavailable", available: false },
+        { id: "next", available: true, item: { id: "c" } }
+    ] }
+    cards = homeQueueCards(queue)
+    eq(cards.Count(), 2, "Home Queue shows current and playable upcoming entries")
+    eq(cards[0].queueEntry, "here", "Home Queue cards target queue entry IDs")
+    eq(cards[1].queueId, "q", "Home Queue cards retain their originating queue")
+    eq(reorderedQueueIds(queue, "next", -1).Join(","), "played,here,next,unavailable", "queue reorder retains protected and unavailable entries")
     ep = { kind: "episode", itemId: "e", parentId: "s", resumeMs: 60000, played: false, watchlisted: false, inContinue: true }
-    eq(menuActs(cardMenu(ep)), "play,restart,watched,uncontinue,show", "card menu: an episode in Continue Watching")
+    eq(menuActs(cardMenu(ep)), "play,restart,watched,queueNext,queueAppend,uncontinue,show,addToPlaylist", "card menu: an episode in Continue Watching")
     movie = { kind: "movie", itemId: "m", parentId: "", resumeMs: 0, played: false, watchlisted: false, inContinue: true }
-    eq(menuActs(cardMenu(movie)), "play,watched,list,uncontinue,open", "card menu: a film in Up Next or Continue Watching")
-    eq(cardMenu(movie)[3].label, "Remove from Continue Watching", "card menu: the remove entry's name")
+    eq(menuActs(cardMenu(movie)), "play,watched,list,queueNext,queueAppend,uncontinue,open,addToPlaylist", "card menu: a film in Up Next or Continue Watching")
+    eq(cardMenu(movie)[5].label, "Remove from Continue Watching", "card menu: the remove entry's name")
     movie.inContinue = false
-    eq(menuActs(cardMenu(movie)), "play,watched,list,open", "card menu: elsewhere there's no remove entry")
+    eq(menuActs(cardMenu(movie)), "play,watched,list,queueNext,queueAppend,open,addToPlaylist", "card menu: elsewhere there's no remove entry")
     eq(cardMenu({ kind: "collection" }).Count(), 0, "card menu: not on a collection")
 end sub
 

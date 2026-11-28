@@ -9,6 +9,10 @@
   <translation>* for options, sort and filter</translation>
 </message>
 <message>
+  <source>* for Play All and Shuffle</source>
+  <translation>* for Play All and Shuffle</translation>
+</message>
+<message>
   <source>%1 and %2</source>
   <translation>%1 and %2</translation>
 </message>
@@ -43,10 +47,6 @@
 <message>
   <source>%1, and %2</source>
   <translation>%1, and %2</translation>
-</message>
-<message>
-  <source>%1's PIN</source>
-  <translation>%1's PIN</translation>
 </message>
 <message>
   <source>%1h</source>
@@ -89,8 +89,28 @@
   <translation>Actor</translation>
 </message>
 <message>
+  <source>Add to Playlist</source>
+  <translation>Add to Playlist</translation>
+</message>
+<message>
+  <source>Add to Queue</source>
+  <translation>Add to Queue</translation>
+</message>
+<message>
   <source>Add to Watchlist</source>
   <translation>Add to Watchlist</translation>
+</message>
+<message>
+  <source>Added to %1.</source>
+  <translation>Added to %1.</translation>
+</message>
+<message>
+  <source>Added to play next.</source>
+  <translation>Added to play next.</translation>
+</message>
+<message>
+  <source>Added to the queue.</source>
+  <translation>Added to the queue.</translation>
 </message>
 <message>
   <source>Address</source>
@@ -157,6 +177,10 @@
   <translation>Automatic</translation>
 </message>
 <message>
+  <source>Back</source>
+  <translation>Back</translation>
+</message>
+<message>
   <source>Because you watched %1</source>
   <translation>Because you watched %1</translation>
 </message>
@@ -201,6 +225,10 @@
   <translation>Check that Arc is running and this Roku is on the same network.</translation>
 </message>
 <message>
+  <source>Checking PIN…</source>
+  <translation>Checking PIN…</translation>
+</message>
+<message>
   <source>Christmas Films</source>
   <translation>Christmas Films</translation>
 </message>
@@ -233,6 +261,10 @@
   <translation>Continue Watching</translation>
 </message>
 <message>
+  <source>Couldn't add this title. Try again.</source>
+  <translation>Couldn't add this title. Try again.</translation>
+</message>
+<message>
   <source>Couldn't change what's watched.</source>
   <translation>Couldn't change what's watched.</translation>
 </message>
@@ -251,6 +283,10 @@
 <message>
   <source>Couldn't load Home.</source>
   <translation>Couldn't load Home.</translation>
+</message>
+<message>
+  <source>Couldn't load playlists. Try again.</source>
+  <translation>Couldn't load playlists. Try again.</translation>
 </message>
 <message>
   <source>Couldn't load Recommended.</source>
@@ -285,8 +321,12 @@
   <translation>Couldn't search.</translation>
 </message>
 <message>
-  <source>Couldn't start playing this season.</source>
-  <translation>Couldn't start playing this season.</translation>
+  <source>Couldn't start this queue. Try again.</source>
+  <translation>Couldn't start this queue. Try again.</translation>
+</message>
+<message>
+  <source>Couldn't update the queue. Try again.</source>
+  <translation>Couldn't update the queue. Try again.</translation>
 </message>
 <message>
   <source>Date added</source>
@@ -317,6 +357,14 @@
   <translation>Enter an address</translation>
 </message>
 <message>
+  <source>Enter this code:</source>
+  <translation>Enter this code:</translation>
+</message>
+<message>
+  <source>Enter your PIN</source>
+  <translation>Enter your PIN</translation>
+</message>
+<message>
   <source>Episodes</source>
   <translation>Episodes</translation>
 </message>
@@ -327,6 +375,10 @@
 <message>
   <source>Featurette</source>
   <translation>Featurette</translation>
+</message>
+<message>
+  <source>File %1</source>
+  <translation>File %1</translation>
 </message>
 <message>
   <source>Filters</source>
@@ -357,6 +409,18 @@
   <translation>Genre</translation>
 </message>
 <message>
+  <source>Genres</source>
+  <translation>Genres</translation>
+</message>
+<message>
+  <source>Get a New Code</source>
+  <translation>Get a New Code</translation>
+</message>
+<message>
+  <source>Getting a code…</source>
+  <translation>Getting a code…</translation>
+</message>
+<message>
   <source>Go to details</source>
   <translation>Go to details</translation>
 </message>
@@ -367,10 +431,6 @@
 <message>
   <source>HDR</source>
   <translation>HDR</translation>
-</message>
-<message>
-  <source>Hide Missing Episodes</source>
-  <translation>Hide Missing Episodes</translation>
 </message>
 <message>
   <source>Hide Spoilers</source>
@@ -427,6 +487,10 @@
 <message>
   <source>Length</source>
   <translation>Length</translation>
+</message>
+<message>
+  <source>Loading…</source>
+  <translation>Loading…</translation>
 </message>
 <message>
   <source>Local network</source>
@@ -493,12 +557,16 @@
   <translation>Most recent first</translation>
 </message>
 <message>
-  <source>Movies</source>
-  <translation>Movies</translation>
+  <source>Move Earlier</source>
+  <translation>Move Earlier</translation>
 </message>
 <message>
-  <source>New code</source>
-  <translation>New code</translation>
+  <source>Move Later</source>
+  <translation>Move Later</translation>
+</message>
+<message>
+  <source>Movies</source>
+  <translation>Movies</translation>
 </message>
 <message>
   <source>Newest first</source>
@@ -507,6 +575,10 @@
 <message>
   <source>No Arc servers answered. Check Arc is running, or type its address.</source>
   <translation>No Arc servers answered. Check Arc is running, or type its address.</translation>
+</message>
+<message>
+  <source>No editable playlists yet. Create a playlist in Arc on the web.</source>
+  <translation>No editable playlists yet. Create a playlist in Arc on the web.</translation>
 </message>
 <message>
   <source>No titles match these filters.</source>
@@ -565,10 +637,6 @@
   <translation>Off</translation>
 </message>
 <message>
-  <source>OK</source>
-  <translation>OK</translation>
-</message>
-<message>
   <source>OK to play now · Back to keep watching</source>
   <translation>OK to play now · Back to keep watching</translation>
 </message>
@@ -581,8 +649,8 @@
   <translation>On</translation>
 </message>
 <message>
-  <source>On your phone or computer, open Arc, choose Link a Device from your profile menu, and type this code.</source>
-  <translation>On your phone or computer, open Arc, choose Link a Device from your profile menu, and type this code.</translation>
+  <source>On your phone or computer, open Arc and choose Link a Device in the profile menu.</source>
+  <translation>On your phone or computer, open Arc and choose Link a Device in the profile menu.</translation>
 </message>
 <message>
   <source>Only when I choose them</source>
@@ -599,6 +667,10 @@
 <message>
   <source>Options</source>
   <translation>Options</translation>
+</message>
+<message>
+  <source>Or go to %1</source>
+  <translation>Or go to %1</translation>
 </message>
 <message>
   <source>Order</source>
@@ -641,12 +713,24 @@
   <translation>Play %1</translation>
 </message>
 <message>
+  <source>Play All</source>
+  <translation>Play All</translation>
+</message>
+<message>
   <source>Play from the beginning</source>
   <translation>Play from the beginning</translation>
 </message>
 <message>
   <source>Play Next</source>
   <translation>Play Next</translation>
+</message>
+<message>
+  <source>Play Version</source>
+  <translation>Play Version</translation>
+</message>
+<message>
+  <source>Play Version…</source>
+  <translation>Play Version…</translation>
 </message>
 <message>
   <source>Playback</source>
@@ -681,8 +765,16 @@
   <translation>Producer</translation>
 </message>
 <message>
+  <source>Profiles</source>
+  <translation>Profiles</translation>
+</message>
+<message>
   <source>Quality</source>
   <translation>Quality</translation>
+</message>
+<message>
+  <source>Queue</source>
+  <translation>Queue</translation>
 </message>
 <message>
   <source>Rate…</source>
@@ -729,6 +821,10 @@
   <translation>Remove from Continue Watching</translation>
 </message>
 <message>
+  <source>Remove from Queue</source>
+  <translation>Remove from Queue</translation>
+</message>
+<message>
   <source>Remove from Watchlist</source>
   <translation>Remove from Watchlist</translation>
 </message>
@@ -749,8 +845,16 @@
   <translation>Resume from %1</translation>
 </message>
 <message>
+  <source>Retry</source>
+  <translation>Retry</translation>
+</message>
+<message>
   <source>Romance for Valentine's Day</source>
   <translation>Romance for Valentine's Day</translation>
+</message>
+<message>
+  <source>Saving…</source>
+  <translation>Saving…</translation>
 </message>
 <message>
   <source>Scene</source>
@@ -761,8 +865,8 @@
   <translation>Search</translation>
 </message>
 <message>
-  <source>Search for films, shows, episodes, collections and people.</source>
-  <translation>Search for films, shows, episodes, collections and people.</translation>
+  <source>Search for films, shows, genres and more.</source>
+  <translation>Search for films, shows, genres and more.</translation>
 </message>
 <message>
   <source>Season %1</source>
@@ -771,6 +875,10 @@
 <message>
   <source>Server</source>
   <translation>Server</translation>
+</message>
+<message>
+  <source>Server: %1</source>
+  <translation>Server: %1</translation>
 </message>
 <message>
   <source>Settings</source>
@@ -813,8 +921,8 @@
   <translation>Sign in automatically</translation>
 </message>
 <message>
-  <source>Sign in to %1</source>
-  <translation>Sign in to %1</translation>
+  <source>Sign in to Arc</source>
+  <translation>Sign in to Arc</translation>
 </message>
 <message>
   <source>Sign out</source>
@@ -909,12 +1017,12 @@
   <translation>Switch Profile</translation>
 </message>
 <message>
-  <source>That PIN isn't right.</source>
-  <translation>That PIN isn't right.</translation>
+  <source>That PIN isn't right. Try again.</source>
+  <translation>That PIN isn't right. Try again.</translation>
 </message>
 <message>
-  <source>The code ran out. Choose New code for another.</source>
-  <translation>The code ran out. Choose New code for another.</translation>
+  <source>The code ran out. Choose Get a New Code for another.</source>
+  <translation>The code ran out. Choose Get a New Code for another.</translation>
 </message>
 <message>
   <source>The file's default</source>
@@ -1017,6 +1125,10 @@
   <translation>Use another server</translation>
 </message>
 <message>
+  <source>Use Another Server</source>
+  <translation>Use Another Server</translation>
+</message>
+<message>
   <source>Version</source>
   <translation>Version</translation>
 </message>
@@ -1029,8 +1141,8 @@
   <translation>Video Format</translation>
 </message>
 <message>
-  <source>Waiting for the code to be approved…</source>
-  <translation>Waiting for the code to be approved…</translation>
+  <source>Waiting for you to enter the code…</source>
+  <translation>Waiting for you to enter the code…</translation>
 </message>
 <message>
   <source>Watch Status</source>
