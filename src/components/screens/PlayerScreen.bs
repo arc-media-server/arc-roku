@@ -6,7 +6,8 @@
 ' player's own. Progress goes to Arc every 10 seconds, on pause and on close; a converting session
 ' is pinged every 30 seconds and ended on close.
 ' The * button opens audio, subtitles, quality, version and chapters, as the other players' menus.
-' Subtitles are drawn from Arc's WebVTT. Skip Intro / Credits and Up Next follow Arc's markers.
+' Text subtitles use Arc's WebVTT and picture subtitles are burned in by Arc.
+' Skip Intro / Credits and Up Next follow Arc's markers.
 
 sub init()
     m.global.observeField("hideSpoilers", "onSpoilerPreference")
@@ -63,6 +64,7 @@ sub init()
     m.generation = 0
     m.prefs = invalid
     m.subtitle = invalid
+    m.subtitleOffsets = {}
     m.cues = []
     m.cuesFor = ""
     m.maxKbps = 0
@@ -106,6 +108,7 @@ end sub
 
 sub onParams()
     p = m.top.params
+    prepareRoomPlayback()
     m.top.findNode("title").text = valueOr(p.title, "")
     m.spinner.control = "start"
     if p.extra <> invalid
@@ -115,7 +118,7 @@ sub onParams()
         callApi("POST", "/cast", { url: p.extra.url }, "onExtraCast")
         return
     end if
-    if prerollEnabled(p)
+    if m.together = invalid and prerollEnabled(p)
         m.prerollWaiting = true
         m.prerollDeadline.control = "start"
         callApi("GET", prerollPath(p.id), invalid, "onPrerollList")
@@ -249,6 +252,7 @@ end sub
 
 sub leaving(_ = invalid as dynamic)
     m.closed = true
+    if m.together <> invalid then m.together.unobserveField("snapshot")
     m.prerollDeadline.control = "stop"
     if m.plan <> invalid then report("stopped", positionMs())
     m.video.control = "stop"
@@ -284,14 +288,14 @@ sub startItem(it as object, startMs as dynamic)
     if it.kind = "episode" and m.top.params.subtitle <> invalid and m.top.params.subtitle <> "" then sub2 = m.top.params.subtitle
     m.top.findNode("title").text = title
     m.top.findNode("subtitle").text = sub2
-    load(startMs, {})
+    load(startMs, { fileId: m.top.params.fileId })
     loadCastAndEpisodes(it)
-    if it.kind = "episode" and pref("auto_play", true) <> false
+    if m.together = invalid
         if m.top.params.queue <> invalid
-            ' Playing through a queue (Shuffle Season): next is the queue's next entry, not Arc's.
             n = queueNext(m.top.params.queue)
             if n <> invalid then m.next = n.item
-        else
+        end if
+        if m.next = invalid and it.kind = "episode" and pref("auto_play", true) <> false
             callApi("GET", "/items/" + escape(it.id) + "/next", invalid, "onNext")
         end if
     end if
@@ -300,7 +304,10 @@ end sub
 sub onNext(event as object)
     res = event.getData()
     ' 204 (nothing next) comes back with no data.
-    if res.ok and res.data <> invalid and res.data.id <> invalid then m.next = res.data
+    if res.ok and res.data <> invalid and res.data.id <> invalid
+        m.autoNext = res.data
+        m.next = res.data
+    end if
 end sub
 
 ' --- starting (and restarting) the stream ---
@@ -321,6 +328,10 @@ end function
 ' load starts (or restarts) the stream at fromMs; opts may name another audio track or version.
 sub load(fromMs as dynamic, opts as object)
     m.generation = m.generation + 1
+    if m.together <> invalid
+        m.roomLoading = true
+        syncRoomPlayback()
+    end if
     old = m.plan
     m.spinner.visible = true
     m.spinner.control = "start"
@@ -338,13 +349,24 @@ sub load(fromMs as dynamic, opts as object)
         body.audio_stream = old.audio_stream
     end if
     if m.maxKbps > 0 then body.max_kbps = m.maxKbps
-    callApi("POST", "/items/" + escape(m.item.id) + "/playback", body, "onPlan", { generation: m.generation, fromMs: fromMs })
+    burn = subtitleBurnId(m.subtitle)
+    if opts.fileId = invalid and burn <> "" then body.burn_subtitle = burn
+    callApi("POST", "/items/" + escape(m.item.id) + "/playback", body, "onPlan", {
+        generation: m.generation, fromMs: fromMs, burn: valueOr(body.burn_subtitle, "")
+    })
 end sub
 
 sub onPlan(event as object)
     res = event.getData()
-    if res.tag.generation <> m.generation or m.closed then return
+    if res.tag.generation <> m.generation or m.closed
+        if res.ok then endSession(res.data)
+        return
+    end if
     if not res.ok
+        if valueOr(res.tag.burn, "") <> ""
+            playWithoutPictureSubtitles(res.tag.fromMs)
+            return
+        end if
         fail(tr("Arc couldn't start this title.") + " " + res.error)
         return
     end if
@@ -361,11 +383,20 @@ sub onPlan(event as object)
                 if a.index = p.audio_stream then audioLang = a.language
             end for
         end if
-        setSubtitle(chooseSubtitle(p.subtitle_tracks, pref("subtitle_language", ""), audioLang, pref("subtitle_mode", "")))
-    else if m.subtitle <> invalid and not hasTrack(p.subtitle_tracks, m.subtitle.id)
-        setSubtitle(invalid)
+        track = chooseSubtitle(p.subtitle_tracks, pref("subtitle_language", ""), audioLang, pref("subtitle_mode", ""))
+        setSubtitle(track)
+        if subtitleBurnId(track) <> ""
+            load(res.tag.fromMs, {})
+            return
+        end if
     else
-        loadCues()
+        track = matchingSubtitle(p.subtitle_tracks, m.subtitle)
+        burn = subtitleBurnId(track)
+        if burn <> "" and burn <> valueOr(p.burn_subtitle, "")
+            print "Arc: server did not apply picture subtitles"
+            track = invalid
+        end if
+        setSubtitle(track)
     end if
     print "Arc: playback "; p.method; " (attempt "; m.attempt; ")"
     callApi("POST", "/cast", { url: p.url }, "onCast", res.tag)
@@ -429,6 +460,7 @@ sub onVideoState()
     end if
     if m.prerollWaiting then return
     if s = "playing"
+        m.roomLoading = false
         m.spinner.visible = false
         m.spinner.control = "stop"
         m.errorLabel.visible = false
@@ -440,10 +472,16 @@ sub onVideoState()
     else if s = "finished"
         report("stopped", durationOf())
         m.ended = true
+        if m.together <> invalid then m.finishedRoom = true
         if m.next <> invalid
             if m.upNextIn < 0 then startUpNext()
         else
-            m.top.action = { go: "back" }
+            q = m.top.params.queue
+            if q = invalid
+                m.top.action = { go: "back" }
+            else
+                m.top.action = { go: "queueFinished", queue: q }
+            end if
         end if
     else if s = "error"
         print "Arc: player error "; m.video.errorCode; " "; m.video.errorMsg; " ("; m.attempt; ")"
@@ -458,10 +496,13 @@ sub onVideoState()
         else if m.attempt <> "convert"
             m.attempt = "convert"
             load(at, {})
+        else if m.plan <> invalid and valueOr(m.plan.burn_subtitle, "") <> "" and subtitleBurnId(m.subtitle) <> ""
+            playWithoutPictureSubtitles(at)
         else
             fail(tr("This Roku couldn't play this title.") + " " + m.video.errorMsg)
         end if
     end if
+    if m.together <> invalid then syncRoomPlayback()
 end sub
 
 sub fail(text as string)
@@ -524,6 +565,7 @@ end sub
 ' --- controls ---
 
 sub onTick()
+    if m.together <> invalid then syncRoomPlayback()
     at = positionMs()
     drawSubtitles(at)
     drawSkip(at)
@@ -645,7 +687,7 @@ sub onSeekTimer()
     target = m.scrub
     m.scrub = -1
     m.thumbGroup.visible = false
-    if target >= 0 then seekTo(target)
+    if target >= 0 then userSeek(target)
 end sub
 
 ' A file plays from anywhere; a converted stream only has what's been made so far, and anything
@@ -671,6 +713,12 @@ sub seekTo(ms as double)
 end sub
 
 sub togglePause()
+    if m.together <> invalid
+        if m.roomSnapshot = invalid then return
+        if m.roomSnapshot.room.state = "paused" then roomCommand("play") else roomCommand("pause")
+        showControls()
+        return
+    end if
     if m.video.state = "playing"
         m.video.control = "pause"
         m.stateLabel.text = tr("Paused")
@@ -1144,7 +1192,7 @@ function cardKey(key as string) as boolean
         name = m.tabNames[m.tabIndex]
         if name = "chapters"
             setZone("picture")
-            seekTo(t.value)
+            userSeek(t.value)
         else if name = "episodes"
             playEpisode(t.value)
         end if
@@ -1162,6 +1210,11 @@ sub playEpisode(ep as object)
     end if
     startAt = 0
     if ep.user_data <> invalid and ep.user_data.played <> true and ep.user_data.position_ms <> invalid then startAt = ep.user_data.position_ms
+    if m.together <> invalid
+        roomCommand("change_item", startAt, ep.id)
+        setZone("picture")
+        return
+    end if
     title = m.top.findNode("title").text
     print "Arc: playing another episode from the player"
     m.top.action = { go: "play", replace: true, id: ep.id, startMs: startAt, title: title, subtitle: osdEpisodeLine(ep) }
@@ -1255,13 +1308,19 @@ sub applySubtitleLook()
     m.subsTop = style.position = "top"
 end sub
 
-function hasTrack(tracks as dynamic, id as dynamic) as boolean
-    if tracks = invalid then return false
-    for each t in tracks
-        if t.id = id then return true
+function matchingSubtitle(tracks as dynamic, selected as dynamic) as dynamic
+    if selected = invalid then return invalid
+    for each track in playableSubtitles(tracks)
+        if track.id = selected.id and (track.image = true) = (selected.image = true) then return track
     end for
-    return false
+    return invalid
 end function
+
+sub playWithoutPictureSubtitles(at as dynamic)
+    print "Arc: retrying playback without picture subtitles"
+    setSubtitle(invalid)
+    load(at, {})
+end sub
 
 sub setSubtitle(track as dynamic)
     m.subtitle = track
@@ -1270,7 +1329,7 @@ end sub
 
 ' loadCues fetches the chosen track as WebVTT for the file that's playing (once per track and file).
 sub loadCues()
-    if m.subtitle = invalid or m.plan = invalid
+    if m.subtitle = invalid or m.plan = invalid or subtitleBurnId(m.subtitle) <> ""
         m.cues = []
         m.cuesFor = ""
         drawSubtitles(positionMs())
@@ -1295,9 +1354,27 @@ sub onCues(event as object)
     print "Arc: subtitles loaded, "; m.cues.Count(); " cues"
 end sub
 
+function activeSubtitleTimingKey() as string
+    if m.plan = invalid then return ""
+    return subtitleTimingKey(m.plan.file_id, m.subtitle)
+end function
+
+function currentSubtitleOffset() as integer
+    key = activeSubtitleTimingKey()
+    if key = "" then return 0
+    return valueOr(m.subtitleOffsets[key], 0)
+end function
+
+sub adjustSubtitleTiming(delta as dynamic)
+    key = activeSubtitleTimingKey()
+    if key = "" then return
+    m.subtitleOffsets[key] = shiftedSubtitleOffset(currentSubtitleOffset(), delta)
+    drawSubtitles(positionMs())
+end sub
+
 sub drawSubtitles(at as double)
     text = ""
-    if m.subtitle <> invalid and m.cues.Count() > 0 then text = cueText(m.cues, at)
+    if m.subtitle <> invalid and m.cues.Count() > 0 then text = cueText(m.cues, at - currentSubtitleOffset())
     if text = m.shownCue and m.subsLift = m.controls.visible and m.cardTop = (m.zone = "tabs" or m.zone = "card") then return
     m.cardTop = m.zone = "tabs" or m.zone = "card"
     m.shownCue = text
@@ -1342,7 +1419,7 @@ sub drawSkip(at as double)
     end if
     ' Skip Intros Automatically (the profile's auto_skip): each intro or recap once, so seeking
     ' back into one plays it.
-    if mk.kind <> "credits" and pref("auto_skip", false) = true
+    if m.together = invalid and mk.kind <> "credits" and pref("auto_skip", false) = true
         key = mk.kind + ":" + mk.start_ms.ToStr()
         if not m.autoSkipped.DoesExist(key)
             m.autoSkipped[key] = true
@@ -1370,7 +1447,7 @@ sub skipNow()
     if mk.kind = "credits" and m.next <> invalid
         playNext()
     else
-        seekTo(mk.end_ms)
+        userSeek(mk.end_ms)
     end if
 end sub
 
@@ -1416,13 +1493,57 @@ sub playNext()
     startAt = 0
     if n.user_data <> invalid and n.user_data.played <> true and n.user_data.position_ms <> invalid then startAt = n.user_data.position_ms
     q = m.top.params.queue
-    if q <> invalid and m.queueMoving <> true
-        ' The queue moves to the entry first (select passes over unavailable ones), then it plays.
+    if q <> invalid
+        if m.queueMoving = true then return
         m.queueMoving = true
-        callApi("PATCH", "/play-queues/" + escape(q.id), { revision: q.revision, operation: "select", entry_id: queueNext(q).id }, "onQueueMoved")
+        ' Resolve the next entry again before advancing, in case an edit changed it.
+        callApi("GET", "/play-queues/" + escape(q.id), invalid, "onQueueBeforeMove")
         return
     end if
     playItem(n, startAt, invalid)
+end sub
+
+sub onQueueBeforeMove(event as object)
+    if m.closed then return
+    res = event.getData()
+    q = res.data
+    if not res.ok or q = invalid or q.current_entry_id <> m.top.params.queue.current_entry_id
+        cancelQueueAdvance()
+        return
+    end if
+    nextEntry = queueNext(q)
+    if nextEntry = invalid and m.autoNext <> invalid
+        body = { revision: q.revision, operation: "append", item_ids: [m.autoNext.id] }
+        callApi("PATCH", "/play-queues/" + escape(q.id), body, "onQueueAppendedNext")
+        return
+    end if
+    if nextEntry = invalid
+        cancelQueueAdvance()
+        return
+    end if
+    selectNextQueueEntry(q, nextEntry)
+end sub
+
+sub onQueueAppendedNext(event as object)
+    if m.closed then return
+    res = event.getData()
+    entry = invalid
+    if res.ok then entry = queueNext(res.data)
+    if entry = invalid
+        cancelQueueAdvance()
+    else
+        selectNextQueueEntry(res.data, entry)
+    end if
+end sub
+
+sub selectNextQueueEntry(q as object, entry as object)
+    callApi("PATCH", "/play-queues/" + escape(q.id), { revision: q.revision, operation: "select", entry_id: entry.id }, "onQueueMoved")
+end sub
+
+sub cancelQueueAdvance()
+    m.queueMoving = false
+    m.next = invalid
+    cancelUpNext()
 end sub
 
 sub onQueueMoved(event as object)
@@ -1432,9 +1553,7 @@ sub onQueueMoved(event as object)
     if res.ok then q = res.data
     e = queueCurrent(q)
     if e = invalid
-        ' Arc refused the change (another device changed the queue, say): play on without it.
-        print "Arc: the play queue couldn't move on ("; res.status; "), playing the next episode without it"
-        playItem(m.next, 0, invalid)
+        cancelQueueAdvance()
         return
     end if
     startAt = 0
@@ -1444,10 +1563,11 @@ sub onQueueMoved(event as object)
 end sub
 
 sub playItem(n as object, startAt as dynamic, queue as dynamic)
-    title = m.top.findNode("title").text
-    if n.series_title <> invalid then title = n.series_title
-    print "Arc: playing the next episode"
-    m.top.action = { go: "play", replace: true, id: n.id, startMs: startAt, title: title, subtitle: episodeTitled(n), queue: queue }
+    title = valueOr(n.series_title, n.title)
+    subtitle = ""
+    if n.kind = "episode" then subtitle = episodeTitled(n)
+    print "Arc: playing the next title"
+    m.top.action = { go: "play", replace: true, id: n.id, startMs: startAt, title: title, subtitle: subtitle, queue: queue }
 end sub
 
 ' --- the options menu (* button) ---
@@ -1482,7 +1602,7 @@ sub openMenu(section as string)
             entries.Push({ label: tr("Audio"), detail: detail })
             m.menuValues.Push("audio")
         end if
-        if textSubtitles(p.subtitle_tracks).Count() > 0
+        if playableSubtitles(p.subtitle_tracks).Count() > 0
             detail = tr("Off")
             if m.subtitle <> invalid then detail = trackName(m.subtitle, 0)
             entries.Push({ label: tr("Subtitles"), detail: detail })
@@ -1498,6 +1618,18 @@ sub openMenu(section as string)
             entries.Push({ label: tr("Chapters"), detail: "" })
             m.menuValues.Push("chapters")
         end if
+    else if section = "subtitleTiming"
+        if activeSubtitleTimingKey() = ""
+            closeMenu()
+            return
+        end if
+        m.options.title = tr("Subtitle Timing") + " · " + subtitleTimingLabel(currentSubtitleOffset())
+        entries = [
+            { label: tr("Earlier"), detail: tr("0.5s") },
+            { label: tr("Later"), detail: tr("0.5s") },
+            { label: tr("Reset"), detail: "" }
+        ]
+        m.menuValues = [-500, 500, invalid]
     else if section = "audio"
         m.options.title = tr("Audio")
         i = 0
@@ -1513,7 +1645,7 @@ sub openMenu(section as string)
         m.menuValues.Push(invalid)
         selected = 0
         i = 0
-        for each s in textSubtitles(p.subtitle_tracks)
+        for each s in playableSubtitles(p.subtitle_tracks)
             if m.subtitle <> invalid and m.subtitle.id = s.id then selected = i + 1
             entries.Push({ label: trackName(s, i), detail: subtitleDetail(s) })
             m.menuValues.Push(s)
@@ -1551,8 +1683,13 @@ sub openMenu(section as string)
         selected = at
         if selected < 0 then selected = 0
     end if
+    if (section = "" or section = "playback") and activeSubtitleTimingKey() <> ""
+        entries.Push({ label: tr("Subtitle Timing"), detail: subtitleTimingLabel(currentSubtitleOffset()) })
+        m.menuValues.Push("subtitleTiming")
+    end if
     m.options.entries = entries
     m.options.selected = selected
+    m.options.focusIndex = 0
     m.options.visible = true
     m.controls.visible = false
     m.options.show = true
@@ -1576,6 +1713,11 @@ sub onOptionPicked()
         openMenu(v)
         return
     end if
+    if section = "subtitleTiming"
+        adjustSubtitleTiming(v)
+        m.options.title = tr("Subtitle Timing") + " · " + subtitleTimingLabel(currentSubtitleOffset())
+        return
+    end if
     closeMenu()
     if section = "audio"
         chooseAudio(v)
@@ -1584,9 +1726,12 @@ sub onOptionPicked()
     else if section = "quality"
         chooseQuality(v)
     else if section = "version"
-        if v <> m.plan.file_id then load(positionMs(), { fileId: v })
+        if v <> m.plan.file_id
+            if subtitleBurnId(m.subtitle) <> "" then setSubtitle(invalid)
+            load(positionMs(), { fileId: v })
+        end if
     else if section = "chapters"
-        seekTo(v)
+        userSeek(v)
     end if
 end sub
 
@@ -1631,7 +1776,10 @@ end sub
 sub chooseSubtitleTrack(track as dynamic)
     lang = rememberedSubtitleLanguage(track, pref("subtitle_mode", ""))
     if lang <> invalid and lang <> pref("subtitle_language", "") then savePref("subtitle_language", lang)
+    oldBurn = subtitleBurnId(m.subtitle)
+    newBurn = subtitleBurnId(track)
     setSubtitle(track)
+    if oldBurn <> newBurn then load(positionMs(), {})
 end sub
 
 sub chooseQuality(q as integer)

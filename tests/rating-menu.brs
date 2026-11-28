@@ -8,6 +8,7 @@ sub Main()
     m.page = { translation: [0, 0] }
     m.tabs = {}
     m.slide = {}
+    m.slideTo = {}
     m.buttons = { setFocus: function(on as boolean)
         m.focused = on
     end function }
@@ -34,6 +35,16 @@ sub Main()
     count = m.requests.Count()
     onRatingSaved(eventFor({ ok: false, tag: { id: "other", rating: 10, previous: 3 } }))
     check(m.item.user_data.rating = 10 and m.requests.Count() = count, "stale page response ignored")
+    m.item = { id: "film", kind: "movie", title: "Film", files: [{ id: 10 }, { id: 11 }], user_data: { position_ms: 72500 } }
+    showTitleMenu()
+    versionIndex = m.cardPanel.entries.Count() - 1
+    check(m.cardPanel.entries[versionIndex].label = "Play Version…", "title offers a pre-play file choice")
+    m.cardPanel.picked = versionIndex
+    onCardPicked()
+    check(m.cardPanel.title = "Play Version" and m.cardPanel.entries.Count() = 2, "opens version choices")
+    m.cardPanel.picked = 1
+    onCardPicked()
+    check(m.top.action.fileId = 11 and m.top.action.startMs = 72500, "plays chosen file from the resume position")
     print "RATING MENU PASSED"
 end sub
 

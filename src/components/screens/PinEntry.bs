@@ -1,0 +1,199 @@
+sub init()
+    m.top.findNode("initial").font.size = 70
+    m.top.findNode("heading").text = tr("Enter your PIN")
+    m.message = m.top.findNode("message")
+    m.backFill = m.top.findNode("backFill")
+    m.backLabel = m.top.findNode("backLabel")
+    m.backLabel.text = "‹   " + tr("Profiles")
+    m.keyFills = []
+    m.keyLabels = []
+    m.keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", ""]
+    m.delete = m.keys.Count() - 1
+    m.back = m.keys.Count()
+    m.selected = 4
+    m.digits = ""
+    m.checking = false
+    m.wrong = false
+    m.slotRings = []
+    m.slotLabels = []
+    buildSlots()
+    buildKeys()
+end sub
+
+sub buildSlots()
+    slots = m.top.findNode("slots")
+    for i = 0 to 3
+        slot = slots.createChild("Group")
+        slot.translation = [i * 142, 0]
+        tile = slot.createChild("Poster")
+        tile.uri = "pkg:/images/auth/slot.png"
+        tile.width = 112
+        tile.height = 112
+        tile.blendColor = "0x202028FF"
+        ring = slot.createChild("Poster")
+        ring.uri = "pkg:/images/auth/slot-border.png"
+        ring.width = 112
+        ring.height = 112
+        m.slotRings.Push(ring)
+        m.slotLabels.Push(centeredLabel(slot, 112, ""))
+    end for
+end sub
+
+sub buildKeys()
+    pad = m.top.findNode("pad")
+    for i = 0 to m.keys.Count() - 1
+        cell = i
+        if i >= 9 then cell = i + 1 ' The fourth row starts with a gap, then 0 and Delete.
+        button = pad.createChild("Group")
+        button.translation = [(cell mod 3) * 140, Int(cell / 3) * 140]
+        tile = button.createChild("Poster")
+        tile.uri = "pkg:/images/auth/key.png"
+        tile.width = 120
+        tile.height = 120
+        m.keyFills.Push(tile)
+        m.keyLabels.Push(centeredLabel(button, 120, m.keys[i]))
+        if i = m.delete
+            m.deleteIcon = button.createChild("Poster")
+            m.deleteIcon.uri = "pkg:/images/auth/delete.png"
+            m.deleteIcon.translation = [38, 38]
+            m.deleteIcon.width = 44
+            m.deleteIcon.height = 44
+        end if
+    end for
+end sub
+
+function centeredLabel(parent as object, size as integer, text as string) as object
+    label = parent.createChild("Label")
+    label.width = size
+    label.height = size
+    label.horizAlign = "center"
+    label.vertAlign = "center"
+    label.font = "font:MediumBoldSystemFont"
+    label.font.size = 42
+    label.text = text
+    label.color = "0xF5F5F7FF"
+    return label
+end function
+
+sub onProfileChanged()
+    p = m.top.profile
+    if p = invalid then return
+    color = p.color
+    if color = invalid or color = "" then color = "teal"
+    if Instr(1, "|amber|blue|green|orange|rose|slate|teal|violet|", "|" + color + "|") = 0 then color = "teal"
+    m.top.findNode("avatar").uri = "pkg:/images/avatars/" + color + ".png"
+    m.top.findNode("initial").text = UCase(Left(p.name, 1))
+    m.top.findNode("name").text = p.name
+    m.digits = ""
+    m.selected = 4
+    m.checking = false
+    m.wrong = false
+    m.message.text = ""
+    paintSelection()
+    paintSlots()
+end sub
+
+sub takeFocus(_ = invalid as dynamic)
+    m.top.setFocus(true)
+end sub
+
+sub failed(failure as object)
+    m.checking = false
+    m.digits = ""
+    m.wrong = failure.wrong
+    m.message.text = failure.message
+    m.message.color = "0xF59E9EFF"
+    paintSlots()
+end sub
+
+sub paintSlots()
+    for i = 0 to 3
+        m.slotLabels[i].text = ""
+        if i < Len(m.digits) then m.slotLabels[i].text = "•"
+        color = "0x30303AFF"
+        if i = Len(m.digits) then color = "0xF5F5F7FF"
+        if m.wrong then color = "0xF59E9EFF"
+        m.slotRings[i].blendColor = color
+    end for
+end sub
+
+sub paintSelection()
+    for i = 0 to m.back - 1
+        selected = m.selected = i
+        if selected
+            m.keyFills[i].blendColor = "0xF5F5F7FF"
+            m.keyLabels[i].color = "0x111116FF"
+        else
+            m.keyFills[i].blendColor = "0x202028FF"
+            m.keyLabels[i].color = "0xF5F5F7FF"
+        end if
+    end for
+    m.deleteIcon.blendColor = m.keyLabels[m.delete].color
+    if m.selected = m.back
+        m.backFill.color = "0xF5F5F7FF"
+        m.backLabel.color = "0x111116FF"
+    else
+        m.backFill.color = "0xF5F5F726"
+        m.backLabel.color = "0xF5F5F7FF"
+    end if
+end sub
+
+sub appendDigit(digit as string)
+    m.wrong = false
+    m.message.text = ""
+    m.digits += digit
+    paintSlots()
+    if Len(m.digits) = 4
+        m.checking = true
+        m.message.color = "0xA7A7B1FF"
+        m.message.text = tr("Checking PIN…")
+        m.top.entry = { pin: m.digits }
+    end if
+end sub
+
+sub removeDigit()
+    m.wrong = false
+    m.message.text = ""
+    if Len(m.digits) > 0 then m.digits = Left(m.digits, Len(m.digits) - 1)
+    paintSlots()
+end sub
+
+function onKeyEvent(key as string, press as boolean) as boolean
+    if not press then return false
+    ' Profile selection is already being committed on the server. Don't exit mid-request.
+    if m.checking then return true
+    if key = "back"
+        m.digits = ""
+        m.top.entry = { cancel: true }
+    else if key = "OK"
+        if m.selected = m.back
+            m.digits = ""
+            m.top.entry = { cancel: true }
+        else if m.selected = m.delete
+            removeDigit()
+        else
+            appendDigit(m.keys[m.selected])
+        end if
+    else if Len(key) = 1 and Instr(1, "0123456789", key) > 0
+        appendDigit(key)
+    else if key = "backspace"
+        removeDigit()
+    else if key = "left" or key = "right" or key = "up" or key = "down"
+        moveSelection(key)
+    else
+        return false
+    end if
+    return true
+end function
+
+sub moveSelection(key as string)
+    ' Each list maps from the current key (1–9, 0, Delete, Profiles) to its neighbour.
+    neighbors = {
+        left: [11, 0, 1, 11, 3, 4, 11, 6, 7, 11, 9, 11],
+        right: [1, 2, 2, 4, 5, 5, 7, 8, 8, 10, 10, 4],
+        up: [0, 1, 2, 0, 1, 2, 3, 4, 5, 7, 8, 11],
+        down: [3, 4, 5, 6, 7, 8, 9, 9, 10, 9, 10, 11],
+    }
+    m.selected = neighbors[key][m.selected]
+    paintSelection()
+end sub

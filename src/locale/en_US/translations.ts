@@ -9,6 +9,10 @@
   <translation>* for options, sort and filter</translation>
 </message>
 <message>
+  <source>* for Play All and Shuffle</source>
+  <translation>* for Play All and Shuffle</translation>
+</message>
+<message>
   <source>%1 and %2</source>
   <translation>%1 and %2</translation>
 </message>
@@ -45,10 +49,6 @@
   <translation>%1, and %2</translation>
 </message>
 <message>
-  <source>%1's PIN</source>
-  <translation>%1's PIN</translation>
-</message>
-<message>
   <source>%1h</source>
   <translation>%1h</translation>
 </message>
@@ -63,6 +63,10 @@
 <message>
   <source>%1s</source>
   <translation>%1s</translation>
+</message>
+<message>
+  <source>0.5s</source>
+  <translation>0.5s</translation>
 </message>
 <message>
   <source>1 title</source>
@@ -85,16 +89,36 @@
   <translation>Actor</translation>
 </message>
 <message>
+  <source>Add to Playlist</source>
+  <translation>Add to Playlist</translation>
+</message>
+<message>
+  <source>Add to Queue</source>
+  <translation>Add to Queue</translation>
+</message>
+<message>
   <source>Add to Watchlist</source>
   <translation>Add to Watchlist</translation>
+</message>
+<message>
+  <source>Added to %1.</source>
+  <translation>Added to %1.</translation>
+</message>
+<message>
+  <source>Added to play next.</source>
+  <translation>Added to play next.</translation>
+</message>
+<message>
+  <source>Added to the queue.</source>
+  <translation>Added to the queue.</translation>
 </message>
 <message>
   <source>Address</source>
   <translation>Address</translation>
 </message>
 <message>
-  <source>All titles</source>
-  <translation>All titles</translation>
+  <source>All</source>
+  <translation>All</translation>
 </message>
 <message>
   <source>Always</source>
@@ -107,6 +131,10 @@
 <message>
   <source>API</source>
   <translation>API</translation>
+</message>
+<message>
+  <source>Arc couldn't complete the room request. Try again.</source>
+  <translation>Arc couldn't complete the room request. Try again.</translation>
 </message>
 <message>
   <source>Arc couldn't start this title.</source>
@@ -133,6 +161,10 @@
   <translation>as %1</translation>
 </message>
 <message>
+  <source>Ask the host for the eight-character code.</source>
+  <translation>Ask the host for the eight-character code.</translation>
+</message>
+<message>
   <source>Audio</source>
   <translation>Audio</translation>
 </message>
@@ -151,6 +183,10 @@
 <message>
   <source>Automatic</source>
   <translation>Automatic</translation>
+</message>
+<message>
+  <source>Back</source>
+  <translation>Back</translation>
 </message>
 <message>
   <source>Because you watched %1</source>
@@ -181,6 +217,10 @@
   <translation>Cancel</translation>
 </message>
 <message>
+  <source>Cancel room</source>
+  <translation>Cancel room</translation>
+</message>
+<message>
   <source>Cast</source>
   <translation>Cast</translation>
 </message>
@@ -195,6 +235,10 @@
 <message>
   <source>Check that Arc is running and this Roku is on the same network.</source>
   <translation>Check that Arc is running and this Roku is on the same network.</translation>
+</message>
+<message>
+  <source>Checking PIN…</source>
+  <translation>Checking PIN…</translation>
 </message>
 <message>
   <source>Christmas Films</source>
@@ -229,6 +273,10 @@
   <translation>Continue Watching</translation>
 </message>
 <message>
+  <source>Couldn't add this title. Try again.</source>
+  <translation>Couldn't add this title. Try again.</translation>
+</message>
+<message>
   <source>Couldn't change what's watched.</source>
   <translation>Couldn't change what's watched.</translation>
 </message>
@@ -247,6 +295,10 @@
 <message>
   <source>Couldn't load Home.</source>
   <translation>Couldn't load Home.</translation>
+</message>
+<message>
+  <source>Couldn't load playlists. Try again.</source>
+  <translation>Couldn't load playlists. Try again.</translation>
 </message>
 <message>
   <source>Couldn't load Recommended.</source>
@@ -281,8 +333,12 @@
   <translation>Couldn't search.</translation>
 </message>
 <message>
-  <source>Couldn't start playing this season.</source>
-  <translation>Couldn't start playing this season.</translation>
+  <source>Couldn't start this queue. Try again.</source>
+  <translation>Couldn't start this queue. Try again.</translation>
+</message>
+<message>
+  <source>Couldn't update the queue. Try again.</source>
+  <translation>Couldn't update the queue. Try again.</translation>
 </message>
 <message>
   <source>Date added</source>
@@ -291,6 +347,10 @@
 <message>
   <source>Decade</source>
   <translation>Decade</translation>
+</message>
+<message>
+  <source>Decline invitation</source>
+  <translation>Decline invitation</translation>
 </message>
 <message>
   <source>Deleted scene</source>
@@ -305,12 +365,44 @@
   <translation>Director %1</translation>
 </message>
 <message>
+  <source>Earlier</source>
+  <translation>Earlier</translation>
+</message>
+<message>
+  <source>End for everyone</source>
+  <translation>End for everyone</translation>
+</message>
+<message>
+  <source>End room</source>
+  <translation>End room</translation>
+</message>
+<message>
+  <source>Enter a room code</source>
+  <translation>Enter a room code</translation>
+</message>
+<message>
   <source>Enter an address</source>
   <translation>Enter an address</translation>
 </message>
 <message>
+  <source>Enter the eight-character room code.</source>
+  <translation>Enter the eight-character room code.</translation>
+</message>
+<message>
+  <source>Enter this code:</source>
+  <translation>Enter this code:</translation>
+</message>
+<message>
+  <source>Enter your PIN</source>
+  <translation>Enter your PIN</translation>
+</message>
+<message>
   <source>Episodes</source>
   <translation>Episodes</translation>
+</message>
+<message>
+  <source>Everyone will leave synchronized playback.</source>
+  <translation>Everyone will leave synchronized playback.</translation>
 </message>
 <message>
   <source>Extra</source>
@@ -319,6 +411,10 @@
 <message>
   <source>Featurette</source>
   <translation>Featurette</translation>
+</message>
+<message>
+  <source>File %1</source>
+  <translation>File %1</translation>
 </message>
 <message>
   <source>Filters</source>
@@ -349,6 +445,26 @@
   <translation>Genre</translation>
 </message>
 <message>
+  <source>Genres</source>
+  <translation>Genres</translation>
+</message>
+<message>
+  <source>Get a New Code</source>
+  <translation>Get a New Code</translation>
+</message>
+<message>
+  <source>Get a new room code</source>
+  <translation>Get a new room code</translation>
+</message>
+<message>
+  <source>Getting a code…</source>
+  <translation>Getting a code…</translation>
+</message>
+<message>
+  <source>Getting ready</source>
+  <translation>Getting ready</translation>
+</message>
+<message>
   <source>Go to details</source>
   <translation>Go to details</translation>
 </message>
@@ -359,10 +475,6 @@
 <message>
   <source>HDR</source>
   <translation>HDR</translation>
-</message>
-<message>
-  <source>Hide Missing Episodes</source>
-  <translation>Hide Missing Episodes</translation>
 </message>
 <message>
   <source>Hide Spoilers</source>
@@ -381,6 +493,14 @@
   <translation>Horror for Halloween</translation>
 </message>
 <message>
+  <source>Host</source>
+  <translation>Host</translation>
+</message>
+<message>
+  <source>Hosted by %1</source>
+  <translation>Hosted by %1</translation>
+</message>
+<message>
   <source>Huge</source>
   <translation>Huge</translation>
 </message>
@@ -397,8 +517,20 @@
   <translation>Interview</translation>
 </message>
 <message>
-  <source>Jump to</source>
-  <translation>Jump to</translation>
+  <source>Invite people…</source>
+  <translation>Invite people…</translation>
+</message>
+<message>
+  <source>Invited</source>
+  <translation>Invited</translation>
+</message>
+<message>
+  <source>Join</source>
+  <translation>Join</translation>
+</message>
+<message>
+  <source>Joining room…</source>
+  <translation>Joining room…</translation>
 </message>
 <message>
   <source>Large</source>
@@ -409,12 +541,24 @@
   <translation>Last watched</translation>
 </message>
 <message>
+  <source>Later</source>
+  <translation>Later</translation>
+</message>
+<message>
   <source>Least recent first</source>
   <translation>Least recent first</translation>
 </message>
 <message>
+  <source>Leave room</source>
+  <translation>Leave room</translation>
+</message>
+<message>
   <source>Length</source>
   <translation>Length</translation>
+</message>
+<message>
+  <source>Loading…</source>
+  <translation>Loading…</translation>
 </message>
 <message>
   <source>Local network</source>
@@ -481,12 +625,16 @@
   <translation>Most recent first</translation>
 </message>
 <message>
-  <source>Movies</source>
-  <translation>Movies</translation>
+  <source>Move Earlier</source>
+  <translation>Move Earlier</translation>
 </message>
 <message>
-  <source>New code</source>
-  <translation>New code</translation>
+  <source>Move Later</source>
+  <translation>Move Later</translation>
+</message>
+<message>
+  <source>Movies</source>
+  <translation>Movies</translation>
 </message>
 <message>
   <source>Newest first</source>
@@ -495,6 +643,10 @@
 <message>
   <source>No Arc servers answered. Check Arc is running, or type its address.</source>
   <translation>No Arc servers answered. Check Arc is running, or type its address.</translation>
+</message>
+<message>
+  <source>No editable playlists yet. Create a playlist in Arc on the web.</source>
+  <translation>No editable playlists yet. Create a playlist in Arc on the web.</translation>
 </message>
 <message>
   <source>No titles match these filters.</source>
@@ -553,10 +705,6 @@
   <translation>Off</translation>
 </message>
 <message>
-  <source>OK</source>
-  <translation>OK</translation>
-</message>
-<message>
   <source>OK to play now · Back to keep watching</source>
   <translation>OK to play now · Back to keep watching</translation>
 </message>
@@ -569,8 +717,8 @@
   <translation>On</translation>
 </message>
 <message>
-  <source>On your phone or computer, open Arc, choose Link a Device from your profile menu, and type this code.</source>
-  <translation>On your phone or computer, open Arc, choose Link a Device from your profile menu, and type this code.</translation>
+  <source>On your phone or computer, open Arc and choose Link a Device in the profile menu.</source>
+  <translation>On your phone or computer, open Arc and choose Link a Device in the profile menu.</translation>
 </message>
 <message>
   <source>Only when I choose them</source>
@@ -581,12 +729,24 @@
   <translation>Open as %1 on this device, without asking who's watching.</translation>
 </message>
 <message>
+  <source>Open player</source>
+  <translation>Open player</translation>
+</message>
+<message>
+  <source>Open room</source>
+  <translation>Open room</translation>
+</message>
+<message>
   <source>Open Source Licences</source>
   <translation>Open Source Licences</translation>
 </message>
 <message>
   <source>Options</source>
   <translation>Options</translation>
+</message>
+<message>
+  <source>Or go to %1</source>
+  <translation>Or go to %1</translation>
 </message>
 <message>
   <source>Order</source>
@@ -605,12 +765,20 @@
   <translation>Paused</translation>
 </message>
 <message>
+  <source>Paused by %1</source>
+  <translation>Paused by %1</translation>
+</message>
+<message>
   <source>People</source>
   <translation>People</translation>
 </message>
 <message>
   <source>Pick the server Arc is running on. It needs to be on the same network as this Roku, or you can type its address.</source>
   <translation>Pick the server Arc is running on. It needs to be on the same network as this Roku, or you can type its address.</translation>
+</message>
+<message>
+  <source>Picture subtitles</source>
+  <translation>Picture subtitles</translation>
 </message>
 <message>
   <source>PIN</source>
@@ -625,12 +793,28 @@
   <translation>Play %1</translation>
 </message>
 <message>
+  <source>Play All</source>
+  <translation>Play All</translation>
+</message>
+<message>
   <source>Play from the beginning</source>
   <translation>Play from the beginning</translation>
 </message>
 <message>
   <source>Play Next</source>
   <translation>Play Next</translation>
+</message>
+<message>
+  <source>Play together</source>
+  <translation>Play together</translation>
+</message>
+<message>
+  <source>Play Version</source>
+  <translation>Play Version</translation>
+</message>
+<message>
+  <source>Play Version…</source>
+  <translation>Play Version…</translation>
 </message>
 <message>
   <source>Playback</source>
@@ -665,8 +849,16 @@
   <translation>Producer</translation>
 </message>
 <message>
+  <source>Profiles</source>
+  <translation>Profiles</translation>
+</message>
+<message>
   <source>Quality</source>
   <translation>Quality</translation>
+</message>
+<message>
+  <source>Queue</source>
+  <translation>Queue</translation>
 </message>
 <message>
   <source>Rate…</source>
@@ -675,6 +867,10 @@
 <message>
   <source>Rating</source>
   <translation>Rating</translation>
+</message>
+<message>
+  <source>Ready</source>
+  <translation>Ready</translation>
 </message>
 <message>
   <source>Recently Added in %1</source>
@@ -697,6 +893,10 @@
   <translation>Recommended</translation>
 </message>
 <message>
+  <source>Reconnecting to the room…</source>
+  <translation>Reconnecting to the room…</translation>
+</message>
+<message>
   <source>Rediscover</source>
   <translation>Rediscover</translation>
 </message>
@@ -713,8 +913,16 @@
   <translation>Remove from Continue Watching</translation>
 </message>
 <message>
+  <source>Remove from Queue</source>
+  <translation>Remove from Queue</translation>
+</message>
+<message>
   <source>Remove from Watchlist</source>
   <translation>Remove from Watchlist</translation>
+</message>
+<message>
+  <source>Reset</source>
+  <translation>Reset</translation>
 </message>
 <message>
   <source>Resume</source>
@@ -729,8 +937,28 @@
   <translation>Resume from %1</translation>
 </message>
 <message>
+  <source>Retry</source>
+  <translation>Retry</translation>
+</message>
+<message>
+  <source>Return to room</source>
+  <translation>Return to room</translation>
+</message>
+<message>
   <source>Romance for Valentine's Day</source>
   <translation>Romance for Valentine's Day</translation>
+</message>
+<message>
+  <source>Room code expired</source>
+  <translation>Room code expired</translation>
+</message>
+<message>
+  <source>Room code expires in %1 min</source>
+  <translation>Room code expires in %1 min</translation>
+</message>
+<message>
+  <source>Saving…</source>
+  <translation>Saving…</translation>
 </message>
 <message>
   <source>Scene</source>
@@ -741,16 +969,24 @@
   <translation>Search</translation>
 </message>
 <message>
-  <source>Search for films, shows, episodes, collections and people.</source>
-  <translation>Search for films, shows, episodes, collections and people.</translation>
+  <source>Search for films, shows, genres and more.</source>
+  <translation>Search for films, shows, genres and more.</translation>
 </message>
 <message>
   <source>Season %1</source>
   <translation>Season %1</translation>
 </message>
 <message>
+  <source>Send invitations</source>
+  <translation>Send invitations</translation>
+</message>
+<message>
   <source>Server</source>
   <translation>Server</translation>
+</message>
+<message>
+  <source>Server: %1</source>
+  <translation>Server: %1</translation>
 </message>
 <message>
   <source>Settings</source>
@@ -793,8 +1029,8 @@
   <translation>Sign in automatically</translation>
 </message>
 <message>
-  <source>Sign in to %1</source>
-  <translation>Sign in to %1</translation>
+  <source>Sign in to Arc</source>
+  <translation>Sign in to Arc</translation>
 </message>
 <message>
   <source>Sign out</source>
@@ -853,6 +1089,10 @@
   <translation>Start Watching</translation>
 </message>
 <message>
+  <source>Starting room…</source>
+  <translation>Starting room…</translation>
+</message>
+<message>
   <source>Stereo</source>
   <translation>Stereo</translation>
 </message>
@@ -877,6 +1117,10 @@
   <translation>Subtitle Size</translation>
 </message>
 <message>
+  <source>Subtitle Timing</source>
+  <translation>Subtitle Timing</translation>
+</message>
+<message>
   <source>Subtitles</source>
   <translation>Subtitles</translation>
 </message>
@@ -885,28 +1129,56 @@
   <translation>Switch Profile</translation>
 </message>
 <message>
-  <source>That PIN isn't right.</source>
-  <translation>That PIN isn't right.</translation>
+  <source>That PIN isn't right. Try again.</source>
+  <translation>That PIN isn't right. Try again.</translation>
 </message>
 <message>
-  <source>The code ran out. Choose New code for another.</source>
-  <translation>The code ran out. Choose New code for another.</translation>
+  <source>That room is unavailable. Check the code or ask the host for a new one.</source>
+  <translation>That room is unavailable. Check the code or ask the host for a new one.</translation>
+</message>
+<message>
+  <source>The code ran out. Choose Get a New Code for another.</source>
+  <translation>The code ran out. Choose Get a New Code for another.</translation>
 </message>
 <message>
   <source>The file's default</source>
   <translation>The file's default</translation>
 </message>
 <message>
+  <source>The host ended the room.</source>
+  <translation>The host ended the room.</translation>
+</message>
+<message>
+  <source>The room changed. Try again.</source>
+  <translation>The room changed. Try again.</translation>
+</message>
+<message>
   <source>Theme Music</source>
   <translation>Theme Music</translation>
+</message>
+<message>
+  <source>There is nobody you can invite to this title.</source>
+  <translation>There is nobody you can invite to this title.</translation>
 </message>
 <message>
   <source>This Roku couldn't play this title.</source>
   <translation>This Roku couldn't play this title.</translation>
 </message>
 <message>
+  <source>This room is no longer available.</source>
+  <translation>This room is no longer available.</translation>
+</message>
+<message>
+  <source>This title isn't available to you.</source>
+  <translation>This title isn't available to you.</translation>
+</message>
+<message>
   <source>Title</source>
   <translation>Title</translation>
+</message>
+<message>
+  <source>Title unavailable</source>
+  <translation>Title unavailable</translation>
 </message>
 <message>
   <source>Titles</source>
@@ -915,6 +1187,10 @@
 <message>
   <source>Titles, artwork and episode details come from TMDB and TheTVDB. This product uses the TMDB API but is not endorsed or certified by TMDB.</source>
   <translation>Titles, artwork and episode details come from TMDB and TheTVDB. This product uses the TMDB API but is not endorsed or certified by TMDB.</translation>
+</message>
+<message>
+  <source>Too many requests. Try again shortly.</source>
+  <translation>Too many requests. Try again shortly.</translation>
 </message>
 <message>
   <source>Top</source>
@@ -993,6 +1269,10 @@
   <translation>Use another server</translation>
 </message>
 <message>
+  <source>Use Another Server</source>
+  <translation>Use Another Server</translation>
+</message>
+<message>
   <source>Version</source>
   <translation>Version</translation>
 </message>
@@ -1005,12 +1285,24 @@
   <translation>Video Format</translation>
 </message>
 <message>
-  <source>Waiting for the code to be approved…</source>
-  <translation>Waiting for the code to be approved…</translation>
+  <source>Waiting for everyone…</source>
+  <translation>Waiting for everyone…</translation>
+</message>
+<message>
+  <source>Waiting for you to enter the code…</source>
+  <translation>Waiting for you to enter the code…</translation>
 </message>
 <message>
   <source>Watch Status</source>
   <translation>Watch Status</translation>
+</message>
+<message>
+  <source>Watch Together</source>
+  <translation>Watch Together</translation>
+</message>
+<message>
+  <source>Watch Together · Paused</source>
+  <translation>Watch Together · Paused</translation>
 </message>
 <message>
   <source>Watched</source>
@@ -1043,6 +1335,10 @@
 <message>
   <source>Yellow</source>
   <translation>Yellow</translation>
+</message>
+<message>
+  <source>You already have an active room.</source>
+  <translation>You already have an active room.</translation>
 </message>
 <message>
   <source>Your Rating</source>

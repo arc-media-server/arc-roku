@@ -1,0 +1,479 @@
+' A lobby stays under the player and owns the one membership for this device/profile.
+sub init()
+    m.room = invalid
+    m.invite = invalid
+    m.busy = false
+    m.beating = false
+    m.closed = false
+    m.inPlayer = false
+    m.autoEnter = true
+    m.failedBeats = 0
+    m.roomClock = CreateObject("roTimespan")
+    m.beatClock = CreateObject("roTimespan")
+    m.serverClockAt = invalid
+    m.clockAge = -60000
+    m.actions = m.top.findNode("actions")
+    m.actions.observeField("itemSelected", "onPicked")
+    m.beat = m.top.findNode("beat")
+    m.beat.observeField("fire", "heartbeat")
+    m.enterTimer = m.top.findNode("enterTimer")
+    m.enterTimer.observeField("fire", "enterIfPlaying")
+    m.statusText = ""
+    m.heading = m.top.findNode("heading")
+    m.heading.text = tr("Watch Together")
+    m.picker = m.top.findNode("picker")
+    m.picker.observeField("picked", "onInvitePicked")
+    m.picker.observeField("closed", "closePicker")
+    m.session = CreateObject("roSGNode", "ContentNode")
+    m.session.addField("snapshot", "assocarray", true)
+    m.session.addField("report", "assocarray", false)
+    m.session.addField("command", "assocarray", true)
+    m.session.observeField("command", "onPlayerCommand")
+end sub
+
+sub onParams()
+    m.intent = m.top.params
+    m.identity = m.global.profile.id
+    m.token = m.global.token
+    m.server = m.global.server
+    m.statusText = tr("Connecting…")
+    renderRoom()
+    if m.intent.recovered <> invalid
+        adoptRoom(m.intent.recovered)
+    else
+        request("GET", "/current", invalid, "current")
+    end if
+end sub
+
+sub takeFocus(_ = invalid as dynamic)
+    if m.picker.visible then return
+    m.actions.setFocus(true)
+end sub
+
+sub returned(_ = invalid as dynamic)
+    m.inPlayer = false
+    m.session.report = {}
+    m.autoEnter = m.room <> invalid and m.room.item_id <> m.playerItem
+    renderRoom()
+    if m.autoEnter then enterPlayer()
+end sub
+
+sub leaving(_ = invalid as dynamic)
+    m.closed = true
+    m.beat.control = "stop"
+    m.enterTimer.control = "stop"
+    stopRoomEvents()
+    m.session.unobserveField("command")
+    if m.room = invalid or m.room.state = "ended" then return
+    if m.global.profile.id <> m.identity or m.global.token <> m.token or m.global.server <> m.server then return
+    callApi("POST", roomPath() + "/leave", invalid, "onLeave")
+end sub
+
+sub onLeave(event as object)
+end sub
+
+function roomPath() as string
+    return TOGETHER_PATH + "/" + CreateObject("roUrlTransfer").Escape(m.room.id)
+end function
+
+sub request(method as string, path as string, body as dynamic, kind as string)
+    m.busy = true
+    callApi(method, TOGETHER_PATH + path, body, "onRequest", kind)
+end sub
+
+sub roomRequest(path as string, body as dynamic, kind as string)
+    m.busy = true
+    callApi("POST", roomPath() + path, body, "onRequest", kind)
+end sub
+
+sub onRequest(event as object)
+    if m.closed then return
+    res = event.getData()
+    kind = res.tag
+    m.busy = false
+    if res.status = 401 then return
+    if kind = "current" and res.status = 404
+        m.statusText = ""
+        if m.intent.itemId <> invalid
+            m.statusText = tr("Starting room…")
+            request("POST", "", { item_id: m.intent.itemId, start_ms: m.intent.startMs }, "create")
+        else if m.intent.roomId <> invalid
+            listedRoom()
+        else
+            showJoinCode()
+        end if
+        return
+    end if
+    if res.ok
+        m.statusText = ""
+        if kind = "current" and m.intent.itemId <> invalid then m.statusText = tr("You already have an active room.")
+        if kind = "people"
+            showPeople(res.data.people)
+            return
+        end if
+        nextRoom = res.data
+        if kind = "create" or kind = "invite"
+            m.invite = res.data
+            nextRoom = res.data.room
+        end if
+        adoptRoom(nextRoom)
+        return
+    end if
+    if res.status = 409 and res.data <> invalid
+        adoptRoom(res.data.room)
+        m.statusText = tr("The room changed. Try again.")
+    else if res.status = 429
+        m.statusText = tr("Too many requests. Try again shortly.")
+    else if kind = "join" and res.status = 404
+        m.statusText = tr("That room is unavailable. Check the code or ask the host for a new one.")
+    else
+        m.statusText = tr("Arc couldn't complete the room request. Try again.")
+    end if
+    if kind = "command"
+        m.commandError = m.statusText
+        m.commandErrorAt = m.beatClock.TotalMilliseconds()
+    end if
+    publishRoom()
+    renderRoom()
+end sub
+
+sub adoptRoom(room as dynamic)
+    if m.room <> invalid and m.room.state = "ended" then return
+    if not newerRoom(m.room, room) then return
+    first = m.room = invalid
+    m.room = room
+    m.roomClock.Mark()
+    m.failedBeats = 0
+    if room.state = "ended"
+        m.invite = invalid
+        m.beat.control = "stop"
+        stopRoomEvents()
+        m.statusText = tr("The host ended the room.")
+    else if first
+        m.beat.control = "start"
+        measureClock()
+        startRoomEvents()
+        heartbeat()
+    end if
+    publishRoom()
+    renderRoom()
+    if m.autoEnter and not m.inPlayer then m.enterTimer.control = "start"
+end sub
+
+sub publishRoom()
+    if m.room = invalid then return
+    ' Pass an epoch estimate at receipt, then the player advances it with its monotonic clock.
+    now = m.room.server_time_ms + m.roomClock.TotalMilliseconds()
+    if m.serverClockAt <> invalid
+        now = m.serverClockAt + (m.beatClock.TotalMilliseconds() - m.serverClockSample)
+    end if
+    message = ""
+    if m.commandError <> invalid and m.beatClock.TotalMilliseconds() - m.commandErrorAt < 3500 then message = m.commandError
+    m.session.snapshot = { room: m.room, serverNow: now, offline: m.failedBeats >= 3, message: message }
+end sub
+
+sub measureClock()
+    m.clockAge = m.beatClock.TotalMilliseconds()
+    callApi("GET", TOGETHER_PATH + "/time", invalid, "onClock")
+end sub
+
+sub onClock(event as object)
+    if m.closed then return
+    res = event.getData()
+    if not res.ok or res.data = invalid then return
+    if res.data.server_received_ms = invalid or res.data.server_sent_ms = invalid then return
+    m.serverClockSample = m.beatClock.TotalMilliseconds()
+    m.serverClockAt = estimatedServerAtReceipt(res.data.server_sent_ms, res.data.server_received_ms, m.serverClockSample - m.clockAge)
+end sub
+
+sub heartbeat()
+    if m.closed or m.room = invalid or m.room.state = "ended" or m.beating then return
+    if m.beatClock.TotalMilliseconds() - m.clockAge >= 60000 then measureClock()
+    m.beating = true
+    m.lastBeat = m.beatClock.TotalMilliseconds()
+    task = CreateObject("roSGNode", "ApiTask")
+    task.request = { method: "POST", path: roomPath() + "/heartbeat", body: roomHeartbeat(m.room, m.session.report), timeoutMs: 4500 }
+    task.observeField("response", "onHeartbeat")
+    keepTask(task)
+    task.control = "RUN"
+end sub
+
+sub onHeartbeat(event as object)
+    if m.closed then return
+    m.beating = false
+    if m.room = invalid or m.room.state = "ended" then return
+    res = event.getData()
+    if res.ok
+        adoptRoom(res.data)
+    else if res.status = 409 and res.data <> invalid
+        adoptRoom(res.data.room)
+    else if res.status = 404
+        m.room.state = "ended"
+        m.invite = invalid
+        m.beat.control = "stop"
+        stopRoomEvents()
+        m.statusText = tr("This room is no longer available.")
+        publishRoom()
+        renderRoom()
+    else
+        m.failedBeats++
+        publishRoom()
+        renderRoom()
+    end if
+end sub
+
+sub startRoomEvents()
+    version = CreateObject("roDeviceInfo").GetOSVersion()
+    if Val(version.major) < 16 then return
+    m.stream = CreateObject("roSGNode", "RoomEventsTask")
+    m.stream.url = absoluteUrl(m.server, roomPath() + "/events")
+    m.stream.token = m.token
+    m.stream.observeField("room", "onRoomEvent")
+    m.stream.control = "run"
+end sub
+
+sub stopRoomEvents()
+    if m.stream = invalid then return
+    m.stream.unobserveField("room")
+    m.stream.stopRequested = true
+    m.stream = invalid
+end sub
+
+sub onRoomEvent(event as object)
+    if not m.closed then adoptRoom(event.getData())
+end sub
+
+sub enterIfPlaying()
+    if not m.autoEnter or m.room = invalid then return
+    if m.room.state = "waiting" or m.room.state = "playing" or m.room.started = true then enterPlayer()
+end sub
+
+sub enterPlayer()
+    if m.inPlayer or m.room = invalid or m.room.available <> true or m.room.state = "ended" then return
+    if m.room.item_id = invalid or m.room.item_id = "" then return
+    m.inPlayer = true
+    m.playerItem = m.room.item_id
+    m.top.action = { go: "play", id: m.room.item_id, startMs: Int(roomPosition(m.room, m.session.snapshot.serverNow)), together: m.session }
+end sub
+
+sub onPlayerCommand(event as object)
+    if m.closed or m.room = invalid or m.room.state = "ended" or m.room.available <> true then return
+    cmd = event.getData()
+    if cmd.action = "heartbeat"
+        if m.beatClock.TotalMilliseconds() - m.lastBeat >= 500 then heartbeat()
+    else
+        sendCommand(cmd.action, cmd.position_ms, cmd.item_id)
+    end if
+end sub
+
+sub sendCommand(action as string, at = invalid as dynamic, itemId = invalid as dynamic)
+    if m.busy or m.failedBeats >= 3 or m.room = invalid or m.room.state = "ended" then return
+    body = { revision: m.room.revision, action: action }
+    if at <> invalid then body.position_ms = Int(at)
+    if itemId <> invalid then body.item_id = itemId
+    roomRequest("/commands", body, "command")
+end sub
+
+sub renderRoom()
+    title = ""
+    code = ""
+    expiry = ""
+    people = []
+    entries = []
+    if m.room = invalid or m.room.state = "ended"
+        if m.room = invalid and m.intent <> invalid and (m.intent.itemId <> invalid or m.intent.roomId <> invalid)
+            entries.Push({ key: "retry", label: tr("Try again") })
+        end if
+        entries.Push({ key: "code", label: tr("Enter a room code") })
+    else
+        room = m.room
+        title = tr("This title isn't available to you.")
+        if room.item <> invalid then title = room.item.title
+        if room.available = true
+            label = tr("Play together")
+            if room.state <> "paused" or room.started = true then label = tr("Open player")
+            entries.Push({ key: "play", label: label })
+        end if
+        for each p in room.participants
+            name = p.name
+            if p.id = room.host_id then name += " · " + tr("Host")
+            state = tr("Getting ready")
+            if p.available = false
+                state = tr("Title unavailable")
+            else if p.ready = true
+                state = tr("Ready")
+            end if
+            people.Push(name + " · " + state)
+        end for
+        if room.invited <> invalid
+            for each person in room.invited
+                people.Push(person.name + " · " + tr("Invited"))
+            end for
+        end if
+        if room.host_id = room.self_id
+            if m.invite <> invalid and m.invite.invite_code <> invalid
+                token = m.invite.invite_code
+                code = Left(token, 4) + "-" + Right(token, 4)
+                leftMs = m.invite.invite_expires_at_ms - room.server_time_ms
+                expiry = tr("Room code expired")
+                if leftMs > 0 then expiry = tr("Room code expires in %1 min").Replace("%1", Int((leftMs + 59999) / 60000).ToStr())
+            end if
+            if room.available = true then entries.Push({ key: "people", label: tr("Invite people…") })
+            entries.Push({ key: "invite", label: tr("Get a new room code") })
+            entries.Push({ key: "end", label: tr("End for everyone") })
+        end if
+        entries.Push({ key: "leave", label: tr("Leave room") })
+    end if
+    m.top.findNode("title").text = title
+    m.top.findNode("code").text = code
+    m.top.findNode("expiry").text = expiry
+    peopleLabel = m.top.findNode("people")
+    peopleLabel.translation = [148, 295]
+    if code <> "" then peopleLabel.translation = [148, 424]
+    peopleLabel.text = people.Join(Chr(10))
+    shown = m.statusText
+    if m.failedBeats >= 3 then shown = tr("Reconnecting to the room…")
+    m.top.findNode("status").text = shown
+    ' Keep focus and selection while room snapshots arrive.
+    labels = []
+    for each e in entries
+        labels.Push(e.label)
+    end for
+    key = labels.Join(Chr(10))
+    if key = m.actionKey then return
+    m.actionKey = key
+    m.entries = entries
+    content = CreateObject("roSGNode", "ContentNode")
+    for each e in entries
+        content.createChild("ContentNode").title = e.label
+    end for
+    m.actions.content = content
+end sub
+
+sub onPicked()
+    if m.busy then return
+    i = m.actions.itemSelected
+    if i < 0 or i >= m.entries.Count() then return
+    key = m.entries[i].key
+    if key = "retry"
+        request("GET", "/current", invalid, "current")
+    else if key = "code"
+        showJoinCode()
+    else if key = "play"
+        if m.room.state = "paused" and m.room.started <> true then sendCommand("play")
+        enterPlayer()
+    else if key = "people"
+        request("GET", "/people" + queryString({ item_id: m.room.item_id }), invalid, "people")
+    else if key = "invite"
+        roomRequest("/invite", { revision: m.room.revision }, "invite")
+    else if key = "end"
+        confirmEnd()
+    else if key = "leave"
+        m.top.action = { go: "back" }
+    end if
+end sub
+
+sub confirmEnd()
+    d = CreateObject("roSGNode", "StandardMessageDialog")
+    d.title = tr("End for everyone")
+    d.message = [tr("Everyone will leave synchronized playback.")]
+    d.buttons = [tr("Cancel"), tr("End room")]
+    d.observeField("buttonSelected", "onEndChoice")
+    m.top.getScene().dialog = d
+end sub
+
+sub onEndChoice(event as object)
+    d = event.getRoSGNode()
+    d.close = true
+    if event.getData() = 1 then sendCommand("end")
+end sub
+
+sub showJoinCode()
+    if not m.top.visible then return
+    d = CreateObject("roSGNode", "StandardKeyboardDialog")
+    d.title = tr("Enter a room code")
+    d.message = [tr("Ask the host for the eight-character code.")]
+    d.buttons = [tr("Join"), tr("Cancel")]
+    d.observeField("buttonSelected", "onCodeChoice")
+    m.top.getScene().dialog = d
+end sub
+
+sub onCodeChoice(event as object)
+    d = event.getRoSGNode()
+    d.close = true
+    if event.getData() <> 0 then return
+    code = roomCode(d.text)
+    if code = ""
+        m.statusText = tr("Enter the eight-character room code.")
+        renderRoom()
+        return
+    end if
+    ' Ended rooms are no longer a membership. A subsequent join starts a new one.
+    m.room = invalid
+    m.invite = invalid
+    m.failedBeats = 0
+    m.autoEnter = true
+    m.statusText = tr("Joining room…")
+    renderRoom()
+    request("POST", "/join", { code: code }, "join")
+end sub
+
+sub listedRoom()
+    id = CreateObject("roUrlTransfer").Escape(m.intent.roomId)
+    request("POST", "/rooms/" + id + "/join", invalid, "join")
+end sub
+
+sub showPeople(people as dynamic)
+    m.invitePeople = []
+    if people <> invalid
+        for each person in people
+            if person.can_watch = true then m.invitePeople.Push(person)
+        end for
+    end if
+    if m.invitePeople.Count() = 0
+        m.statusText = tr("There is nobody you can invite to this title.")
+        renderRoom()
+        return
+    end if
+    m.inviteSelection = {}
+    m.picker.title = tr("Invite people…")
+    m.picker.visible = true
+    drawPicker(0)
+end sub
+
+sub drawPicker(focus as integer)
+    entries = []
+    for each person in m.invitePeople
+        label = person.name
+        if m.inviteSelection.DoesExist(person.id) then label = "✓ " + label
+        entries.Push({ label: label })
+    end for
+    entries.Push({ label: tr("Send invitations") })
+    m.picker.entries = entries
+    m.picker.focusIndex = focus
+    m.picker.show = true
+end sub
+
+sub onInvitePicked()
+    i = m.picker.picked
+    if i < 0 or i > m.invitePeople.Count() then return
+    if i = m.invitePeople.Count()
+        ids = m.inviteSelection.Keys()
+        if ids.Count() = 0 then return
+        closePicker()
+        if not m.busy and m.room.state <> "ended" then roomRequest("/people", { profile_ids: ids }, "invited")
+        return
+    end if
+    id = m.invitePeople[i].id
+    if m.inviteSelection.DoesExist(id)
+        m.inviteSelection.Delete(id)
+    else if m.inviteSelection.Count() < 9
+        m.inviteSelection[id] = true
+    end if
+    drawPicker(i)
+end sub
+
+sub closePicker()
+    m.picker.visible = false
+    takeFocus()
+end sub

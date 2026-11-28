@@ -17,6 +17,7 @@ function cardMenu(node as dynamic) as object
         else
             out.Push({ label: tr("Play"), act: "play" })
         end if
+        if m.global <> invalid and m.global.watchTogether = true and node.available <> false then out.Push({ label: tr("Watch Together"), act: "together" })
     end if
     if node.played then out.Push({ label: tr("Mark as unwatched"), act: "unwatched" }) else out.Push({ label: tr("Mark as watched"), act: "watched" })
     if kind <> "episode"
@@ -24,19 +25,31 @@ function cardMenu(node as dynamic) as object
     end if
     ' Only on a card in Continue Watching or Up Next: takes it out without marking it watched (an
     ' episode takes its show out, until something of it is played again).
+    if node.available <> false
+        out.Push({ label: tr("Play Next"), act: "queueNext" })
+        out.Push({ label: tr("Add to Queue"), act: "queueAppend" })
+    end if
     if node.inContinue = true then out.Push({ label: tr("Remove from Continue Watching"), act: "uncontinue" })
     if kind = "episode" and node.parentId <> "" then out.Push({ label: tr("Go to show"), act: "show" })
     if kind <> "episode" then out.Push({ label: tr("Go to details"), act: "open" })
+    out.Push({ label: tr("Add to Playlist"), act: "addToPlaylist" })
     return out
 end function
 
 ' runCardAction: does what was picked; returns the screen action to send, if any (play or open).
 function runCardAction(node as object, act as string) as dynamic
+    if act = "queueNext" or act = "queueAppend"
+        operation = "append"
+        if act = "queueNext" then operation = "next"
+        return { go: "queueAdd", id: node.itemId, operation: operation }
+    end if
     id = CreateObject("roUrlTransfer").Escape(node.itemId)
     if act = "play" then return { go: "play", id: node.itemId, startMs: node.resumeMs, title: node.title, subtitle: node.line2 }
     if act = "restart" then return { go: "play", id: node.itemId, startMs: 0, title: node.title, subtitle: node.line2 }
+    if act = "together" then return { go: "together", itemId: node.itemId, startMs: node.resumeMs }
     if act = "show" then return { go: "open", id: node.parentId, episodeId: node.itemId }
     if act = "open" then return { go: "open", id: node.itemId }
+    if act = "addToPlaylist" then return { go: "playlistPicker", id: node.itemId, title: node.title }
     if act = "watched" or act = "unwatched" then callApi("PUT", "/items/" + id + "/played", { played: act = "watched" }, "onCardChanged")
     if act = "list" or act = "unlist" then callApi("PUT", "/items/" + id + "/watchlist", { on: act = "list" }, "onCardChanged")
     if act = "uncontinue" then callApi("DELETE", "/home/continue/" + id, invalid, "onCardChanged")
