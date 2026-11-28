@@ -77,14 +77,23 @@ function durationMs(item as object) as integer
     return 0
 end function
 
+' The separate cuts of a movie share a title and year, so show the edition beside it.
+function yearAndEdition(item as object) as string
+    parts = []
+    if item.year <> invalid and item.year > 0 then parts.Push(item.year.ToStr())
+    if item.kind = "movie" and item.edition <> invalid and item.edition <> "" then parts.Push(item.edition)
+    return parts.Join(" · ")
+end function
+
 ' metaLine: the year (or episode code and name), rating, length and up to two genres, joined by " · ".
 function metaLine(item as object) as string
     parts = []
     code = episodeCode(item)
     if code <> ""
         parts.Push(code)
-    else if item.year <> invalid and item.year > 0
-        parts.Push(item.year.ToStr())
+    else
+        caption = yearAndEdition(item)
+        if caption <> "" then parts.Push(caption)
     end if
     if item.content_rating <> invalid and item.content_rating <> "" then parts.Push(item.content_rating)
     if item.runtime_min <> invalid then

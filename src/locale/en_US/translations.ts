@@ -9,6 +9,10 @@
   <translation>* for options, sort and filter</translation>
 </message>
 <message>
+  <source>* for Play All and Shuffle</source>
+  <translation>* for Play All and Shuffle</translation>
+</message>
+<message>
   <source>%1 and %2</source>
   <translation>%1 and %2</translation>
 </message>
@@ -43,10 +47,6 @@
 <message>
   <source>%1, and %2</source>
   <translation>%1, and %2</translation>
-</message>
-<message>
-  <source>%1's PIN</source>
-  <translation>%1's PIN</translation>
 </message>
 <message>
   <source>%1h</source>
@@ -221,6 +221,10 @@
   <translation>Check that Arc is running and this Roku is on the same network.</translation>
 </message>
 <message>
+  <source>Checking PIN…</source>
+  <translation>Checking PIN…</translation>
+</message>
+<message>
   <source>Christmas Films</source>
   <translation>Christmas Films</translation>
 </message>
@@ -345,6 +349,14 @@
   <translation>Enter an address</translation>
 </message>
 <message>
+  <source>Enter this code:</source>
+  <translation>Enter this code:</translation>
+</message>
+<message>
+  <source>Enter your PIN</source>
+  <translation>Enter your PIN</translation>
+</message>
+<message>
   <source>Episodes</source>
   <translation>Episodes</translation>
 </message>
@@ -389,6 +401,18 @@
   <translation>Genre</translation>
 </message>
 <message>
+  <source>Genres</source>
+  <translation>Genres</translation>
+</message>
+<message>
+  <source>Get a New Code</source>
+  <translation>Get a New Code</translation>
+</message>
+<message>
+  <source>Getting a code…</source>
+  <translation>Getting a code…</translation>
+</message>
+<message>
   <source>Go to details</source>
   <translation>Go to details</translation>
 </message>
@@ -399,10 +423,6 @@
 <message>
   <source>HDR</source>
   <translation>HDR</translation>
-</message>
-<message>
-  <source>Hide Missing Episodes</source>
-  <translation>Hide Missing Episodes</translation>
 </message>
 <message>
   <source>Hide Spoilers</source>
@@ -537,10 +557,6 @@
   <translation>Movies</translation>
 </message>
 <message>
-  <source>New code</source>
-  <translation>New code</translation>
-</message>
-<message>
   <source>Newest first</source>
   <translation>Newest first</translation>
 </message>
@@ -609,10 +625,6 @@
   <translation>Off</translation>
 </message>
 <message>
-  <source>OK</source>
-  <translation>OK</translation>
-</message>
-<message>
   <source>OK to play now · Back to keep watching</source>
   <translation>OK to play now · Back to keep watching</translation>
 </message>
@@ -625,8 +637,8 @@
   <translation>On</translation>
 </message>
 <message>
-  <source>On your phone or computer, open Arc, choose Link a Device from your profile menu, and type this code.</source>
-  <translation>On your phone or computer, open Arc, choose Link a Device from your profile menu, and type this code.</translation>
+  <source>On your phone or computer, open Arc and choose Link a Device in the profile menu.</source>
+  <translation>On your phone or computer, open Arc and choose Link a Device in the profile menu.</translation>
 </message>
 <message>
   <source>Only when I choose them</source>
@@ -643,6 +655,10 @@
 <message>
   <source>Options</source>
   <translation>Options</translation>
+</message>
+<message>
+  <source>Or go to %1</source>
+  <translation>Or go to %1</translation>
 </message>
 <message>
   <source>Order</source>
@@ -679,6 +695,10 @@
 <message>
   <source>Play %1</source>
   <translation>Play %1</translation>
+</message>
+<message>
+  <source>Play All</source>
+  <translation>Play All</translation>
 </message>
 <message>
   <source>Play from the beginning</source>
@@ -727,6 +747,10 @@
 <message>
   <source>Producer</source>
   <translation>Producer</translation>
+</message>
+<message>
+  <source>Profiles</source>
+  <translation>Profiles</translation>
 </message>
 <message>
   <source>Quality</source>
@@ -821,8 +845,8 @@
   <translation>Search</translation>
 </message>
 <message>
-  <source>Search for films, shows, episodes, collections and people.</source>
-  <translation>Search for films, shows, episodes, collections and people.</translation>
+  <source>Search for films, shows, genres and more.</source>
+  <translation>Search for films, shows, genres and more.</translation>
 </message>
 <message>
   <source>Season %1</source>
@@ -831,6 +855,10 @@
 <message>
   <source>Server</source>
   <translation>Server</translation>
+</message>
+<message>
+  <source>Server: %1</source>
+  <translation>Server: %1</translation>
 </message>
 <message>
   <source>Settings</source>
@@ -873,8 +901,8 @@
   <translation>Sign in automatically</translation>
 </message>
 <message>
-  <source>Sign in to %1</source>
-  <translation>Sign in to %1</translation>
+  <source>Sign in to Arc</source>
+  <translation>Sign in to Arc</translation>
 </message>
 <message>
   <source>Sign out</source>
@@ -965,12 +993,12 @@
   <translation>Switch Profile</translation>
 </message>
 <message>
-  <source>That PIN isn't right.</source>
-  <translation>That PIN isn't right.</translation>
+  <source>That PIN isn't right. Try again.</source>
+  <translation>That PIN isn't right. Try again.</translation>
 </message>
 <message>
-  <source>The code ran out. Choose New code for another.</source>
-  <translation>The code ran out. Choose New code for another.</translation>
+  <source>The code ran out. Choose Get a New Code for another.</source>
+  <translation>The code ran out. Choose Get a New Code for another.</translation>
 </message>
 <message>
   <source>The file's default</source>
@@ -1073,6 +1101,10 @@
   <translation>Use another server</translation>
 </message>
 <message>
+  <source>Use Another Server</source>
+  <translation>Use Another Server</translation>
+</message>
+<message>
   <source>Version</source>
   <translation>Version</translation>
 </message>
@@ -1085,8 +1117,8 @@
   <translation>Video Format</translation>
 </message>
 <message>
-  <source>Waiting for the code to be approved…</source>
-  <translation>Waiting for the code to be approved…</translation>
+  <source>Waiting for you to enter the code…</source>
+  <translation>Waiting for you to enter the code…</translation>
 </message>
 <message>
   <source>Watch Status</source>
