@@ -117,8 +117,8 @@
   <translation>Address</translation>
 </message>
 <message>
-  <source>All titles</source>
-  <translation>All titles</translation>
+  <source>All</source>
+  <translation>All</translation>
 </message>
 <message>
   <source>Always</source>
@@ -463,10 +463,6 @@
 <message>
   <source>Interview</source>
   <translation>Interview</translation>
-</message>
-<message>
-  <source>Jump to</source>
-  <translation>Jump to</translation>
 </message>
 <message>
   <source>Large</source>

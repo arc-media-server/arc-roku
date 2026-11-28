@@ -7,6 +7,8 @@ const GRID_CARD_TOP_INSET = 12
 
 sub init()
     m.grid = m.top.findNode("grid")
+    m.letterRail = m.top.findNode("letterRail")
+    m.letterRail.observeField("itemSelected", "onLetterSelected")
     m.titleLabel = m.top.findNode("title")
     m.summary = m.top.findNode("summary")
     m.hint = m.top.findNode("hint")
@@ -71,14 +73,12 @@ sub reload()
     m.generation = m.generation + 1
     m.style = browseStyle(m.source)
     if m.style = "thumb"
-        m.grid.numColumns = 4
+        m.fullColumns = 4
         m.grid.itemSize = cardSize("thumb")
-        m.grid.itemSpacing = [0, 36]
         m.grid.numRows = 3
     else
-        m.grid.numColumns = 7
+        m.fullColumns = 7
         m.grid.itemSize = cardSize("poster")
-        m.grid.itemSpacing = [0, 40]
         m.grid.numRows = 3
     end if
     size = m.grid.itemSize
@@ -87,6 +87,7 @@ sub reload()
     m.loaded = 0
     m.queueItems = []
     m.letters = []
+    if not canJumpToLetter() then showLetterRail()
     ' Where the loaded titles start in the whole list: 0, or a letter's place after a jump.
     m.base = 0
     m.total = -1
@@ -112,6 +113,7 @@ sub onPage(event as object)
     m.spinner.visible = false
     m.spinner.control = "stop"
     if not res.ok
+        if m.loaded = 0 then showLetterRail()
         showEmpty(tr("Couldn't load this.") + " " + res.error)
         return
     end if
@@ -143,6 +145,7 @@ sub onPage(event as object)
     end if
     if m.source.kind = "playlist" and res.data <> invalid and res.data.playlist <> invalid then m.titleLabel.text = res.data.playlist.title
     if first
+        showLetterRail()
         m.grid.content = m.content
         if m.loaded = 0
             if m.source.kind = "library" and libraryFilterParams(m.query).Count() > 0
@@ -151,10 +154,65 @@ sub onPage(event as object)
                 showEmpty(tr("Nothing here."))
             end if
         end if
-        if m.keepFocus <> invalid and m.keepFocus > 0 and m.keepFocus < m.loaded then m.grid.jumpToItem = m.keepFocus
+        if m.keepFocus <> invalid and m.keepFocus >= 0 and m.keepFocus < m.loaded then m.grid.jumpToItem = m.keepFocus
         m.keepFocus = invalid
     end if
     showSummary()
+end sub
+
+function canJumpToLetter() as boolean
+    return m.source.kind = "library" and m.query.sort = "title"
+end function
+
+sub showLetterRail()
+    show = canJumpToLetter() and m.loaded > 0 and m.letters.Count() > 1
+    m.letterRail.visible = show
+    columns = m.fullColumns
+    spacing = [0, 40]
+    if m.style = "thumb" then spacing[1] = 36
+    if show
+        ' Leave room for the rail while keeping each card the same size.
+        columns--
+        if m.style = "poster" then spacing[0] = 24
+    end if
+    m.grid.numColumns = columns
+    m.grid.itemSpacing = spacing
+    if not show then return
+
+    m.railLetters = [""]
+    m.railLetters.Append(orderedLetters(m.letters, m.query.reverse))
+    content = CreateObject("roSGNode", "ContentNode")
+    for each letter in m.railLetters
+        label = UCase(letter)
+        if letter = "" then label = tr("All")
+        content.createChild("ContentNode").title = label
+    end for
+    m.letterRail.content = content
+end sub
+
+sub focusLetterRail()
+    i = 0
+    for each letter in m.railLetters
+        if letter = m.query.letter then exit for
+        i++
+    end for
+    m.letterRail.setFocus(true)
+    if i >= m.railLetters.Count() then i = 0
+    m.letterRail.jumpToItem = i
+end sub
+
+sub onLetterSelected()
+    i = m.letterRail.itemSelected
+    if not m.letterRail.hasFocus() or m.spinner.visible or not m.letterRail.visible then return
+    if i < 0 or i >= m.railLetters.Count() then return
+    jumpToLetter(m.railLetters[i])
+end sub
+
+sub jumpToLetter(letter as string)
+    m.query.letter = letter
+    m.keepFocus = 0
+    reload()
+    m.grid.setFocus(true)
 end sub
 
 sub onFacets(event as object)
@@ -226,6 +284,24 @@ end sub
 function onKeyEvent(key as string, press as boolean) as boolean
     if not press then return false
     if m.options.visible then return true
+    if m.letterRail.hasFocus()
+        if key = "left" or key = "back"
+            m.grid.setFocus(true)
+            return true
+        end if
+        if key = "options"
+            m.grid.setFocus(true)
+        else
+            return false
+        end if
+    end if
+    if key = "right" and m.letterRail.visible and m.grid.hasFocus() and not m.spinner.visible
+        i = m.grid.itemFocused
+        if i >= 0 and ((i + 1) mod m.grid.numColumns = 0 or i = m.loaded - 1)
+            focusLetterRail()
+            return true
+        end if
+    end if
     if key = "play"
         c = focusedCard()
         if c <> invalid and (c.kind = "movie" or c.kind = "episode")
@@ -277,13 +353,6 @@ sub openMenu(section as string, focus = "" as string)
         if m.top.params.source.kind = "library" and m.libraryView = "library"
             entries.Push({ label: tr("Sort by"), detail: sortName(q.sort) })
             values.Push("sort")
-            ' Sorted by title, the grid can start at a letter (as the web's A–Z rail).
-            if q.sort = "title" and m.letters <> invalid and m.letters.Count() > 0
-                detail = tr("All titles")
-                if q.letter <> "" then detail = UCase(q.letter)
-                entries.Push({ label: tr("Jump to"), detail: detail })
-                values.Push("jump")
-            end if
             if q.sort <> "shuffle"
                 d = sortDirections(q.sort)
                 detail = d[0]
@@ -323,16 +392,6 @@ sub openMenu(section as string, focus = "" as string)
             if choices[i] = q.sort then selected = i
             entries.Push({ label: sortName(choices[i]), detail: "" })
             values.Push(choices[i])
-        end for
-    else if section = "jump"
-        m.options.title = tr("Jump to")
-        entries.Push({ label: tr("All titles"), detail: "" })
-        values.Push("")
-        selected = 0
-        for each l in m.letters
-            if l = q.letter then selected = values.Count()
-            entries.Push({ label: UCase(l), detail: "" })
-            values.Push(l)
         end for
     else if section = "order"
         m.options.title = tr("Order")
@@ -427,8 +486,6 @@ sub onOptionPicked()
     if section = "view"
         m.libraryView = v
         m.source = { kind: v, id: m.top.params.source.id, libraryKind: m.top.params.source.libraryKind }
-    else if section = "jump"
-        m.query.letter = v
     else if section = "sort"
         if v <> m.query.sort
             m.query.reverse = false
@@ -444,8 +501,8 @@ sub onOptionPicked()
         return
     end if
     reload()
-    if section = "view" or section = "jump"
-        ' Another view is a different grid, and a letter is a place in it: the panel closes onto it.
+    if section = "view"
+        ' Another view is a different grid: the panel closes onto it.
         m.menu = ""
         m.options.visible = false
         m.grid.setFocus(true)
@@ -465,7 +522,7 @@ sub onOptionsClosed()
     if m.menu = "filters"
         openMenu("", "filters")
     else if m.menu <> ""
-        if m.menu = "view" or m.menu = "sort" or m.menu = "order" or m.menu = "jump"
+        if m.menu = "view" or m.menu = "sort" or m.menu = "order"
             openMenu("", m.menu)
         else
             openMenu("filters", m.menu)

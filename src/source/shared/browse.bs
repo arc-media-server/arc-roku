@@ -181,6 +181,15 @@ function letterChoices(letters as dynamic) as object
     return out
 end function
 
+function orderedLetters(letters as object, reverse as boolean) as object
+    if not reverse then return letters
+    out = []
+    for i = letters.Count() - 1 to 0 step -1
+        out.Push(letters[i])
+    end for
+    return out
+end function
+
 function joinWith(parts as object, sep as string) as string
     out = ""
     for each p in parts
