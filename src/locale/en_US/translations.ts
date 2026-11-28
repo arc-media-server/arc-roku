@@ -85,12 +85,24 @@
   <translation>Add to Playlist</translation>
 </message>
 <message>
+  <source>Add to Queue</source>
+  <translation>Add to Queue</translation>
+</message>
+<message>
   <source>Add to Watchlist</source>
   <translation>Add to Watchlist</translation>
 </message>
 <message>
   <source>Added to %1.</source>
   <translation>Added to %1.</translation>
+</message>
+<message>
+  <source>Added to play next.</source>
+  <translation>Added to play next.</translation>
+</message>
+<message>
+  <source>Added to the queue.</source>
+  <translation>Added to the queue.</translation>
 </message>
 <message>
   <source>Address</source>
@@ -301,8 +313,12 @@
   <translation>Couldn't search.</translation>
 </message>
 <message>
-  <source>Couldn't start playing this season.</source>
-  <translation>Couldn't start playing this season.</translation>
+  <source>Couldn't start this queue. Try again.</source>
+  <translation>Couldn't start this queue. Try again.</translation>
+</message>
+<message>
+  <source>Couldn't update the queue. Try again.</source>
+  <translation>Couldn't update the queue. Try again.</translation>
 </message>
 <message>
   <source>Date added</source>
@@ -521,6 +537,14 @@
   <translation>Most recent first</translation>
 </message>
 <message>
+  <source>Move Earlier</source>
+  <translation>Move Earlier</translation>
+</message>
+<message>
+  <source>Move Later</source>
+  <translation>Move Later</translation>
+</message>
+<message>
   <source>Movies</source>
   <translation>Movies</translation>
 </message>
@@ -713,6 +737,10 @@
   <translation>Quality</translation>
 </message>
 <message>
+  <source>Queue</source>
+  <translation>Queue</translation>
+</message>
+<message>
   <source>Rate…</source>
   <translation>Rate…</translation>
 </message>
@@ -755,6 +783,10 @@
 <message>
   <source>Remove from Continue Watching</source>
   <translation>Remove from Continue Watching</translation>
+</message>
+<message>
+  <source>Remove from Queue</source>
+  <translation>Remove from Queue</translation>
 </message>
 <message>
   <source>Remove from Watchlist</source>

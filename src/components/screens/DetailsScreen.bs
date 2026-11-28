@@ -327,10 +327,12 @@ sub showTitleMenu()
     current = 0
     if m.item.user_data <> invalid and m.item.user_data.rating <> invalid then current = m.item.user_data.rating
     entries = [{ label: tr("Rate…"), detail: ratingStars(current) }]
+    m.queueMenuStart = entries.Count()
     if m.item.kind = "movie" or m.item.kind = "series" or m.item.kind = "episode"
-        entries.Push({ label: tr("Add to Playlist"), act: "addToPlaylist" })
+        entries.Push({ label: tr("Play Next") })
+        entries.Push({ label: tr("Add to Queue") })
+        entries.Push({ label: tr("Add to Playlist") })
     end if
-    m.titleMenuEntries = entries
     m.cardPanel.entries = entries
     m.cardPanel.selected = -1
     m.cardPanel.visible = true
@@ -340,9 +342,16 @@ end sub
 sub onRatingPicked()
     i = m.cardPanel.picked
     if m.ratingPanel = "more"
-        if i >= 0 and i < m.titleMenuEntries.Count() and m.titleMenuEntries[i].act = "addToPlaylist"
+        if i = m.queueMenuStart + 2 and i < m.cardPanel.entries.Count()
             closeCardPanel()
             m.top.action = { go: "playlistPicker", id: m.item.id, title: m.item.title }
+            return
+        end if
+        if i >= m.queueMenuStart and i < m.cardPanel.entries.Count()
+            operation = "append"
+            if i = m.queueMenuStart then operation = "next"
+            closeCardPanel()
+            m.top.action = { go: "queueAdd", id: m.item.id, operation: operation }
             return
         end if
         if i <> 0 then return
@@ -744,7 +753,7 @@ sub onCardPicked()
         body = { played: act = "seasonWatched", season_number: at.season.season_number }
         callApi("PUT", "/items/" + escape(m.item.id) + "/played", body, "onCardChanged")
     else if act = "shuffleSeason"
-        callApi("POST", "/play-queues", { item_ids: shuffledIds(at.season.episodes) }, "onSeasonQueue", m.item.id)
+        m.top.action = { go: "queueStart", body: { item_ids: shuffledIds(at.season.episodes) } }
     else
         go = runCardAction(node, act)
         if go <> invalid then m.top.action = go
@@ -770,20 +779,6 @@ sub onCardChanged(event as object)
     else
         m.error.text = tr("Couldn't change what's watched.") + " " + res.error
     end if
-end sub
-
-' Shuffle Season's queue is made: play its first entry, with the queue for the player to play on.
-sub onSeasonQueue(event as object)
-    res = event.getData()
-    if m.item = invalid or res.tag <> m.item.id then return
-    first = invalid
-    if res.ok then first = queueCurrent(res.data)
-    if first = invalid
-        m.error.text = tr("Couldn't start playing this season.") + " " + valueOr(res.error, "")
-        return
-    end if
-    print "Arc: shuffling a season ("; res.data.entries.Count(); " episodes)"
-    m.top.action = { go: "play", id: first.item.id, startMs: 0, title: m.item.title, subtitle: episodeLine(first.item), queue: res.data }
 end sub
 
 ' episodeLine: "S1 · E4 · Shindig", for the player's second line.

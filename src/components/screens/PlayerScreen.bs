@@ -278,21 +278,22 @@ sub onItem(event as object)
     m.top.findNode("subtitle").text = sub2
     load(valueOr(m.top.params.startMs, 0), {})
     loadCastAndEpisodes(it)
-    if it.kind = "episode" and pref("auto_play", true) <> false
-        if m.top.params.queue <> invalid
-            ' Playing through a queue (Shuffle Season): next is the queue's next entry, not Arc's.
-            n = queueNext(m.top.params.queue)
-            if n <> invalid then m.next = n.item
-        else
-            callApi("GET", "/items/" + escape(it.id) + "/next", invalid, "onNext")
-        end if
+    if m.top.params.queue <> invalid
+        n = queueNext(m.top.params.queue)
+        if n <> invalid then m.next = n.item
+    end if
+    if m.next = invalid and it.kind = "episode" and pref("auto_play", true) <> false
+        callApi("GET", "/items/" + escape(it.id) + "/next", invalid, "onNext")
     end if
 end sub
 
 sub onNext(event as object)
     res = event.getData()
     ' 204 (nothing next) comes back with no data.
-    if res.ok and res.data <> invalid and res.data.id <> invalid then m.next = res.data
+    if res.ok and res.data <> invalid and res.data.id <> invalid
+        m.autoNext = res.data
+        m.next = res.data
+    end if
 end sub
 
 ' --- starting (and restarting) the stream ---
@@ -435,7 +436,12 @@ sub onVideoState()
         if m.next <> invalid
             if m.upNextIn < 0 then startUpNext()
         else
-            m.top.action = { go: "back" }
+            q = m.top.params.queue
+            if q = invalid
+                m.top.action = { go: "back" }
+            else
+                m.top.action = { go: "queueFinished", queue: q }
+            end if
         end if
     else if s = "error"
         print "Arc: player error "; m.video.errorCode; " "; m.video.errorMsg; " ("; m.attempt; ")"
@@ -1408,13 +1414,57 @@ sub playNext()
     startAt = 0
     if n.user_data <> invalid and n.user_data.played <> true and n.user_data.position_ms <> invalid then startAt = n.user_data.position_ms
     q = m.top.params.queue
-    if q <> invalid and m.queueMoving <> true
-        ' The queue moves to the entry first (select passes over unavailable ones), then it plays.
+    if q <> invalid
+        if m.queueMoving = true then return
         m.queueMoving = true
-        callApi("PATCH", "/play-queues/" + escape(q.id), { revision: q.revision, operation: "select", entry_id: queueNext(q).id }, "onQueueMoved")
+        ' Resolve the next entry again before advancing, in case an edit changed it.
+        callApi("GET", "/play-queues/" + escape(q.id), invalid, "onQueueBeforeMove")
         return
     end if
     playItem(n, startAt, invalid)
+end sub
+
+sub onQueueBeforeMove(event as object)
+    if m.closed then return
+    res = event.getData()
+    q = res.data
+    if not res.ok or q = invalid or q.current_entry_id <> m.top.params.queue.current_entry_id
+        cancelQueueAdvance()
+        return
+    end if
+    nextEntry = queueNext(q)
+    if nextEntry = invalid and m.autoNext <> invalid
+        body = { revision: q.revision, operation: "append", item_ids: [m.autoNext.id] }
+        callApi("PATCH", "/play-queues/" + escape(q.id), body, "onQueueAppendedNext")
+        return
+    end if
+    if nextEntry = invalid
+        cancelQueueAdvance()
+        return
+    end if
+    selectNextQueueEntry(q, nextEntry)
+end sub
+
+sub onQueueAppendedNext(event as object)
+    if m.closed then return
+    res = event.getData()
+    entry = invalid
+    if res.ok then entry = queueNext(res.data)
+    if entry = invalid
+        cancelQueueAdvance()
+    else
+        selectNextQueueEntry(res.data, entry)
+    end if
+end sub
+
+sub selectNextQueueEntry(q as object, entry as object)
+    callApi("PATCH", "/play-queues/" + escape(q.id), { revision: q.revision, operation: "select", entry_id: entry.id }, "onQueueMoved")
+end sub
+
+sub cancelQueueAdvance()
+    m.queueMoving = false
+    m.next = invalid
+    cancelUpNext()
 end sub
 
 sub onQueueMoved(event as object)
@@ -1424,9 +1474,7 @@ sub onQueueMoved(event as object)
     if res.ok then q = res.data
     e = queueCurrent(q)
     if e = invalid
-        ' Arc refused the change (another device changed the queue, say): play on without it.
-        print "Arc: the play queue couldn't move on ("; res.status; "), playing the next episode without it"
-        playItem(m.next, 0, invalid)
+        cancelQueueAdvance()
         return
     end if
     startAt = 0
@@ -1436,10 +1484,11 @@ sub onQueueMoved(event as object)
 end sub
 
 sub playItem(n as object, startAt as dynamic, queue as dynamic)
-    title = m.top.findNode("title").text
-    if n.series_title <> invalid then title = n.series_title
-    print "Arc: playing the next episode"
-    m.top.action = { go: "play", replace: true, id: n.id, startMs: startAt, title: title, subtitle: episodeTitled(n), queue: queue }
+    title = valueOr(n.series_title, n.title)
+    subtitle = ""
+    if n.kind = "episode" then subtitle = episodeTitled(n)
+    print "Arc: playing the next title"
+    m.top.action = { go: "play", replace: true, id: n.id, startMs: startAt, title: title, subtitle: subtitle, queue: queue }
 end sub
 
 ' --- the options menu (* button) ---

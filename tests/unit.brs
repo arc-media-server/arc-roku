@@ -474,13 +474,24 @@ sub testSeasons()
 end sub
 
 sub testCardMenu()
+    queue = { id: "q", current_entry_id: "here", entries: [
+        { id: "played", available: true, item: { id: "a" } },
+        { id: "here", available: true, item: { id: "b" } },
+        { id: "unavailable", available: false },
+        { id: "next", available: true, item: { id: "c" } }
+    ] }
+    cards = homeQueueCards(queue)
+    eq(cards.Count(), 2, "Home Queue shows current and playable upcoming entries")
+    eq(cards[0].queueEntry, "here", "Home Queue cards target queue entry IDs")
+    eq(cards[1].queueId, "q", "Home Queue cards retain their originating queue")
+    eq(reorderedQueueIds(queue, "next", -1).Join(","), "played,here,next,unavailable", "queue reorder retains protected and unavailable entries")
     ep = { kind: "episode", itemId: "e", parentId: "s", resumeMs: 60000, played: false, watchlisted: false, inContinue: true }
-    eq(menuActs(cardMenu(ep)), "play,restart,watched,uncontinue,show,addToPlaylist", "card menu: an episode in Continue Watching")
+    eq(menuActs(cardMenu(ep)), "play,restart,watched,queueNext,queueAppend,uncontinue,show,addToPlaylist", "card menu: an episode in Continue Watching")
     movie = { kind: "movie", itemId: "m", parentId: "", resumeMs: 0, played: false, watchlisted: false, inContinue: true }
-    eq(menuActs(cardMenu(movie)), "play,watched,list,uncontinue,open,addToPlaylist", "card menu: a film in Up Next or Continue Watching")
-    eq(cardMenu(movie)[3].label, "Remove from Continue Watching", "card menu: the remove entry's name")
+    eq(menuActs(cardMenu(movie)), "play,watched,list,queueNext,queueAppend,uncontinue,open,addToPlaylist", "card menu: a film in Up Next or Continue Watching")
+    eq(cardMenu(movie)[5].label, "Remove from Continue Watching", "card menu: the remove entry's name")
     movie.inContinue = false
-    eq(menuActs(cardMenu(movie)), "play,watched,list,open,addToPlaylist", "card menu: elsewhere there's no remove entry")
+    eq(menuActs(cardMenu(movie)), "play,watched,list,queueNext,queueAppend,open,addToPlaylist", "card menu: elsewhere there's no remove entry")
     eq(cardMenu({ kind: "collection" }).Count(), 0, "card menu: not on a collection")
 end sub
 

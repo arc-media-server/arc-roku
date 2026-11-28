@@ -24,6 +24,10 @@ function cardMenu(node as dynamic) as object
     end if
     ' Only on a card in Continue Watching or Up Next: takes it out without marking it watched (an
     ' episode takes its show out, until something of it is played again).
+    if node.available <> false
+        out.Push({ label: tr("Play Next"), act: "queueNext" })
+        out.Push({ label: tr("Add to Queue"), act: "queueAppend" })
+    end if
     if node.inContinue = true then out.Push({ label: tr("Remove from Continue Watching"), act: "uncontinue" })
     if kind = "episode" and node.parentId <> "" then out.Push({ label: tr("Go to show"), act: "show" })
     if kind <> "episode" then out.Push({ label: tr("Go to details"), act: "open" })
@@ -33,6 +37,11 @@ end function
 
 ' runCardAction: does what was picked; returns the screen action to send, if any (play or open).
 function runCardAction(node as object, act as string) as dynamic
+    if act = "queueNext" or act = "queueAppend"
+        operation = "append"
+        if act = "queueNext" then operation = "next"
+        return { go: "queueAdd", id: node.itemId, operation: operation }
+    end if
     id = CreateObject("roUrlTransfer").Escape(node.itemId)
     if act = "play" then return { go: "play", id: node.itemId, startMs: node.resumeMs, title: node.title, subtitle: node.line2 }
     if act = "restart" then return { go: "play", id: node.itemId, startMs: 0, title: node.title, subtitle: node.line2 }

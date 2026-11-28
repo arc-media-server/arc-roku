@@ -18,7 +18,10 @@ sub Main()
     onSeasons(eventFor({ok:true,tag:tag,data:{seasons:[{season_number:1,episodes:[{available:false,title:"Missing",episode_number:1}]}]}}))
     check(m.error.text = "" and m.draws = 1, "missing episode received")
     showTitleMenu()
-    check(m.cardPanel.entries.Count() = 1, "title menu only offers rating")
+    check(m.cardPanel.entries[0].label = "Rate…", "title menu retains rating")
+    for each entry in m.cardPanel.entries
+        check(entry.label <> "Show Missing Episodes" and entry.label <> "Hide Missing Episodes", "missing-episode toggle lives in Settings")
+    end for
     closeCardPanel()
     node = {itemId:"",available:false,title:"Missing",kind:"episode",resumeMs:0}
     row = { rowKind:"season", seasonIndex:0, child:node, getChild:function(i as integer) as object
